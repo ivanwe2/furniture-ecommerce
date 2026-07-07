@@ -54,7 +54,7 @@ Tasks:
     c) tag revalidation: minimal test page reading a doc via
        `unstable_cache` tagged `probe`; edit doc in admin (temporary hook
        revalidates `probe`); page updates within seconds on refresh.
-    d) versions frozen: next 16.x / payload 3.85+ (NOT 4-beta) / adapter /
+    d) versions frozen: next 15.4.x / payload 3.85+ (NOT 4-beta). / adapter /
        wrangler exact versions → Decisions log.
 1.9 Delete probe artifacts; update PROGRESS.md.
 

@@ -44,8 +44,9 @@ record actual hours at phase completion.)
 | 2026-07-06 | All-in Cloudflare: Workers Paid + D1 + R2 + Images + KV | one vendor, official template, honest $5/mo | ARCHITECTURE §1–2 |
 | 2026-07-06 | No separate spike phase; checks absorbed into Phase 1 AC | velocity | PHASES header |
 | 2026-07-06 | Payload 3.85+ locked; v4 beta forbidden | no GA/migration guide | ARCHITECTURE §2 |
-| (fill) | Frozen versions: next@__ payload@__ @opennextjs/cloudflare@__ wrangler@__ | Phase 1.8d | here |
-| (fill) | next/image custom loader vs plain img+srcSet | Phase 4.3 | here |
+| 2026-07-07 | Frozen baseline: next@15.4.11 · payload@3.85.2 (+all @payloadcms/* identical) · @opennextjs/cloudflare@1.20.1 · wrangler@<your version> · node 24.x · pnpm 11.10 | Phase 1.8d | here |
+| 2026-07-07 | Stay on template's Next 15; Next 16 upgrade only as deliberate post-launch decision | template = tested combo; CLAUDE.md rule 2 | ARCHITECTURE §2 |
+| 2026-07-07 | Node baseline is 24.x (template engines), not 22 | install reality | ARCHITECTURE/REFERENCE CI |
 
 ## Blocked / Decisions needed
 

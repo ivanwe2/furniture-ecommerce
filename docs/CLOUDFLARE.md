@@ -23,7 +23,7 @@ dashboard button or its documented CLI equivalent, then vendor the generated
 project into our repo layout (ARCHITECTURE §12) in the same Phase 1 commit.
 
 Non-negotiables at scaffold time (Phase 1 acceptance criteria):
-- Resolved versions: Next **16.x**, Payload **3.85+** (NOT 4.0-beta — check
+- Resolved versions: Next 15.4.x (template-shipped), Payload 3.85+ (NOT 4.0-beta — check
   `package.json` + lockfile), current `@opennextjs/cloudflare`.
 - Keep the template's D1 adapter and R2 wiring exactly as generated. Do not
   swap the DB adapter, do not add `sharp` (it cannot run on Workers).

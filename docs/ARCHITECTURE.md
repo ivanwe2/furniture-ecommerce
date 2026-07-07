@@ -37,7 +37,7 @@ import Cloudflare-specific APIs.
 | Layer | Choice | Pin | Notes |
 |---|---|---|---|
 | Hosting | Cloudflare Workers (Paid) | — | via OpenNext adapter, from the **official Payload-on-Workers template** |
-| Framework | Next.js App Router | 16.x latest minor | Node runtime (not Edge); Turbopack builds require current adapter |
+| Framework | Next.js App Router | 15.4.x (as shipped by template) | The template is the tested Next+Payload+OpenNext combination — do not hand-upgrade. Next 16 = deliberate post-launch decision via Decisions log. |
 | Adapter | `@opennextjs/cloudflare` | latest at scaffold | freeze exact version in Decisions log |
 | CMS | Payload | 3.85+ (v3 line) | **Payload 4 beta forbidden** (no GA, no migration guide; revisit post-launch after v4 GA) |
 | Database | **Cloudflare D1** (SQLite) | template's adapter (`@payloadcms/db-d1-sqlite` family) | native binding, zero egress, one vendor. SQLite caveats: DATA-MODEL §Search, §Migrations in CLOUDFLARE.md |
@@ -67,7 +67,7 @@ localStorage libraries beyond zustand/persist.
 Browser ──▶ Cloudflare edge
              ├─ static assets (Workers Assets — no invocation cost)
              ├─ /cdn-cgi/image/*  → Image Transformations → R2 original
-             └─ Worker (Next 16 server via OpenNext)
+             └─ Worker (Next 15 server via OpenNext)
                   ├─ RSC pages  → query layer → Payload local API → D1
                   ├─ /admin/*   → Payload admin (auth: Payload users)
                   ├─ server actions (checkout, contact) → D1 + KV + Resend
