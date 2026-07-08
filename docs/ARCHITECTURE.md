@@ -39,7 +39,7 @@ import Cloudflare-specific APIs.
 | Hosting | Cloudflare Workers (Paid) | — | via OpenNext adapter, from the **official Payload-on-Workers template** |
 | Framework | Next.js App Router | 15.4.x (as shipped by template) | The template is the tested Next+Payload+OpenNext combination — do not hand-upgrade. Next 16 = deliberate post-launch decision via Decisions log. |
 | Adapter | `@opennextjs/cloudflare` | latest at scaffold | freeze exact version in Decisions log |
-| CMS | Payload | 3.85+ (v3 line) | **Payload 4 beta forbidden** (no GA, no migration guide; revisit post-launch after v4 GA) |
+| CMS | Payload | 3.82.x (template pin, v3 line) | **Payload 4 beta forbidden** (no GA, no migration guide; revisit post-launch after v4 GA). 3.85.2 upgrade attempted then reverted — broke `/admin` (RSC serialization). |
 | Database | **Cloudflare D1** (SQLite) | template's adapter (`@payloadcms/db-d1-sqlite` family) | native binding, zero egress, one vendor. SQLite caveats: DATA-MODEL §Search, §Migrations in CLOUDFLARE.md |
 | Media storage | Cloudflare R2 | template's storage wiring | originals only — see §5 Images |
 | Image sizing | **Cloudflare Image Transformations** | — | `/cdn-cgi/image/…` URLs; sharp does NOT run on Workers (native binary) |
@@ -250,7 +250,7 @@ in the table and cart controls.
 ## 11. Environments & secrets
 
 - `wrangler.jsonc` (bindings, vars) is committed; secrets are NOT.
-- Local: `.dev.vars` (gitignored) mirrors `.dev.vars.example`:
+- Local: `.env` (gitignored) mirrors `.env.example`:
 
 ```
 PAYLOAD_SECRET=
@@ -305,7 +305,7 @@ ORDER_INBOX_EMAIL=
 │   ├── emails/order-owner.tsx  order-customer.tsx  contact-owner.tsx
 │   └── middleware.ts          # redirect map
 ├── wrangler.jsonc  open-next.config.ts  next.config.ts
-└── .dev.vars.example
+└── .env.example
 ```
 
 Deviating from this layout (new top-level dirs, relocated seams) requires a

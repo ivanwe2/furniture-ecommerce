@@ -23,8 +23,8 @@ dashboard button or its documented CLI equivalent, then vendor the generated
 project into our repo layout (ARCHITECTURE §12) in the same Phase 1 commit.
 
 Non-negotiables at scaffold time (Phase 1 acceptance criteria):
-- Resolved versions: Next 15.4.x (template-shipped), Payload 3.85+ (NOT 4.0-beta — check
-  `package.json` + lockfile), current `@opennextjs/cloudflare`.
+- Resolved versions: Next 15.4.x (template-shipped), Payload 3.82.x (template pin;
+  NOT 4.0-beta — check `package.json` + lockfile), current `@opennextjs/cloudflare`.
 - Keep the template's D1 adapter and R2 wiring exactly as generated. Do not
   swap the DB adapter, do not add `sharp` (it cannot run on Workers).
 - Record exact versions of next / payload / adapter / wrangler in
@@ -37,15 +37,20 @@ the template's pattern — keep the template's access helper):
 
 | Binding | Type | Name in code | Purpose |
 |---|---|---|---|
-| D1 | d1_databases | `DB` | Payload database |
-| R2 | r2_buckets | `MEDIA_BUCKET` | media originals |
-| R2 | r2_buckets | (template's) | OpenNext incremental cache (ISR/tags) |
-| KV | kv_namespaces | `RATE_LIMIT_KV` | rate-limit counters |
-| Assets | assets | (template's) | static assets |
+| D1 | d1_databases | `D1` | Payload database (real: `nasteh-db`, id `85538a45-…`) |
+| R2 | r2_buckets | `R2` | media originals (real: `nasteh-media`) |
+| R2 | r2_buckets | `NEXT_INC_CACHE_R2_BUCKET` | OpenNext incremental cache (ISR/tags) — commented out until wired (Phase 8) |
+| KV | kv_namespaces | `RATE_LIMIT_KV` | rate-limit counters (create in Phase 1.5) |
+| Assets | assets | `ASSETS` | static assets |
+
+Binding names follow the **template's** defaults (`D1`, `R2`, `ASSETS`) — this
+is what `src/payload.config.ts` reads (`cloudflare.env.D1`, `cloudflare.env.R2`).
+Earlier drafts of this table said `DB`/`MEDIA_BUCKET`; reconciled to reality
+2026-07-08.
 
 `wrangler.jsonc` is committed. It contains binding IDs and public `vars`;
 never secrets. When adding a binding: update wrangler.jsonc + this table +
-`.dev.vars.example` (if a local var is involved) in one commit.
+`.env.example` (if a local var is involved) in one commit.
 
 Public vars (wrangler `vars` block): `NEXT_PUBLIC_SITE_URL`,
 `NEXT_PUBLIC_SHOW_BGN`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`,
@@ -60,9 +65,9 @@ Public vars (wrangler `vars` block): `NEXT_PUBLIC_SITE_URL`,
 | `TURNSTILE_SECRET_KEY` | server-side captcha verify | `npx wrangler secret put TURNSTILE_SECRET_KEY` |
 | `ORDER_INBOX_EMAIL` | owner notification target | secret (or var — it's semi-public; keep secret for tidiness) |
 
-Local equivalents in `.dev.vars` (gitignored). `.dev.vars.example` lists
-every key with empty values and MUST stay in sync — CI greps for drift
-(Phase 1 sets this check up).
+Local equivalents in `.env` (gitignored — the template reads `process.env`
+via Next/dotenv, not `.dev.vars`). `.env.example` lists every key with empty
+values and MUST stay in sync — CI greps for drift (Phase 1 sets this check up).
 
 Secret rotation: rotate in dashboard/CLI → redeploy → verify checkout email
 round-trip. `PAYLOAD_SECRET` rotation logs out all admin sessions — warn the
@@ -190,7 +195,7 @@ existing gmail. Procedure:
   (UI-SPEC copy key `errors.captcha`). Implementation lives in
   `src/lib/turnstile.ts`, called only from server actions.
 - Local dev: use Cloudflare's documented test sitekey/secret pair (always
-  passes) via `.dev.vars` so the form flow is testable offline.
+  passes) via `.env` so the form flow is testable offline.
 
 ## 11. Observability
 

@@ -234,5 +234,5 @@ Local-only guard (refuses to run when bindings are remote). Creates:
   (realistic data from the price-table screenshot), one single-item product,
   one out-of-stock item row, one draft product.
 - Site-settings with real company data (from old site footer/Контакти).
-- An admin user from `.dev.vars` (`SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`).
+- An admin user from `.env` (`SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`).
 Idempotent (upsert by slug/sku).

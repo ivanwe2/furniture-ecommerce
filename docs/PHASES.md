@@ -34,7 +34,7 @@ Tasks:
 1.4 CI (GitHub Actions): on push/PR — install, typecheck, lint, test,
     build. Plus two greps that FAIL the build: hex colors in
     src/app|src/components (CONVENTIONS §5); literal `/cdn-cgi/image/`
-    outside `src/lib/images.ts` (CLOUDFLARE §7). Plus `.dev.vars.example`
+    outside `src/lib/images.ts` (CLOUDFLARE §7). Plus `.env.example`
     key-drift check vs a committed key list.
 1.5 KV namespace for rate limiting: create, bind as `RATE_LIMIT_KV`,
     document in CLOUDFLARE §3 table (already listed — fill the ID).
@@ -54,7 +54,7 @@ Tasks:
     c) tag revalidation: minimal test page reading a doc via
        `unstable_cache` tagged `probe`; edit doc in admin (temporary hook
        revalidates `probe`); page updates within seconds on refresh.
-    d) versions frozen: next 15.4.x / payload 3.85+ (NOT 4-beta). / adapter /
+    d) versions frozen: next 15.4.x / payload 3.82.x (NOT 4-beta). / adapter /
        wrangler exact versions → Decisions log.
 1.9 Delete probe artifacts; update PROGRESS.md.
 
