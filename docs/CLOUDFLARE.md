@@ -105,16 +105,38 @@ pnpm payload migrate:create   # generates SQL migration in ./migrations
 pnpm migrate:local            # applies to local D1 (template script)
 # commit collection change + migration file TOGETHER
 # production apply happens via the deploy script or:
-pnpm migrate:remote           # template's wrangler d1 migrations apply … --remote
+pnpm migrate:remote           # payload migrate against remote D1 (NODE_ENV=production)
 ```
 
 - If the template names these scripts differently, adopt ITS names and
   update this file in the same commit (Decisions log entry).
+
+**Script reconciliation (Phase 1.3 — actual names/commands).** The template's
+`package.json` scripts were reconciled to the PHASES 1.3 contract:
+
+| Script | Command | Note |
+|---|---|---|
+| `typecheck` | `tsc --noEmit` | added (template had none); needs `src/types/globals.d.ts` ambient CSS decls to pass bare `tsc` |
+| `lint` | `eslint .` | template script kept |
+| `test` | `pnpm run test:int` (vitest) | was `test:int && test:e2e`; Playwright/e2e dropped from the gate per CONVENTIONS §8. `vitest.config.mts` include repointed to co-located `src/**/*.test.ts` |
+| `build` | `next build` | **was `payload build` — not a valid command in Payload 3.82.1.** OpenNext's `opennextjs-cloudflare build` shells out to `pnpm build`, so it must be `next build` |
+| `preview` / `deploy` | `opennextjs-cloudflare …` | template scripts kept |
+| `migrate:local` | `payload migrate` | non-production → local D1 (`.wrangler/state`) |
+| `migrate:remote` | `NODE_ENV=production PAYLOAD_SECRET=ignore payload migrate` | production → remote D1; run only per §6 rules |
+| `seed:dev` | `tsx scripts/seed-dev.ts` | script name reserved; the file lands in Phase 2 |
+
+⚠ **`pnpm build` needs Cloudflare auth.** `next build` compiles + typechecks
+cleanly, but "Collecting page data" imports the Payload API route, which inits
+Payload and opens the Cloudflare context against **remote** D1 — so a full build
+requires `CLOUDFLARE_API_TOKEN` (or an interactive `wrangler login`). This is by
+the template's design. CI therefore gates on typecheck+lint+test+greps (no creds
+needed); full-build verification happens in the deploy flow (task 1.7). See
+PROGRESS → Blocked.
 - NEVER edit an applied migration. New change ⇒ new migration.
 - NEVER run `migrate:remote` outside a deploy unless PROGRESS.md contains
   an explicit instruction from Ivan.
 - Backups: before every production deploy that includes a migration, export
-  a snapshot: `npx wrangler d1 export DB --remote --output backups/<date>.sql`
+  a snapshot: `npx wrangler d1 export D1 --remote --output backups/<date>.sql`
   (backups/ is gitignored; Ivan archives). D1 also has Time Travel
   point-in-time restore — treat it as second line, not a reason to skip
   exports.

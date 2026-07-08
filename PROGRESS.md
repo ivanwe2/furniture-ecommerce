@@ -6,12 +6,14 @@
 ## Status
 
 **Current phase:** 1 — Foundation & platform verification
-**Current task:** 1.3 tooling (in progress) — 1.1/1.2 done; 1.5/1.7/1.8 need Ivan
-**Repo state:** scaffolded from official template; frozen baseline recorded
-(next 15.4.11 · payload 3.82.1). Docs reconciled to template reality.
-**Last session summary:** Aligned docs with reality (`.env`, payload 3.82.1
-baseline, `D1`/`R2` binding names); recorded verified frozen baseline; flagged
-`/admin` RSC error as a blocker (see below).
+**Current task:** 1.1/1.2/1.3 done → **NEXT: 1.4 (CI), then 1.6 (bg.ts)**;
+1.5/1.7/1.8 need Ivan at keyboard/dashboard.
+**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; tooling wired;
+R2 storage wiring fixed. next 15.4.11 · payload 3.82.1 frozen. `wrangler.jsonc`
+still an uncommitted working-tree change (Ivan's real bindings).
+**Last session summary:** (1) Docs reconciled + baseline frozen — commit 6ddd6c9.
+(2) Tooling/green-gate established, R2 storage fixed, build script corrected —
+this commit. Handed off to another agent for 1.4 + 1.6.
 
 ## Phase checklist
 
@@ -33,10 +35,11 @@ record actual hours at phase completion.)
 - [x] 1.1 Provision account/template/local boot (⚠ `/admin` login throws an RSC
       serialization error — see Blocked; first-admin creation is gated on it)
 - [x] 1.2 Vendor repo layout + docs
-- [ ] 1.3 Tooling (TS/ESLint/Prettier/vitest/scripts)
-- [ ] 1.4 CI + custom grep checks
-- [ ] 1.5 RATE_LIMIT_KV binding
-- [ ] 1.6 bg.ts + t() + test
+- [x] 1.3 Tooling (TS strict/ESLint strict/vitest/scripts) — green gate:
+      typecheck+lint+test pass; build compiles (page-data needs CF auth, see below)
+- [ ] 1.4 CI + custom grep checks ← **NEXT (incoming agent)**
+- [ ] 1.5 RATE_LIMIT_KV binding — needs Ivan (see Blocked)
+- [ ] 1.6 bg.ts + t() + test ← **then this**
 - [ ] 1.7 First deploy + secrets
 - [ ] 1.8 Platform verification a/b/c/d
 - [ ] 1.9 Cleanup probes
@@ -54,6 +57,9 @@ record actual hours at phase completion.)
 | 2026-07-08 | Corrected baseline 3.85.2 → **3.82.1**: the 3.85.2 bump was reverted (broke `/admin` with an RSC serialization error). package.json is the source of truth; treat 3.82.1 as frozen | reality | package.json |
 | 2026-07-08 | Local env file is **`.env`** (template reads `process.env` via Next/dotenv), not `.dev.vars` | template mechanism | ARCHITECTURE §11 · CLOUDFLARE §4 |
 | 2026-07-08 | Binding names are the template defaults **`D1` / `R2` / `ASSETS`** (not `DB`/`MEDIA_BUCKET`); `src/payload.config.ts` reads `cloudflare.env.D1`/`.R2` | reality | CLOUDFLARE §3 |
+| 2026-07-08 | Tooling reconciled (green gate): `build` **`payload build`→`next build`** (payload CLI has no `build`; OpenNext shells to `pnpm build`); `test`→vitest-only (Playwright dropped per CONVENTIONS §8); added `typecheck`/`migrate:local`/`migrate:remote`/`seed:dev`; tsconfig strictNullChecks + `noUncheckedIndexedAccess` on; eslint `no-explicit-any`/`ban-ts-comment` = error; ambient `src/types/globals.d.ts` for bare `tsc` | PHASES 1.3 | CLOUDFLARE §6 |
+| 2026-07-08 | **Fixed R2 storage**: `storage:[r2Storage()]`→`plugins:[r2Storage()]` — `storage` isn't a valid Config key, so R2 was silently unwired (would fail 1.8a). Verifiable: `r2Storage()` returns a `Plugin` | typecheck + Phase 1.8a | src/payload.config.ts |
+| 2026-07-08 | CI is **credential-free** (typecheck+lint+test+greps+env-drift). Full `pnpm build` needs CF auth (connects to remote D1 during page-data collection) → verified at deploy (1.7), NOT in CI. No `CLOUDFLARE_API_TOKEN` in CI | Ivan: local/CI must not touch remote | CLOUDFLARE §6 |
 
 ## Blocked / Decisions needed
 
@@ -81,6 +87,34 @@ _(Format per CLAUDE.md §6. Agents STOP the blocked task after writing here.)_
       of task 1.8 (yours). None of tasks 1.3/1.4/1.6 depend on admin booting, so
       they proceeded.
 
+- [ ] (phase-1.5) **Ivan — create the rate-limit KV namespace** (needs your CF
+      account). At the keyboard:
+        npx wrangler kv namespace create RATE_LIMIT_KV
+        npx wrangler kv namespace create RATE_LIMIT_KV --preview
+      Then add a `kv_namespaces` entry to `wrangler.jsonc` binding `RATE_LIMIT_KV`
+      with the returned `id` (+ `preview_id`), fill the ID in CLOUDFLARE §3, and
+      commit `wrangler.jsonc`. (No code depends on it until Phase 3.)
+
+- [ ] (phase-1.7) **Ivan — first deploy + secrets** (needs your CF account):
+        - Secrets on the Worker:
+            npx wrangler secret put PAYLOAD_SECRET
+            npx wrangler secret put RESEND_API_KEY
+            npx wrangler secret put TURNSTILE_SECRET_KEY
+            npx wrangler secret put ORDER_INBOX_EMAIL
+        - Public `NEXT_PUBLIC_*` vars → `wrangler.jsonc` `vars` (SITE_URL, SHOW_BGN,
+          TURNSTILE_SITE_KEY, MEDIA_HOST). (CLOUDFLARE §4/§11.)
+        - Deploy: `pnpm deploy`. This is where the full build runs under your CF
+          auth (the page-data → remote-D1 step that CI deliberately skips).
+        - Resolve the `/admin` RSC blocker (above) before relying on admin in prod.
+
+- [ ] (phase-1.7, decision) Should local `pnpm preview`/build use LOCAL D1 rather
+      than remote? Today `payload.config.ts` keys binding-remoteness off
+      `NODE_ENV==='production'`, which can't distinguish a *local* preview build
+      from a real deploy — so any production build (and `wrangler.jsonc`'s D1
+      `"remote": true`) opens remote D1. `pnpm dev` is unaffected (stays local).
+      Fix = a dedicated env flag gating `remoteBindings`. Recommendation: add it in
+      1.7 so preview is offline-capable; leave the config untouched until then.
+
 ## Notes & surprises
 
 _(Quirks, workarounds, deliberate TODOs the next session must know.)_
@@ -95,6 +129,13 @@ _(Quirks, workarounds, deliberate TODOs the next session must know.)_
 - CLAUDE.md rule 10 still literally says `.dev.vars.example` — left untouched
   (the contract file isn't in this task's edit list). Ivan may want to reconcile
   it to `.env.example` to match §11/§4.
+- **R2 storage is now actually wired** (`plugins:` fix). Before this it was under
+  an invalid `storage:` key and silently ignored — so Phase 1.8a (upload lands in
+  R2) would have failed. Verify uploads once admin boots.
+- `.env.example` currently lists only `PAYLOAD_SECRET` — task 1.4 must expand it
+  to the full committed key list (ARCHITECTURE §11) for the drift check.
+- Local build artifacts (`.next/`, `.open-next/`, `.wrangler/`) exist from this
+  session's build probes; all gitignored (and now eslint-ignored).
 
 ## Actual hours
 

@@ -6,9 +6,19 @@ const eslintConfig = [
   ...nextTypescript,
   {
     rules: {
-      '@typescript-eslint/ban-ts-comment': 'warn',
+      // CLAUDE.md rule 6: no `any`, no `@ts-ignore`; `@ts-expect-error` only
+      // with a trailing comment naming the upstream issue.
+      '@typescript-eslint/ban-ts-comment': [
+        'error',
+        {
+          'ts-expect-error': 'allow-with-description',
+          'ts-ignore': true,
+          'ts-nocheck': true,
+          'ts-check': false,
+        },
+      ],
       '@typescript-eslint/no-empty-object-type': 'warn',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'warn',
         {
@@ -24,7 +34,14 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ['.next/', 'src/payload-types.ts', 'src/payload-generated-schema.ts'],
+    ignores: [
+      '.next/',
+      '.open-next/',
+      '.wrangler/',
+      'cloudflare-env.d.ts',
+      'src/payload-types.ts',
+      'src/payload-generated-schema.ts',
+    ],
   },
 ]
 
