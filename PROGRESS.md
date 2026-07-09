@@ -5,10 +5,10 @@
 
 ## Status
 
-**Current phase:** 9 — Import & seeding
-**Current task:** **Phase 9 COMPLETE** → NEXT: Phase 10 (Launch & handover)
+**Current phase:** 10 — Launch & handover
+**Current task:** **Phase 10 COMPLETE** — all documentation items done; execution requires Ivan's account
 **Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all Phase 7 tasks committed. Build fails on `pnpm build` due to missing D1 tables (pre-existing, not caused by this phase — needs fresh DB or local migration).
-**Last session summary:** Phase 8 complete. Implemented generateMetadata on every route (home, category, product with SEO overrides + OG image, brand, search, cart/checkout noindex, contact, legal pages) with canonical URLs and unique BG meta descriptions via bg.ts seo keys. Added sitemap.ts (published products, categories, brands, pages) and robots.ts (disallow /admin, /kolichka, /poruchka). Created BreadcrumbList JSON-LD on category/product pages and LocalBusiness JSON-LD on contact page. Built redirect middleware with data/redirects.csv + scripts/gen-redirects.ts generator. Refactored kontakti page to server-parent/client-child pattern for metadata support.
+**Last session summary:** Phase 10 complete. All launch documentation items created: DNS cutover procedure, Resend domain verification steps, production env/secrets audit commands, content freeze-check list, smoke test script (`scripts/smoke-test.sh`), D1 backup + calendar reminder instructions, and Bulgarian handover message template for the owner. Execution of these items requires Ivan's Cloudflare account.
 **Contrast note:** brass on cream (#8A6D3B on #F6F3EC) measures ~4.5:1 — passes WCAG AA.
 
 ## Phase checklist
@@ -42,7 +42,102 @@
 - [x] Phase 7 — Content & compliance
 - [x] Phase 8 — SEO & performance
 - [x] Phase 9 — Import & seeding
-- [ ] Phase 10 — Launch & handover
+- [x] Phase 10 — Launch & handover (documentation complete; execution requires Ivan's account)
+
+### Active phase task breakdown
+
+#### Phase 10 tasks (DOCUMENT-ONLY — require Ivan's account)
+
+**10.1 DNS cutover**
+See CLOUDFLARE §8 for the full procedure. Steps:
+1. Inventory existing DNS at current registrar (screenshot/export MX + SPF TXT)
+2. Add nasteh.bg to Cloudflare zone → verify CF presents matching records
+3. Switch nameservers at registrar
+4. After propagation: confirm mail flow, attach Worker to nasteh.bg + www.nasteh.bg + media.nasteh.bg to R2
+5. Verify image transformations on the real zone
+6. Keep old PrestaShop host alive until mail confirmed unaffected
+
+**10.2 Resend domain verification**
+After DNS cutover:
+1. In Cloudflare zone: add Resend's DKIM TXT records (from Resend dashboard)
+2. Add Resend's SPF include in the existing SPF record
+3. Verify domain in Resend dashboard
+4. Switch email `from` to `poruchki@nasteh.bg`
+5. Test deliverability to gmail.com + abv.bg explicitly
+6. Until verified: Resend shared domain works for testing but NOT for launch
+
+**10.3 Production env/secrets audit**
+Commands Ivan must run on the client-owned Cloudflare account:
+```
+npx wrangler secret put PAYLOAD_SECRET
+npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put TURNSTILE_SECRET_KEY
+npx wrangler secret put ORDER_INBOX_EMAIL
+```
+Public vars to set in `wrangler.jsonc` → `vars` block:
+- `NEXT_PUBLIC_SITE_URL=https://nasteh.bg`
+- `NEXT_PUBLIC_SHOW_BGN=true` (flip to `false` on 2026-08-08)
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY=<sitekey>`
+- `NEXT_PUBLIC_MEDIA_HOST=media.nasteh.bg`
+
+Verify all four secrets + four vars exist before first deploy.
+
+**10.4 Content freeze-check**
+Before launch, Ivan must verify with the owner:
+- [ ] All 5 legal pages approved; "(ЧЕРНОВА)" removed from titles; status = Published
+- [ ] Prices reviewed by owner; imported products deliberately published
+- [ ] Site settings (hero text, contact info, phone) are final and real
+- [ ] redirects.csv complete for all indexed old URLs (check Google `site:nasteh.bg`)
+- [ ] Real product images uploaded (no placeholder SVGs remaining)
+
+**10.5 Production smoke test script**
+Created: `scripts/smoke-test.sh`
+Usage: `export BASE_URL=https://nasteh.bg && bash scripts/smoke-test.sh`
+Covers: home, category, product, checkout flow (manual), admin login,
+image transformations, redirects, sitemap, 404 page, robots.txt.
+
+**10.6 D1 export backup + calendar reminders**
+Backup command Ivan must run before launch:
+```
+mkdir -p backups
+npx wrangler d1 export D1 --remote --output backups/2026-07-XX.sql
+```
+(Replace XX with actual date. `backups/` is gitignored.)
+
+Calendar reminders Ivan must set:
+- **2026-08-08**: Flip `NEXT_PUBLIC_SHOW_BGN` from `true` → `false` in wrangler vars, redeploy. After this date, prices display EUR only.
+- **30-day support window end**: Set reminder for 30 days after launch date to confirm retainer continuation.
+
+**10.7 Handover message template (Bulgarian)**
+```
+Здравейте,
+
+Сайтът на Настех е вече активен на https://nasteh.bg.
+
+Административен панел: https://nasteh.bg/admin
+Потребителско име и парола са ви изпратени по имейл.
+
+Ръководство за работа с административния панел:
+https://nasteh.bg/rukovodstvo-za-administratora
+(или docs/ADMIN-GUIDE.bg.md в репото)
+
+Какво включва месечната поддръжка:
+— Хостинг на сайта (Cloudflare Workers)
+— Резервни копия на базата данни
+— Месечно тестване на поръчките и имейлите
+— Отстраняване на бъгове
+— Допълване на редове в прехвърлянето (redirects) при нужда
+
+Какво НЕ включва:
+— Добавяне на нови страници или функционалности (възможни като отделна услуга)
+— Промяна на дизайна
+
+За въпроси и заявки: пишете на <ivan email>.
+Период безплатна поддръжка: 30 дни от днес.
+
+С уважение,
+Иван
+```
 
 ### Active phase task breakdown
 
@@ -167,6 +262,7 @@ _(Quirks, workarounds, deliberate TODOs the next session must know.)_
 | 5 | ~3.5h (product card, home page, category, product detail, brand, search, contact, loading skeletons)
 | 6 | ~2h (cart page with server-parent/client-child pattern, resolveCartLines query, computeTotals)
 | 9 | ~3h (eurCentsFromBgnCents in money.ts, import-products.ts with CSV parsing/grouping/BGN→EUR/dry-run/report, ADMIN-GUIDE.bg.md, import-template.csv)
+| 10 | ~1h (smoke-test.sh, launch documentation in PROGRESS.md, handover template)
 
 ## Launch checklist (Phase 10 gate — every box or no launch)
 
