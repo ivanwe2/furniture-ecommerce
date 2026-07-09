@@ -256,6 +256,52 @@ export function getPage(slug: string) {
   )()
 }
 
+export async function getAllPublishedProducts() {
+  const payload = await p()
+  const { docs } = await payload.find({
+    collection: 'products',
+    depth: 0,
+    limit: 500,
+    where: { status: { equals: 'published' } },
+  })
+  return docs
+}
+
+export async function resolveCartLines(lines: { productSlug: string; sku: string; qty: number }[]) {
+  const resolution = new Map<string, {
+    productSlug: string
+    sku: string
+    name: string
+    unit: string
+    priceEurCents: number
+    inStock: boolean
+    qty: number
+  }>()
+
+  for (const line of lines) {
+    const product = await getProductBySlug(line.productSlug)
+    if (!product || !product.items) continue
+
+    const item = product.items.find((i) => i.sku === line.sku)
+    if (!item) continue
+
+    // Reject out-of-stock items
+    if (item.inStock === false) continue
+
+    resolution.set(`${line.productSlug}:${line.sku}`, {
+      productSlug: line.productSlug,
+      sku: line.sku,
+      name: item.name,
+      unit: item.unit ?? 'бр.',
+      priceEurCents: item.priceEurCents,
+      inStock: true,
+      qty: line.qty,
+    })
+  }
+
+  return resolution
+}
+
 export const getSettings = unstable_cache(
   async () => {
     const payload = await p()

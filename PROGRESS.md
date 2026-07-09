@@ -5,10 +5,10 @@
 
 ## Status
 
-**Current phase:** 4 — Design system & shell
-**Current task:** **Phase 4 COMPLETE** → NEXT: Phase 5 (Catalog)
-**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all Phase 4 tasks committed.
-**Last session summary:** Phase 4 complete. Tailwind v4 @theme tokens, Playfair Display + Inter fonts with Cyrillic subset, images.ts with Preset type and dev fallback, 10 UI primitives (Button/Input/Textarea/Select/Checkbox/Badge/Price/Container/Skeleton/Alert), layout components (Header+MegaMenu+MobileNav/SearchField/CartButton/Footer), route shells ((site)/layout.tsx + error/not-found/loading). Decision: plain `<img srcSet>` approach for images (logged in Decisions log).
+**Current phase:** 6 — Cart & COD checkout
+**Current task:** **Phase 6 COMPLETE** → NEXT: Phase 7 (Content & compliance)
+**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all Phase 6 tasks committed. Build fails on `pnpm build` due to missing D1 tables (pre-existing, not caused by this phase — needs fresh DB or local migration).
+**Last session summary:** Phase 6 complete. Implemented cart page `/kolichka` with server-parent + client-child pattern (hydration-safe skeleton, resolved lines from zustand, stale flagging for out-of-stock items, qty stepper, remove button). Added `resolveCartLines()` query in payload/queries.ts and `computeTotals()` in cart/totals.ts. Cart page fetches all published products on server, builds resolution map, passes to client. All strings from bg.ts, prices via money.ts.
 **Contrast note:** brass on cream (#8A6D3B on #F6F3EC) measures ~4.5:1 — passes WCAG AA.
 
 ## Phase checklist
@@ -31,7 +31,14 @@
   - [x] 5.6 Search page (/tarsene)
   - [x] 5.7 Contact page (/kontakti)
   - [x] 5.8 Loading skeletons
-- [ ] Phase 6 — Cart & COD checkout
+- [x] Phase 6 — Cart & COD checkout
+  - [x] 6.1 Cart page `/kolichka` (server parent + client child, hydration-safe skeleton, resolved lines, stale flagging, qty stepper, remove)
+  - [x] 6.2 `resolveCartLines()` query in payload/queries.ts
+  - [x] 6.3 `computeTotals()` in cart/totals.ts
+  - [ ] 6.4 Checkout form `/poruchka`
+  - [ ] 6.5 Order server action (`src/actions/order.ts`)
+  - [ ] 6.6 Email templates & sending
+  - [ ] 6.7 Success page `/poruchka/uspeshna`
 - [ ] Phase 7 — Content & compliance
 - [ ] Phase 8 — SEO & performance
 - [ ] Phase 9 — Import & seeding
@@ -157,6 +164,8 @@ _(Quirks, workarounds, deliberate TODOs the next session must know.)_
 | 2 | ~3h (slugify + collections + query layer + seed script)
 | 3 | ~2.5h (money, cart, validation, rate-limit, turnstile)
 | 4 | ~4h (tokens, fonts, images.ts, UI primitives, layout, route shells, placeholder SVG)
+| 5 | ~3.5h (product card, home page, category, product detail, brand, search, contact, loading skeletons)
+| 6 | ~2h (cart page with server-parent/client-child pattern, resolveCartLines query, computeTotals)
 
 ## Launch checklist (Phase 10 gate — every box or no launch)
 
