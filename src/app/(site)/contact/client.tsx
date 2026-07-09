@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
+import { company } from '@/lib/company'
 import { t, tSafe } from '@/lib/i18n/bg'
 import { Container, Input, Textarea, Button, Alert, Turnstile } from '@/components/ui'
 import { submitContact } from '@/actions/contact'
@@ -64,23 +65,25 @@ export default function ContactPageClient() {
         {/* Contact info */}
         <div className="space-y-6">
           <div>
-            <h2 className="text-lg font-semibold text-ink">Настех ООД</h2>
-            <p className="mt-1 text-sm text-steel">гр. Пловдив, бул. &quot;Васил Левски&quot; 55</p>
+            <h2 className="text-lg font-semibold text-ink">{company.name}</h2>
+            <p className="mt-1 text-sm text-steel">
+              {t('store.centralOffice')}: гр. {company.city}, {company.addressLine}
+            </p>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-ink">Телефон</h3>
-            <a href="tel:+359888000000" className="mt-1 block text-sm text-brass hover:underline">
-              +359 888 000 000
+            <h3 className="text-sm font-semibold text-ink">{t('store.phone')}</h3>
+            <a href={company.phoneHref} className="mt-1 block text-sm text-brass hover:underline">
+              {company.phoneDisplay}
             </a>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-ink">Имейл</h3>
-            <a href="mailto:info@nasteh.bg" className="mt-1 block text-sm text-brass hover:underline">
-              info@nasteh.bg
+            <h3 className="text-sm font-semibold text-ink">{t('store.email')}</h3>
+            <a href={company.emailHref} className="mt-1 block text-sm text-brass hover:underline">
+              {company.email}
             </a>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-ink">Работно време</h3>
+            <h3 className="text-sm font-semibold text-ink">{t('store.workingHours')}</h3>
             <p className="mt-1 text-sm text-steel">Пон–Пет: 08:30–17:30</p>
             <p className="text-sm text-steel">Съб: 09:00–14:00</p>
           </div>

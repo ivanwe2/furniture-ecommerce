@@ -221,11 +221,14 @@ _(Format per CLAUDE.md §6. Agents STOP the blocked task after writing here.)_
       language, everything works — but should be moved into `bg.ts`.
 - [ ] **Real content (Ivan/owner):** category tree is a placeholder (verify the
       real taxonomy from the live site), real prices, product images, legal-page
-      text (currently draft placeholders), site-settings (contact info in the
-      contact page + footer is hardcoded sample data → wire to the settings global).
-- [ ] **`NEXT_PUBLIC_SHOW_BGN`:** currently unset → prices show EUR only. Set
-      `true` in `.env`/wrangler vars for the mandatory dual EUR/BGN display until
-      2026-08-08.
+      text (currently draft placeholders).
+- [x] **Store contact info:** real Настех ООД details (Пловдив, ул. „Жан Жорес“ 9,
+      0898 272 567, nastehsales@gmail.com) wired via `src/lib/company.ts` into the
+      footer, contact page, LocalBusiness schema, and emails; SiteSettings defaults
+      pre-filled. Runtime read from the settings global remains a post-launch item.
+- [~] **`NEXT_PUBLIC_SHOW_BGN`:** set `true` in local `.env` (dual EUR/BGN now
+      showing locally). Still needs setting in wrangler vars for production, with
+      the 2026-08-08 flip to `false` (EUR only) after that date.
 - [ ] **Turnstile:** dev bypasses it (no keys). Real keys needed for production
       (task 1.7 / CLOUDFLARE §10).
 

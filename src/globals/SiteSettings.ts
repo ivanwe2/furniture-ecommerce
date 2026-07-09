@@ -19,6 +19,7 @@ export const SiteSettings: GlobalConfig = {
       name: 'addressLine',
       type: 'text',
       required: true,
+      defaultValue: 'ул. „Жан Жорес“ 9',
       label: 'Адрес',
     },
     {
@@ -31,6 +32,7 @@ export const SiteSettings: GlobalConfig = {
       name: 'phones',
       type: 'array',
       label: 'Телефони',
+      defaultValue: [{ number: '0898 272 567' }],
       fields: [
         { name: 'number', type: 'text', required: true, label: 'Номер' },
       ],
@@ -39,9 +41,15 @@ export const SiteSettings: GlobalConfig = {
       name: 'email',
       type: 'email',
       required: true,
+      defaultValue: 'nastehsales@gmail.com',
       label: 'Имейл',
     },
-    { name: 'workingHours', type: 'textarea', label: 'Работно време' },
+    {
+      name: 'workingHours',
+      type: 'textarea',
+      defaultValue: 'Пон–Пет: 08:30–17:30\nСъб: 09:00–14:00',
+      label: 'Работно време',
+    },
     { name: 'heroTitle', type: 'text', label: 'Начална страница — заглавие' },
     {
       name: 'heroSubtitle',

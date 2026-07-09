@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Container } from '@/components/ui'
+import { company } from '@/lib/company'
 import { t } from '@/lib/i18n/bg'
 import type { CategoryNode } from '@/lib/payload/queries'
 
@@ -16,15 +17,16 @@ export default function Footer({ categories }: FooterProps) {
         <div className="grid grid-cols-1 gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
           {/* Company block */}
           <div>
-            <h3 className="text-sm font-semibold text-ink">{t('common.home')}</h3>
-            <p className="mt-2 text-sm text-steel">
-              Настех ООД — мебелен обков
-            </p>
+            <h3 className="text-sm font-semibold text-ink">{t('store.info')}</h3>
+            <p className="mt-2 text-sm font-medium text-ink">{company.name}</p>
             <p className="mt-1 text-sm text-steel">
-              г. Пловдив, бул. &quot;Васил Левски&quot; 55
+              {t('store.centralOffice')}: гр. {company.city}, {company.addressLine}
             </p>
-            <Link href="tel:+359888000000" className="text-sm text-brass hover:underline">
-              +359 888 000 000
+            <Link href={company.phoneHref} className="mt-1 block text-sm text-brass hover:underline">
+              {company.phoneDisplay}
+            </Link>
+            <Link href={company.emailHref} className="text-sm text-brass hover:underline">
+              {company.email}
             </Link>
           </div>
 

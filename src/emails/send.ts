@@ -1,6 +1,7 @@
 'use server'
 import 'server-only'
 
+import { company } from '@/lib/company'
 import { formatEur } from '@/lib/money'
 import type { Order } from '@/payload-types'
 
@@ -120,7 +121,7 @@ ${d.note ? `<p style="font-size:13px;color:#6b6559;margin:0 0 12px;"><strong>Б�
 <p style="font-size:12px;color:#6b6559;margin:0;"><a href="${SITE_URL}/admin/collections/orders" style="color:#8A6D3B;">Види в административния панел →</a></p>
 </td></tr>
 <tr><td style="padding:16px 20px;font-size:11px;color:#6b6559;border-top:1px solid #d4cfc5;">
-Настех ООД · Пловдив
+${company.name} · ${company.addressLine}, гр. ${company.city} · ${company.phoneDisplay}
 </td></tr>
 </table>
 </body></html>`
@@ -167,11 +168,12 @@ ${d.lines.map(l => `<tr style="border-bottom:1px solid #d4cfc5;"><td style="padd
 <p style="font-size:13px;color:#6b6559;margin:0 0 12px;"><strong>Доставка:</strong> ${d.deliveryMethod} — ${d.addressOrOffice}, ${d.city}</p>
 <p style="font-size:13px;color:#6b6559;margin:0 0 12px;">Плащане при доставка (наложен платеж).</p>
 <hr style="border:none;border-top:1px solid #d4cfc5;margin:16px 0;"/>
-<p style="font-size:12px;color:#6b6559;margin:0;"><strong>Продавач:</strong> Настех ООД, Пловдив</p>
+<p style="font-size:12px;color:#6b6559;margin:0;"><strong>Продавач:</strong> ${company.name}, ${company.addressLine}, гр. ${company.city}</p>
+<p style="font-size:12px;color:#6b6559;margin:4px 0 0;"><a href="${company.phoneHref}" style="color:#8A6D3B;">${company.phoneDisplay}</a> · <a href="${company.emailHref}" style="color:#8A6D3B;">${company.email}</a></p>
 <p style="font-size:12px;color:#6b6559;margin:4px 0 0;"><a href="${SITE_URL}/returns" style="color:#8A6D3B;">Право на отказ →</a></p>
 </td></tr>
 <tr><td style="padding:16px 20px;font-size:11px;color:#6b6559;border-top:1px solid #d4cfc5;">
-Настех ООД · Пловдив
+${company.name} · ${company.addressLine}, гр. ${company.city} · ${company.phoneDisplay}
 </td></tr>
 </table>
 </body></html>`
@@ -192,6 +194,9 @@ function orderCustomerText(d: {
     '',
     `Доставка: ${d.deliveryMethod} — ${d.addressOrOffice}, ${d.city}`,
     'Плащане при доставка (наложен платеж).',
+    '',
+    `${company.name} · ${company.addressLine}, гр. ${company.city}`,
+    `${company.phoneDisplay} · ${company.email}`,
   ].join('\n')
 }
 
@@ -214,7 +219,7 @@ ${d.phone ? `<tr><td style="padding:4px 0;font-size:14px;"><a href="tel:${d.phon
 <p style="font-size:12px;color:#6b6559;margin:12px 0 0;"><a href="${SITE_URL}/admin" style="color:#8A6D3B;">Административен панел →</a></p>
 </td></tr>
 <tr><td style="padding:16px 20px;font-size:11px;color:#6b6559;border-top:1px solid #d4cfc5;">
-Настех ООД · Пловдив
+${company.name} · ${company.addressLine}, гр. ${company.city} · ${company.phoneDisplay}
 </td></tr>
 </table>
 </body></html>`

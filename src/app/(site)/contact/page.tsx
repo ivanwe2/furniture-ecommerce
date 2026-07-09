@@ -1,4 +1,5 @@
 import { t } from '@/lib/i18n/bg'
+import { company } from '@/lib/company'
 import LocalBusiness from '@/components/seo/LocalBusiness'
 import ContactPageClient from './client'
 
@@ -21,10 +22,10 @@ export default function ContactPage() {
   return (
     <>
       <LocalBusiness
-        name="Настех ООД"
-        address='бул. "Васил Левски" 55'
-        telephone="+359888000000"
-        email="info@nasteh.bg"
+        name={company.name}
+        address={company.addressLine}
+        telephone={company.phoneHref.replace('tel:', '')}
+        email={company.email}
       />
       <ContactPageClient />
     </>
