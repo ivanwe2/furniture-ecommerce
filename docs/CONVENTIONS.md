@@ -70,7 +70,7 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
   (`z.infer`).
 - Client form components use `useTransition` + the action; disable submit
   while pending; render fieldErrors inline; on `ok` redirect
-  (`router.push('/poruchka/uspeshna?n='+orderNumber)`) — the success page
+  (`router.push('/checkout/success?n='+orderNumber)`) — the success page
   re-reads nothing sensitive (order number display only).
 
 ## 4. Errors & logging

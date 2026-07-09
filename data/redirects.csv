@@ -1,9 +1,9 @@
 old_path_or_query,new_path
-index.php?id_category=2,kategoria/mebelen-obkov/ugli
-index.php?id_category=3,kategoria/mebelen-obkov/shtiftovi
-index.php?id_category=4,kategoria/mebelen-obkov/panti
-index.php?id_product=1,produkt/sevroll-pluzgashta-s-ma
-index.php?id_product=2,produkt/uglen-za-mebel-90-gradusa
-index.php?id_manufacturer=1,marka/sevroll
-controller=catalog&orderby=id&orderway=desc,kategoria/mebelen-obkov
-index.php?controller=search&search_query=щифт,tarsene?q=%D1%89%D0%B8%D1%84%D1%82
+index.php?id_category=2,category/mebelen-obkov/ugli
+index.php?id_category=3,category/mebelen-obkov/shtiftovi
+index.php?id_category=4,category/mebelen-obkov/panti
+index.php?id_product=1,product/sevroll-pluzgashta-s-ma
+index.php?id_product=2,product/uglen-za-mebel-90-gradusa
+index.php?id_manufacturer=1,brand/sevroll
+controller=catalog&orderby=id&orderway=desc,category/mebelen-obkov
+index.php?controller=search&search_query=щифт,search?q=%D1%89%D0%B8%D1%84%D1%82

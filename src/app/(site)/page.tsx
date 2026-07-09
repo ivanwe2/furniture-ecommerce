@@ -44,7 +44,7 @@ export default async function HomePage() {
               <p className="text-lg text-steel">{settings.heroSubtitle}</p>
             )}
             <Link
-              href="/kategoria/mebelen-obkov"
+              href="/category/mebelen-obkov"
               className="inline-flex items-center rounded bg-brass px-6 py-3 text-sm font-medium text-cream transition-colors hover:bg-brass/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 ring-offset-cream"
             >
               {t('home.heroCta')}
@@ -81,7 +81,7 @@ export default async function HomePage() {
             {categories.map((cat) => (
               <Link
                 key={cat.id}
-                href={`/kategoria/${cat.slug}`}
+                href={`/category/${cat.slug}`}
                 className="group relative overflow-hidden rounded bg-sand aspect-[4/3]"
               >
                 {cat.image && typeof cat.image === 'object' && 'filename' in cat.image && cat.image.filename ? (
@@ -122,7 +122,7 @@ export default async function HomePage() {
         <section className="py-12">
           <Container>
             <Link
-              href="/marka/sevroll"
+              href="/brand/sevroll"
               className="group flex items-center gap-6 rounded-lg bg-sand p-6 transition-colors hover:bg-sand/80"
             >
               {sevroll.logo && typeof sevroll.logo === 'object' && 'filename' in sevroll.logo && (sevroll.logo as Media).filename ? (

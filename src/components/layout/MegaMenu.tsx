@@ -55,7 +55,7 @@ export function MegaMenu({ categories }: MegaMenuProps) {
                 {categories[activeIndex].children.map((sub) => (
                   <div key={sub.id}>
                     <Link
-                      href={`/kategoria/${sub.slug}`}
+                      href={`/category/${sub.slug}`}
                       className="text-sm font-semibold text-ink hover:text-brass"
                       role="menuitem"
                     >
@@ -66,7 +66,7 @@ export function MegaMenu({ categories }: MegaMenuProps) {
                         {sub.children.map((leaf) => (
                           <li key={leaf.id}>
                             <Link
-                              href={`/kategoria/${leaf.slug}`}
+                              href={`/category/${leaf.slug}`}
                               className="text-sm text-steel hover:text-brass transition-colors"
                               role="menuitem"
                             >
@@ -81,7 +81,7 @@ export function MegaMenu({ categories }: MegaMenuProps) {
               </div>
             ) : (
               <Link
-                href={`/kategoria/${categories[activeIndex].slug}`}
+                href={`/category/${categories[activeIndex].slug}`}
                 className="text-sm text-ink hover:text-brass"
                 role="menuitem"
               >

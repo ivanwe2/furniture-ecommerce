@@ -15,7 +15,7 @@ export function SearchField({ className }: { className?: string }) {
         e.preventDefault()
         const form = e.currentTarget
         const q = (form.elements.namedItem('q') as HTMLInputElement)?.value?.trim()
-        if (q) router.push(`/tarsene?q=${encodeURIComponent(q)}`)
+        if (q) router.push(`/search?q=${encodeURIComponent(q)}`)
       }}
     >
       <Input

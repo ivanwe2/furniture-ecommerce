@@ -19,9 +19,9 @@ non-empty): sand bg, ink text, single line, no dismiss (it's owner-managed).
   navigate, `Escape` closes, tab order logical. Implementation: server-
   rendered structure; a small client component only for open state.
 - Search: input with placeholder `search.placeholder`; submit →
-  `/tarsene?q=…`. On mobile: icon expands input inside the drawer.
+  `/search?q=…`. On mobile: icon expands input inside the drawer.
 - Cart button: bag icon + count badge (client; reads zustand; hidden badge
-  when 0). Click → `/kolichka`. No slide-out drawer in v1 (velocity).
+  when 0). Click → `/cart`. No slide-out drawer in v1 (velocity).
 - Mobile (<1024px): logo + burger + cart. Burger opens full-height drawer:
   accordion category tree (3 levels), search input, contact phone link.
   Focus-trapped, `Escape`/overlay closes.
@@ -37,18 +37,18 @@ Bottom line: `© {year} Настех ООД` + "Цените са с включ�
 Order: hero → featured products → category grid → SEVROLL strip → trust
 block.
 - Hero: settings `heroTitle`/`heroSubtitle`, brass CTA button → top category
-  or `/kategoria/mebelen-obkov` (`home.heroCta`). Background: cream with a
+  or `/category/mebelen-obkov` (`home.heroCta`). Background: cream with a
   large product photograph (owner-provided via settings later; solid
   composition without image must also look intentional).
 - Featured: `getFeaturedProducts(8)` as ProductCard grid (4/2/1 per row).
   Section title `home.featured`.
 - Category grid: top-level categories as image cards with name overlay.
-- SEVROLL strip: brand logo + one line + link to `/marka/sevroll` (only if
+- SEVROLL strip: brand logo + one line + link to `/brand/sevroll` (only if
   brand exists — render conditionally).
 - Trust block: three quiet items with icons — years in business /
   наложен платеж / lightning contact (copy keys `home.trust1..3`).
 
-## 3. Category `/kategoria/[...slug]`
+## 3. Category `/category/[...slug]`
 
 Catch-all resolves the deepest slug segment; 404 if unknown. Breadcrumbs
 from `getCategoryPath`.
@@ -62,7 +62,7 @@ from `getCategoryPath`.
   item price. Whole card is one `<a>`.
 - Empty category: friendly empty state `category.empty` + link home.
 
-## 4. Product `/produkt/[slug]` — the signature page
+## 4. Product `/product/[slug]` — the signature page
 
 Layout desktop: gallery left (55%), info right; items table full-width
 below; description after it. Mobile: gallery → info → table → description.
@@ -88,7 +88,7 @@ below; description after it. Mobile: gallery → info → table → description.
     button swaps to ✓ + `product.added` for 1.2s (reduced-motion: instant
     swap, no animation), cart badge increments.
   - Out-of-stock row: muted, controls replaced by `product.onRequest`
-    linking to `/kontakti?otnosno=<sku>` (prefills the contact message).
+    linking to `/contact?about=<sku>` (prefills the contact message).
   - **Mobile (<768px)**: rows collapse to stacked cards via CSS (each cell
     gets a `data-label` rendered as inline label) — same DOM, no element
     swap; horizontal page scroll is a defect.
@@ -97,13 +97,13 @@ below; description after it. Mobile: gallery → info → table → description.
   preset).
 - JSON-LD Product per ARCHITECTURE §9.
 
-## 5. Search `/tarsene`
+## 5. Search `/search`
 
 SSR page reading `?q=`. Heading `search.resultsFor` + query echo (escaped).
 Grid of ProductCards from `searchProducts`. Empty → `search.empty` +
 suggestion to browse categories (links). No instant-search dropdown in v1.
 
-## 6. Cart `/kolichka`
+## 6. Cart `/cart`
 
 Client page (store is the source of truth), hydration-safe (render skeleton
 until store hydrated — CONVENTIONS §2).
@@ -115,10 +115,10 @@ until store hydrated — CONVENTIONS §2).
 - Summary card: items total (dual price), `cart.codNote` ("Плащане при
   доставка (наложен платеж)."), delivery note `cart.deliveryNote`
   ("Доставката се заплаща на куриера по тарифа на Еконт/Спиди."), CTA →
-  `/poruchka`.
+  `/checkout`.
 - Empty state: `cart.empty` + CTA home.
 
-## 7. Checkout `/poruchka`
+## 7. Checkout `/checkout`
 
 Single page, one column (max-w-lg), order summary collapsed at top
 (expandable), then the form:
@@ -134,16 +134,16 @@ Single page, one column (max-w-lg), order summary collapsed at top
   `checkout.submitting`; server action per CONVENTIONS §3.
 - Field errors inline under fields; global errors (captcha, rate limit,
   stale cart) in an alert box above submit; first invalid field focused.
-- Success → `/poruchka/uspeshna?n=NAS-…`: big ✓, `checkout.successTitle`,
+- Success → `/checkout/success?n=NAS-…`: big ✓, `checkout.successTitle`,
   order number prominent, `checkout.successBody` (mentions confirmation
   email + that the owner will call to confirm), CTA home. Direct visits
   without `n` → redirect home.
 
-## 8. Contact `/kontakti`
+## 8. Contact `/contact`
 
 Settings-driven info block (address, phones, hours, map LINK to Google Maps
 — no embedded map in v1) + message form (name*, phone, email*, message*,
-Turnstile, honeypot) → `submitContact` → owner email. `?otnosno=` prefills
+Turnstile, honeypot) → `submitContact` → owner email. `?about=` prefills
 message with `contact.aboutSku` + value. Success inline `contact.success`.
 
 ## 9. Static pages `/[pageSlug]`, 404, error, loading

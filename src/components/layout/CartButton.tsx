@@ -9,7 +9,7 @@ export function CartButton() {
   const totalQty = lines.reduce((sum, l) => sum + l.qty, 0)
 
   return (
-    <Link href="/kolichka" className="relative inline-flex items-center p-2 text-ink hover:text-brass transition-colors">
+    <Link href="/cart" className="relative inline-flex items-center p-2 text-ink hover:text-brass transition-colors">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"

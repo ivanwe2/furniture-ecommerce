@@ -21,7 +21,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const categoryName = typeof product.category === 'object' && product.category?.name ? product.category.name : undefined
 
   return (
-    <Link href={`/produkt/${product.slug}`} className="group block">
+    <Link href={`/product/${product.slug}`} className="group block">
       {/* Image */}
       <div className="aspect-[4/3] w-full overflow-hidden rounded bg-cream">
         {coverImage && typeof coverImage === 'object' && 'filename' in coverImage && coverImage.filename ? (

@@ -81,7 +81,7 @@ export function CartClient({ resolution }: CartClientProps) {
           <p className="text-xs text-steel">{t('cart.deliveryNote')}</p>
           {result.ok.length > 0 && (
             <Link
-              href="/poruchka"
+              href="/checkout"
               className={clsx(
                 'block w-full rounded bg-brass px-5 py-2.5 text-center text-sm font-medium text-cream hover:bg-brass/90',
               )}
@@ -117,7 +117,7 @@ function CartLineItem({ line, setQty, remove }: {
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-sand bg-cream p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
-        <Link href={`/produkt/${line.productSlug}`} className="font-medium text-ink hover:text-brass transition-colors">
+        <Link href={`/product/${line.productSlug}`} className="font-medium text-ink hover:text-brass transition-colors">
           {line.name}
         </Link>
         <p className="mt-0.5 text-xs font-mono text-steel">{line.sku} · {line.unit}</p>

@@ -278,7 +278,7 @@ Commit: `feat(phase-7): complete — content & compliance`
 Tasks:
 8.1 generateMetadata everywhere per ARCHITECTURE §9 (+ seo group
     overrides); canonicals; OG images via `og` preset.
-82  sitemap.ts + robots.ts (disallow /admin, /kolichka, /poruchka).
+82  sitemap.ts + robots.ts (disallow /admin, /cart, /checkout).
 8.3 JSON-LD: BreadcrumbList (category/product), LocalBusiness (contact).
     (Product JSON-LD shipped in 5.4 — validate now.)
 8.4 `middleware.ts` + `data/redirects.csv` loader: exact-match on

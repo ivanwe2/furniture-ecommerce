@@ -16,14 +16,14 @@ export async function generateMetadata({ searchParams }: SearchPageProps) {
     return {
       title: `Резултати за "${q}" | Настех`,
       description: t('seo.searchDesc').replace('{q}', q),
-      alternates: { canonical: `/tarsene?q=${encodeURIComponent(q)}` },
+      alternates: { canonical: `/search?q=${encodeURIComponent(q)}` },
       robots: { index: false, follow: true },
     }
   }
   return {
     title: 'Търсене | Настех — мебелен обков',
     description: t('seo.searchDesc').replace('{q}', ''),
-    alternates: { canonical: '/tarsene' },
+    alternates: { canonical: '/search' },
   }
 }
 
@@ -89,7 +89,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             {categories.map((cat) => (
               <Link
                 key={cat.id}
-                href={`/kategoria/${cat.slug}`}
+                href={`/category/${cat.slug}`}
                 className="rounded bg-sand/60 px-3 py-1.5 text-sm font-medium text-ink hover:bg-sand transition-colors"
               >
                 {cat.name}

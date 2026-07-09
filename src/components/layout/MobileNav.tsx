@@ -15,7 +15,7 @@ function renderCategoryTree(nodes: CategoryNode[], depth: number = 0) {
   return nodes.map((node) => (
     <li key={node.id} className="border-b border-sand last:border-b-0">
       <Link
-        href={`/kategoria/${node.slug}`}
+        href={`/category/${node.slug}`}
         className={clsx(
           'block py-3 text-sm hover:text-brass transition-colors',
           depth === 0 && 'font-medium text-ink',
@@ -126,7 +126,7 @@ export function MobileNav({ categories }: MobileNavProps) {
 
             <div className="p-4 border-t border-sand space-y-3">
               <Link
-                href="/kontakti"
+                href="/contact"
                 className="block text-sm font-medium text-ink hover:text-brass py-2"
                 onClick={() => setOpen(false)}
               >

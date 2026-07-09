@@ -116,7 +116,7 @@ export function ItemsTable({ items, productSlug, productName }: ItemsTableProps)
                     </button>
                   ) : (
                     <a
-                      href={`/kontakti?otnosno=${item.sku}`}
+                      href={`/contact?about=${item.sku}`}
                       className="text-xs text-brass hover:underline"
                     >
                       {t('product.onRequest')}

@@ -7,12 +7,12 @@ export async function generateMetadata() {
   return {
     title: `Контакти | ${siteName}`,
     description: t('seo.contactDesc'),
-    alternates: { canonical: '/kontakti' },
+    alternates: { canonical: '/contact' },
     openGraph: {
       title: `Контакти | ${siteName}`,
       description: t('seo.contactDesc'),
       type: 'website',
-      url: '/kontakti',
+      url: '/contact',
     },
   }
 }

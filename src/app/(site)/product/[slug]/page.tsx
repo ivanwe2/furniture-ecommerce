@@ -24,12 +24,12 @@ export async function generateMetadata({ params }: ProductPageProps) {
   return {
     title: seoTitle,
     description: seoDesc,
-    alternates: { canonical: `/produkt/${product.slug}` },
+    alternates: { canonical: `/product/${product.slug}` },
     openGraph: {
       title: seoTitle,
       description: seoDesc,
       type: 'website',
-      url: `/produkt/${product.slug}`,
+      url: `/product/${product.slug}`,
       images: firstImage && typeof firstImage === 'object' && 'filename' in firstImage
         ? [{ url: imageUrl(firstImage as Media, 'og'), width: 1200, height: 630 }] as const
         : undefined,
@@ -70,8 +70,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   // Build JSON-LD breadcrumbs
   const jsonLdBreadcrumbs = [
     { name: t('common.home'), url: '/' },
-    ...(categorySlug ? [{ name: categoryName ?? '', url: `/kategoria/${categorySlug}` }] : []),
-    { name: product.name, url: `/produkt/${product.slug}` },
+    ...(categorySlug ? [{ name: categoryName ?? '', url: `/category/${categorySlug}` }] : []),
+    { name: product.name, url: `/product/${product.slug}` },
   ]
 
   return (
@@ -89,7 +89,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {categorySlug && (
             <li className="flex items-center gap-2">
               <span aria-hidden="true">/</span>
-              <Link href={`/kategoria/${categorySlug}`} className="hover:text-brass transition-colors">
+              <Link href={`/category/${categorySlug}`} className="hover:text-brass transition-colors">
                 {categoryName}
               </Link>
             </li>
@@ -112,7 +112,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           {/* Brand chip */}
           {brandName && brandSlug ? (
-            <Link href={`/marka/${brandSlug}`}>
+            <Link href={`/brand/${brandSlug}`}>
               <Badge variant="steel" className="hover:opacity-80 transition-opacity">
                 {brandName}
               </Badge>

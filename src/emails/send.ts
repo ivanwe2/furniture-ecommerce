@@ -168,7 +168,7 @@ ${d.lines.map(l => `<tr style="border-bottom:1px solid #d4cfc5;"><td style="padd
 <p style="font-size:13px;color:#6b6559;margin:0 0 12px;">Плащане при доставка (наложен платеж).</p>
 <hr style="border:none;border-top:1px solid #d4cfc5;margin:16px 0;"/>
 <p style="font-size:12px;color:#6b6559;margin:0;"><strong>Продавач:</strong> Настех ООД, Пловдив</p>
-<p style="font-size:12px;color:#6b6559;margin:4px 0 0;"><a href="${SITE_URL}/pravo-na-otkaz" style="color:#8A6D3B;">Право на отказ →</a></p>
+<p style="font-size:12px;color:#6b6559;margin:4px 0 0;"><a href="${SITE_URL}/returns" style="color:#8A6D3B;">Право на отказ →</a></p>
 </td></tr>
 <tr><td style="padding:16px 20px;font-size:11px;color:#6b6559;border-top:1px solid #d4cfc5;">
 Настех ООД · Пловдив

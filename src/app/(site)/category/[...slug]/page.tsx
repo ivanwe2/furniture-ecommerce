@@ -23,12 +23,12 @@ export async function generateMetadata({ params }: CategoryPageProps) {
   return {
     title: `${category.name} | ${siteName}`,
     description: t('seo.categoryDesc').replace('{name}', category.name),
-    alternates: { canonical: `/kategoria/${categorySlug}` },
+    alternates: { canonical: `/category/${categorySlug}` },
     openGraph: {
       title: `${category.name} | ${siteName}`,
       description: t('seo.categoryDesc').replace('{name}', category.name),
       type: 'website',
-      url: `/kategoria/${categorySlug}`,
+      url: `/category/${categorySlug}`,
     },
   }
 }
@@ -58,8 +58,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   // Build JSON-LD breadcrumbs
   const jsonLdBreadcrumbs = [
     { name: t('common.home'), url: '/' },
-    ...breadcrumbs.map((b) => ({ name: b.name, url: `/kategoria/${b.slug}` })),
-    { name: category.name, url: `/kategoria/${categorySlug}` },
+    ...breadcrumbs.map((b) => ({ name: b.name, url: `/category/${b.slug}` })),
+    { name: category.name, url: `/category/${categorySlug}` },
   ]
 
   return (
@@ -77,7 +77,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           {breadcrumbs.map((crumb) => (
             <li key={crumb.id} className="flex items-center gap-2">
               <span aria-hidden="true">/</span>
-              <Link href={`/kategoria/${crumb.slug}`} className="hover:text-brass transition-colors">
+              <Link href={`/category/${crumb.slug}`} className="hover:text-brass transition-colors">
                 {crumb.name}
               </Link>
             </li>
@@ -99,7 +99,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
             {subcategories.map((sub) => (
               <Link
                 key={sub.id}
-                href={`/kategoria/${sub.slug}`}
+                href={`/category/${sub.slug}`}
                 className="group flex items-center gap-3 rounded-lg bg-sand p-4 transition-colors hover:bg-sand/80"
               >
                 <svg
@@ -144,7 +144,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
               <nav aria-label="Pagination" className="mt-8 flex items-center justify-center gap-2">
                 {(page ?? 1) > 1 && (
                   <Link
-                    href={`/kategoria/${categorySlug}?page=${(page ?? 1) - 1}`}
+                    href={`/category/${categorySlug}?page=${(page ?? 1) - 1}`}
                     className="rounded bg-sand px-3 py-2 text-sm font-medium text-ink hover:bg-sand/80 transition-colors"
                   >
                     {t('common.back')}
@@ -155,7 +155,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                 </span>
                 {(page ?? 1) < totalPages && (
                   <Link
-                    href={`/kategoria/${categorySlug}?page=${(page ?? 1) + 1}`}
+                    href={`/category/${categorySlug}?page=${(page ?? 1) + 1}`}
                     className="rounded bg-sand px-3 py-2 text-sm font-medium text-ink hover:bg-sand/80 transition-colors"
                   >
                     Напред

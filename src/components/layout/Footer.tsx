@@ -35,7 +35,7 @@ export default function Footer({ categories }: FooterProps) {
               {categories.map((cat) => (
                 <li key={cat.id}>
                   <Link
-                    href={`/kategoria/${cat.slug}`}
+                    href={`/category/${cat.slug}`}
                     className="text-sm text-steel hover:text-brass transition-colors"
                   >
                     {cat.name}
@@ -50,12 +50,12 @@ export default function Footer({ categories }: FooterProps) {
             <h3 className="text-sm font-semibold text-ink">{t('footer.info')}</h3>
             <ul className="mt-2 space-y-1.5">
               {[
-                { href: '/obshti-usloviya', label: 'Общи условия' },
-                { href: '/politika-za-poveritelnost', label: 'Политика за поверителност' },
-                { href: '/dostavka-i-plashane', label: 'Доставка и плащане' },
-                { href: '/pravo-na-otkaz', label: 'Право на отказ' },
-                { href: '/biskvitki', label: 'Бисквитки' },
-                { href: '/kontakti', label: t('nav.contact') },
+                { href: '/terms', label: 'Общи условия' },
+                { href: '/privacy', label: 'Политика за поверителност' },
+                { href: '/delivery-payment', label: 'Доставка и плащане' },
+                { href: '/returns', label: 'Право на отказ' },
+                { href: '/cookies', label: 'Бисквитки' },
+                { href: '/contact', label: t('nav.contact') },
               ].map((link) => (
                 <li key={link.href}>
                   <Link

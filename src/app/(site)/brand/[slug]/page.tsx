@@ -18,12 +18,12 @@ export async function generateMetadata({ params }: BrandPageProps) {
   return {
     title: `${brand.name} | ${siteName}`,
     description: t('seo.brandDesc').replace('{name}', brand.name),
-    alternates: { canonical: `/marka/${brand.slug}` },
+    alternates: { canonical: `/brand/${brand.slug}` },
     openGraph: {
       title: `${brand.name} | ${siteName}`,
       description: t('seo.brandDesc').replace('{name}', brand.name),
       type: 'website',
-      url: `/marka/${brand.slug}`,
+      url: `/brand/${brand.slug}`,
     },
   }
 }
@@ -97,7 +97,7 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
             <nav aria-label="Pagination" className="mt-8 flex items-center justify-center gap-2">
               {(page ?? 1) > 1 && (
                 <Link
-                  href={`/marka/${resolvedParams.slug}?page=${(page ?? 1) - 1}`}
+                  href={`/brand/${resolvedParams.slug}?page=${(page ?? 1) - 1}`}
                   className="rounded bg-sand px-3 py-2 text-sm font-medium text-ink hover:bg-sand/80 transition-colors"
                 >
                   {t('common.back')}
@@ -108,7 +108,7 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
               </span>
               {(page ?? 1) < totalPages && (
                 <Link
-                  href={`/marka/${resolvedParams.slug}?page=${(page ?? 1) + 1}`}
+                  href={`/brand/${resolvedParams.slug}?page=${(page ?? 1) + 1}`}
                   className="rounded bg-sand px-3 py-2 text-sm font-medium text-ink hover:bg-sand/80 transition-colors"
                 >
                   Напред

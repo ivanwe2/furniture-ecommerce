@@ -171,6 +171,7 @@ https://nasteh.bg/rukovodstvo-za-administratora
 | 2026-07-09 | Added `zustand@^5`, `zod@^3`, `clsx@^2` dependencies | ARCHITECTURE §2 lists them as approved (cart state, validation, styling) | here + package.json |
 | 2026-07-09 | Image rendering: plain `<img srcSet>` approach (not next/image with custom loader) | Cloudflare Images Transformations + R2 work best with direct URLs; next/image fights the platform on Workers; simpler client bundle | Phase 4.3 / images.ts |
 | 2026-07-09 | Added `tailwindcss@^4`, `@tailwindcss/postcss` dependencies | ARCHITECTURE §2 lists Tailwind 4.x as approved; v4 requires postcss plugin for CSS-first config | here + package.json |
+| 2026-07-09 | **URL scheme → English (Ivan)**: fixed route segments are English — `/category` `/product` `/brand` `/search` `/cart` `/checkout` (+ `/checkout/success`) `/contact`; legal pages `/terms /privacy /delivery-payment /returns /cookies`. Dynamic slugs stay latin-transliterated (e.g. `/product/drazhka-comfort`). UI text stays Bulgarian. Amends the Bulgarian-route layout in ARCHITECTURE §12 / UI-SPEC | Ivan directive | ARCHITECTURE §12 · UI-SPEC · redirects |
 
 ## Blocked / Decisions needed
 

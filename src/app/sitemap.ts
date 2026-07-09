@@ -10,21 +10,21 @@ export default async function sitemap() {
   entries.push({ url: `${baseUrl}/` })
 
   // Contact
-  entries.push({ url: `${baseUrl}/kontakti` })
+  entries.push({ url: `${baseUrl}/contact` })
 
   // Categories
   for (const slug of slugs.categories) {
-    entries.push({ url: `${baseUrl}/kategoria/${slug}` })
+    entries.push({ url: `${baseUrl}/category/${slug}` })
   }
 
   // Brands
   for (const slug of slugs.brands) {
-    entries.push({ url: `${baseUrl}/marka/${slug}` })
+    entries.push({ url: `${baseUrl}/brand/${slug}` })
   }
 
   // Products
   for (const slug of slugs.products) {
-    entries.push({ url: `${baseUrl}/produkt/${slug}` })
+    entries.push({ url: `${baseUrl}/product/${slug}` })
   }
 
   // Pages

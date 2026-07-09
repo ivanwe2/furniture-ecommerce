@@ -39,7 +39,7 @@ Admin: `useAsTitle: 'name'`, defaultColumns `['name','parent','sortOrder']`.
 
 `name` (text, required) · `slug` (unique) · `logo` (upload→media) ·
 `description` (textarea). Exists because SEVROLL is commercially prominent
-(dedicated systems line) and earns `/marka/[slug]` landing pages. Hooks:
+(dedicated systems line) and earns `/brand/[slug]` landing pages. Hooks:
 slug + `revalidateTag('brands')` + `revalidateTag('products')`.
 
 ## 3. `products`
@@ -118,8 +118,8 @@ default sort `-createdAt`.
 `title` (req) · `slug` (unique) · `content` (richText) ·
 `status` draft/published (default draft). Renders at `/[pageSlug]`.
 Hooks: `revalidateTag('pages')`, `revalidateTag('page-'+slug)`.
-Seeded (Phase 7) as drafts: `obshti-usloviya`, `politika-za-poveritelnost`,
-`dostavka-i-plashtane`, `pravo-na-otkaz`, `biskvitki`.
+Seeded (Phase 7) as drafts: `terms`, `privacy`,
+`delivery-payment`, `returns`, `cookies`.
 
 ## 6. `media` + global `site-settings` + `users`
 

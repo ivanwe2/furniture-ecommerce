@@ -29,7 +29,7 @@ export default function CookieNotice() {
         <p className="text-ink">
           {t('cookie.notice')}
           {' '}
-          <Link href="/biskvitki" className="text-brass underline hover:opacity-80">
+          <Link href="/cookies" className="text-brass underline hover:opacity-80">
             {t('cookie.learnMore')}
           </Link>
         </p>

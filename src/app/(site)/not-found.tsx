@@ -16,7 +16,7 @@ export default function NotFound() {
             e.preventDefault()
             const form = e.currentTarget
             const q = (form.elements.namedItem('q') as HTMLInputElement)?.value?.trim()
-            if (q) window.location.href = `/tarsene?q=${encodeURIComponent(q)}`
+            if (q) window.location.href = `/search?q=${encodeURIComponent(q)}`
           }}
         >
           <Input

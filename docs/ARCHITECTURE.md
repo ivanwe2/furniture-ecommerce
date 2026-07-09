@@ -219,7 +219,7 @@ in the table and cart controls.
   мебелен обков"), descriptions, canonicals, OG image (product cover via
   `og` preset).
 - `sitemap.ts` (published products, categories, brands, pages) + `robots.ts`
-  (allow all; disallow `/admin`, `/kolichka`, `/poruchka`).
+  (allow all; disallow `/admin`, `/cart`, `/checkout`).
 - JSON-LD: `Product` with `offers` per item row (price in EUR, availability
   from `inStock`), `BreadcrumbList` on category/product, `LocalBusiness`
   (from settings) on the contact page.
@@ -280,13 +280,13 @@ ORDER_INBOX_EMAIL=
 │   ├── app/
 │   │   ├── (site)/
 │   │   │   ├── layout.tsx  page.tsx  not-found.tsx  error.tsx
-│   │   │   ├── kategoria/[...slug]/page.tsx
-│   │   │   ├── produkt/[slug]/page.tsx
-│   │   │   ├── marka/[slug]/page.tsx
-│   │   │   ├── tarsene/page.tsx
-│   │   │   ├── kolichka/page.tsx
-│   │   │   ├── poruchka/page.tsx  poruchka/uspeshna/page.tsx
-│   │   │   ├── kontakti/page.tsx
+│   │   │   ├── category/[...slug]/page.tsx
+│   │   │   ├── product/[slug]/page.tsx
+│   │   │   ├── brand/[slug]/page.tsx
+│   │   │   ├── search/page.tsx
+│   │   │   ├── cart/page.tsx
+│   │   │   ├── checkout/page.tsx  checkout/success/page.tsx
+│   │   │   ├── contact/page.tsx
 │   │   │   └── [pageSlug]/page.tsx        # legal/static pages
 │   │   └── (payload)/                     # template-generated admin+api
 │   ├── collections/           # one file per collection + globals/
