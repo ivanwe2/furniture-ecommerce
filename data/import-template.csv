@@ -1,0 +1,11 @@
+# Nasteh BG — CSV Import Template
+# Consecutive rows sharing product_name merge into ONE product with multiple items.
+# Exactly one of price_bgn / price_eur per row (BGN → EUR at ÷1.95583, half-up).
+# category_slug must exist; brand is created on the fly if missing.
+# unit: бр. | м | компл. | чифт  (empty defaults to бр.)
+# All products land as draft — owner reviews before publishing.
+#
+category_slug,brand,product_name,item_name,sku,unit,length_mm,color,price_bgn,price_eur
+drzhki,Kesseböhmer,Дръжка Comfort 16 II,Дръжка Comfort 16 II — Сребро,02718,бр.,16,Сребро,31.14,
+drzhki,Kesseböhmer,Дръжка Comfort 16 II,Дръжка Comfort 16 II — Злато,02719,бр.,16,Злато,,15.80
+panti,Kesseböhmer,Пант Hettich 170°,Пант Hettich 170° — Сребро,HET-170-SR,чифт,,Сребро,2.49,
