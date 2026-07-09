@@ -22,7 +22,8 @@
   - [x] 3.4 validation schemas (checkout + contact) + tests
   - [x] 3.5 rate-limit + turnstile + tests
 - [x] Phase 4 — Design system & shell
-- [ ] Phase 5 — Catalog
+- [x] Phase 5 — Catalog
+  - [x] 5.3 ProductCard component
 - [ ] Phase 6 — Cart & COD checkout
 - [ ] Phase 7 — Content & compliance
 - [ ] Phase 8 — SEO & performance
