@@ -123,7 +123,7 @@ export const Orders: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
-      async ({ data, operation }) => {
+      async ({ data, req, operation }) => {
         if (operation === 'create' && !data.orderNumber) {
           const now = new Date()
           const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
@@ -138,7 +138,7 @@ export const Orders: CollectionConfig = {
               .slice(0, 4)
             orderNumber = `NAS-${dateStr}-${randomStr}`
             // Check uniqueness
-            const existing = await data.payload.find({
+            const existing = await req.payload.find({
               collection: 'orders',
               depth: 0,
               overrideAccess: true,

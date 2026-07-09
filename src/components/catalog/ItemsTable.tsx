@@ -97,7 +97,7 @@ export function ItemsTable({ items, productSlug, productName }: ItemsTableProps)
                   {isInStock ? (
                     <button
                       onClick={() => handleAdd(item)}
-                      disabled={!isAdded}
+                      disabled={isAdded}
                       className={clsx(
                         'inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-medium transition-colors',
                         isAdded
