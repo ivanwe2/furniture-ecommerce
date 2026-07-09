@@ -1,18 +1,21 @@
 import React from 'react'
 import './styles.css'
+import { FontProvider } from '@/components/providers/font-provider'
 
 export const metadata = {
-  description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
+  description: 'Настех — мебелен обков',
+  title: 'Настех — мебелен обков',
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
 
   return (
-    <html lang="en">
+    <html lang="bg">
       <body>
-        <main>{children}</main>
+        <FontProvider>
+          <main>{children}</main>
+        </FontProvider>
       </body>
     </html>
   )
