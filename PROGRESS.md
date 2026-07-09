@@ -24,6 +24,7 @@
 - [x] Phase 4 — Design system & shell
 - [x] Phase 5 — Catalog
   - [x] 5.3 ProductCard component
+  - [x] 5.1 Home page (/)
 - [ ] Phase 6 — Cart & COD checkout
 - [ ] Phase 7 — Content & compliance
 - [ ] Phase 8 — SEO & performance

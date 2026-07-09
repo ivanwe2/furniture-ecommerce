@@ -13,6 +13,7 @@ export interface CategoryNode {
   name: string
   slug: string
   sortOrder: number
+  image?: { filename?: string | null; alt?: string | null } | null
   parent: { id: number | string; name: string; slug: string } | null
   children: CategoryNode[]
 }
