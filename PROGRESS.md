@@ -181,6 +181,7 @@ https://nasteh.bg/rukovodstvo-za-administratora
 | 2026-07-09 | Added `tailwindcss@^4`, `@tailwindcss/postcss` dependencies | ARCHITECTURE §2 lists Tailwind 4.x as approved; v4 requires postcss plugin for CSS-first config | here + package.json |
 | 2026-07-10 | Added `@payloadcms/translations@3.82.1` as a direct dep (was transitive-only; pnpm doesn't hoist it) to set the admin UI to Bulgarian (`i18n.fallbackLanguage: 'bg'`) per CLAUDE.md rule 14. Same version as the frozen Payload baseline — not a version bump | rule 14 (Bulgarian admin) | here + package.json + payload.config.ts |
 | 2026-07-09 | **URL scheme → English (Ivan)**: fixed route segments are English — `/category` `/product` `/brand` `/search` `/cart` `/checkout` (+ `/checkout/success`) `/contact`; legal pages `/terms /privacy /delivery-payment /returns /cookies`. Dynamic slugs stay latin-transliterated (e.g. `/product/drazhka-comfort`). UI text stays Bulgarian. Amends the Bulgarian-route layout in ARCHITECTURE §12 / UI-SPEC | Ivan directive | ARCHITECTURE §12 · UI-SPEC · redirects |
+| 2026-07-10 | **SCOPE CHANGE (Ivan authorized in-session):** build Econt + Speedy office/map selectors at checkout — overrides the "no courier API integrations" out-of-scope line in CLAUDE.md. Server-side API calls only (external calls to ee.econt.com + api.speedy.bg), credentials as CF secrets. Needs Ivan's courier accounts/keys (see task list). Ivan to amend CLAUDE.md scope + ARCHITECTURE when confirmed | Ivan directive | here; ARCHITECTURE (pending) |
 
 ### 2026-07-09 repair session — what the audit found & fixed
 
@@ -232,6 +233,15 @@ _(Format per CLAUDE.md §6. Agents STOP the blocked task after writing here.)_
       the 2026-08-08 flip to `false` (EUR only) after that date.
 - [ ] **Turnstile:** dev bypasses it (no keys). Real keys needed for production
       (task 1.7 / CLOUDFLARE §10).
+- [ ] **Courier office selectors (Econt + Speedy) — Ivan credentials needed:**
+      Econt: register a demo account (login-demo.econt.com) for testing, and get
+      production Econt Delivery API user/pass from your merchant account. Speedy:
+      email api.registration@speedy.bg (name, company, phone) for TEST creds, and
+      get production user/pass from your Speedy contract. Store all four as CF
+      secrets: `ECONT_USER/ECONT_PASS`, `SPEEDY_USER/SPEEDY_PASS`. Until then the
+      selector runs on local fixtures. APIs: Econt `POST {base}/Nomenclatures/
+      NomenclaturesService.getOffices.json` (HTTP Basic); Speedy `POST
+      api.speedy.bg/v1/location/office` + `/location/site` (creds in JSON body).
 
 - [ ] (phase-1.5) **Ivan — create the rate-limit KV namespace** (needs your CF
       account). At the keyboard:
