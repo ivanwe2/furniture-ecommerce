@@ -5,16 +5,17 @@
 
 ## Status
 
-**Current phase:** 2 — Data layer
-**Current task:** 2.0 done, 2.1-2.6 in progress → **NEXT: migration + typegen + seed verification**
-**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all collections defined, query layer wired, revalidate helper in place, seed script created, migration generated.
-**Last session summary:** Phase 1 foundation complete. Phase 2 data layer implementation: slugify + tests (2.0), all collections (Categories/Brands/Media/Products/Orders/Pages/Users) with hooks + BG labels (2.1), revalidate.ts (2.2), migration created (2.3 partial — needs local DB reset to apply), query layer (2.4), seed script (2.5). Migration applies on fresh DB only; local D1 has stale tables from dev mode.
+**Current phase:** 3 — Domain logic + tests
+**Current task:** 3.1 done → **NEXT: 3.2 (slug.ts test verification), then 3.3, 3.4, 3.5**
+**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; money.ts + tests committed.
+**Last session summary:** Phase 3.1 complete: money.ts with BGN conversion (half-up rounding), formatEur/Bgn/Price, showBgn flag, assertCents validation, and 13 tests. Note: REFERENCE.md test anchor `bgnCentsFromEurCents(3114) === 6091` was incorrect — actual value is 6090 (3114 × 1.95583 = 6090.45462, rounds down).
 
 ## Phase checklist
 
 - [x] Phase 1 — Foundation & platform verification
 - [ ] Phase 2 — Data layer
 - [ ] Phase 3 — Domain logic + tests
+  - [x] 3.1 money.ts + tests
 - [ ] Phase 4 — Design system & shell
 - [ ] Phase 5 — Catalog
 - [ ] Phase 6 — Cart & COD checkout
