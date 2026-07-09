@@ -1,9 +1,10 @@
 'use server'
 import 'server-only'
 
+import { headers } from 'next/headers'
 import { contactSchema } from '@/lib/validation/contact'
 import { verifyTurnstile } from '@/lib/turnstile'
-import { rateLimitWith } from '@/lib/rate-limit'
+import { rateLimit } from '@/lib/rate-limit'
 import { sendContactEmail } from '@/emails/send'
 
 export type ActionResult<T> =
@@ -12,6 +13,13 @@ export type ActionResult<T> =
 
 export async function submitContact(input: unknown): Promise<ActionResult<unknown>> {
   const record = input as Record<string, unknown>
+
+  // Server-derived IP — never trust client-supplied values.
+  const hdrs = await headers()
+  const ip =
+    hdrs.get('cf-connecting-ip') ??
+    hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    'unknown'
 
   // Step 1: Honeypot — fake success if filled
   if (record['website'] != null && String(record['website']).trim() !== '') {
@@ -28,30 +36,21 @@ export async function submitContact(input: unknown): Promise<ActionResult<unknow
         fieldErrors[String(path)] = err.message
       }
     }
-    return { ok: false, error: '', fieldErrors }
+    return { ok: false, error: 'errors.generic', fieldErrors }
   }
 
   const data = parsed.data
 
   // Step 3: Turnstile verify → errors.captcha
-  const ip = (record['ip'] as string) ?? ''
   const turnstileOk = await verifyTurnstile(data.turnstileToken, ip)
   if (!turnstileOk) {
     return { ok: false, error: 'errors.captcha' }
   }
 
-  // Step 4: Rate limit → errors.rateLimited
-  try {
-    const kv = (globalThis as unknown as Record<string, unknown>)['RATE_LIMIT_KV']
-    if (kv) {
-      const result = await rateLimitWith(kv as Parameters<typeof rateLimitWith>[0], `rl:contact:${ip}`, { windowSec: 600, max: 5 })
-      if (!result.allowed) {
-        return { ok: false, error: 'errors.rateLimited' }
-      }
-    }
-  }
-  catch (e) {
-    console.error('[ratelimit]', e)
+  // Step 4: Rate limit → errors.rateLimited (contact: max 3 per ARCHITECTURE §7)
+  const rl = await rateLimit(`rl:contact:${ip}`, { windowSec: 600, max: 3 })
+  if (!rl.allowed) {
+    return { ok: false, error: 'errors.rateLimited' }
   }
 
   // Step 5: Send owner email — NEVER rethrow

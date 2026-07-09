@@ -1,9 +1,10 @@
 'use server'
 import 'server-only'
 
+import { headers } from 'next/headers'
 import { checkoutSchema } from '@/lib/validation/checkout'
 import { verifyTurnstile } from '@/lib/turnstile'
-import { rateLimitWith } from '@/lib/rate-limit'
+import { rateLimit } from '@/lib/rate-limit'
 import { resolveCartLines } from '@/lib/payload/queries'
 import { computeTotals } from '@/lib/cart/totals'
 import { getPayload } from 'payload'
@@ -28,6 +29,14 @@ function mapMethod(method: 'address' | 'econt' | 'speedy'): Order['delivery']['m
 export async function submitOrder(input: unknown): Promise<ActionResult<{ orderNumber: string }>> {
   const record = input as Record<string, unknown>
 
+  // Server-derived request metadata — never trust client-supplied IP/UA.
+  const hdrs = await headers()
+  const ip =
+    hdrs.get('cf-connecting-ip') ??
+    hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    'unknown'
+  const userAgent = hdrs.get('user-agent') ?? ''
+
   // Step 1: Honeypot — fake success if filled
   if (record['website'] != null && String(record['website']).trim() !== '') {
     console.log('[order] honeypot triggered')
@@ -43,30 +52,21 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
         fieldErrors[String(path)] = err.message
       }
     }
-    return { ok: false, error: '', fieldErrors }
+    return { ok: false, error: 'errors.generic', fieldErrors }
   }
 
   const data = parsed.data
 
   // Step 3: Turnstile verify → errors.captcha
-  const ip = (record['ip'] as string) ?? ''
   const turnstileOk = await verifyTurnstile(data.turnstileToken, ip)
   if (!turnstileOk) {
     return { ok: false, error: 'errors.captcha' }
   }
 
   // Step 4: Rate limit → errors.rateLimited
-  try {
-    const kv = (globalThis as unknown as Record<string, unknown>)['RATE_LIMIT_KV']
-    if (kv) {
-      const result = await rateLimitWith(kv as Parameters<typeof rateLimitWith>[0], `rl:order:${ip}`, { windowSec: 600, max: 5 })
-      if (!result.allowed) {
-        return { ok: false, error: 'errors.rateLimited' }
-      }
-    }
-  }
-  catch (e) {
-    console.error('[ratelimit]', e)
+  const rl = await rateLimit(`rl:order:${ip}`, { windowSec: 600, max: 5 })
+  if (!rl.allowed) {
+    return { ok: false, error: 'errors.rateLimited' }
   }
 
   // Step 5: Resolve items from DB by (productId, sku); reject unknown/unpublished/out-of-stock
@@ -123,7 +123,7 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
     totalEurCents: subtotalEurCents,
     meta: {
       ip,
-      userAgent: (record['userAgent'] as string) ?? '',
+      userAgent,
     },
   }
 
