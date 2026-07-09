@@ -43,6 +43,11 @@
 /* Items table collapses to stacked cards on mobile (same DOM, no element swap).
    Cells opt in with a `data-label` attribute; see components/catalog. */
 @media (max-width: 767px) {
+  .items-table,
+  .items-table tbody {
+    display: block;
+    width: 100%;
+  }
   .items-table thead {
     position: absolute;
     width: 1px;

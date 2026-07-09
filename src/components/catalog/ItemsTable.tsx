@@ -40,8 +40,8 @@ export function ItemsTable({ items, productSlug, productName }: ItemsTableProps)
   )
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-sand">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-lg border border-sand md:overflow-x-auto">
+      <table className="items-table w-full text-sm">
         <thead className="sticky top-0 bg-sand">
           <tr>
             <th scope="col" className="px-4 py-3 text-left font-semibold text-ink">{t('product.colName')}</th>
@@ -66,14 +66,13 @@ export function ItemsTable({ items, productSlug, productName }: ItemsTableProps)
                   'border-t border-sand transition-colors',
                   !isInStock && 'opacity-50',
                 )}
-                data-label={item.name}
               >
-                <td className="px-4 py-3 text-ink">{item.name}</td>
-                <td className="px-4 py-3 text-steel">{item.unit ?? 'бр.'}</td>
-                {hasLength && <td className="px-4 py-3 text-steel tabular-nums">{item.lengthMm ?? ''}</td>}
-                {hasColor && <td className="px-4 py-3 text-steel">{item.color ?? ''}</td>}
-                <td className="px-4 py-3 font-mono text-steel">{item.sku}</td>
-                <td className="px-4 py-3 text-right tabular-nums">
+                <td className="px-4 py-3 text-ink" data-label={t('product.colName')}>{item.name}</td>
+                <td className="px-4 py-3 text-steel" data-label={t('product.colUnit')}>{item.unit ?? 'бр.'}</td>
+                {hasLength && <td className="px-4 py-3 text-steel tabular-nums" data-label={t('product.colLength')}>{item.lengthMm ?? ''}</td>}
+                {hasColor && <td className="px-4 py-3 text-steel" data-label={t('product.colColor')}>{item.color ?? ''}</td>}
+                <td className="px-4 py-3 font-mono text-steel" data-label={t('product.colSku')}>{item.sku}</td>
+                <td className="px-4 py-3 text-right tabular-nums" data-label={t('product.colPrice')}>
                   {isInStock ? (
                     <span className="inline-flex items-center gap-1">
                       <Price eurCents={item.priceEurCents} />
@@ -82,7 +81,7 @@ export function ItemsTable({ items, productSlug, productName }: ItemsTableProps)
                     <span className="text-steel">{t('product.onRequest')}</span>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" data-label={t('product.colQty')}>
                   {isInStock ? (
                     <QtyStepper
                       sku={item.sku}
@@ -93,7 +92,7 @@ export function ItemsTable({ items, productSlug, productName }: ItemsTableProps)
                     <span className="text-xs text-steel">—</span>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="actions px-4 py-3">
                   {isInStock ? (
                     <button
                       onClick={() => handleAdd(item)}
