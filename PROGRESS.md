@@ -11,8 +11,8 @@
 R2 storage wiring fixed. next 15.4.11 · payload 3.82.1 frozen. `wrangler.jsonc`
 still an uncommitted working-tree change (Ivan's real bindings).
 **Last session summary:** (1) Docs reconciled + baseline frozen — commit 6ddd6c9.
-(2) Tooling/green-gate established, R2 storage fixed, build script corrected —
-this commit. Handed off to another agent for 1.4 + 1.6.
+(2) Tooling/green-gate established, R2 storage fixed, build script corrected.
+(3) CI + guardrail greps + env-drift check — commit 060b6b7.
 
 ## Phase checklist
 
@@ -131,8 +131,7 @@ _(Quirks, workarounds, deliberate TODOs the next session must know.)_
 - **R2 storage is now actually wired** (`plugins:` fix). Before this it was under
   an invalid `storage:` key and silently ignored — so Phase 1.8a (upload lands in
   R2) would have failed. Verify uploads once admin boots.
-- `.env.example` currently lists only `PAYLOAD_SECRET` — task 1.4 must expand it
-  to the full committed key list (ARCHITECTURE §11) for the drift check.
+- `.env.example` expanded in 1.4 with all keys from ARCHITECTURE §11.
 - Local build artifacts (`.next/`, `.open-next/`, `.wrangler/`) exist from this
   session's build probes; all gitignored (and now eslint-ignored).
 
