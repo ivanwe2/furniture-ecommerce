@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
 import { slugify } from '@/lib/slug'
 import { revalidateTags } from '@/lib/payload/revalidate'
 
@@ -189,16 +189,17 @@ export const Products: CollectionConfig = {
         if (Array.isArray(data.items) && data.items.length > 0) {
           const skus = data.items.map((it: { sku?: string }) => it.sku).filter(Boolean) as string[]
           if (skus.length > 0) {
+            // Exclude the current doc only on update — on create there is no
+            // id yet, and D1 rejects an `undefined` bind value.
+            const and: Where[] = [{ 'items.sku': { in: skus } }]
+            if (originalDoc?.id != null) {
+              and.push({ id: { not_equals: originalDoc.id } })
+            }
             const result = await req.payload.find({
               collection: 'products',
               depth: 0,
               overrideAccess: true,
-              where: {
-                and: [
-                  { 'items.sku': { in: skus } },
-                  { id: { not_equals: originalDoc?.id } },
-                ],
-              },
+              where: { and },
             })
             if (result.docs.length > 0) {
               for (const sku of skus) {

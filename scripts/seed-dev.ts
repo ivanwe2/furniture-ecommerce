@@ -93,7 +93,7 @@ await upsert('products', 'slug', 'drzhka-comfort-16', {
   items: [
     {
       name: 'Дръжка Comfort 16 II — Сребро',
-      sku: '02718',
+      sku: '02730',
       unit: 'бр.',
       priceEurCents: 158,
       inStock: true,
@@ -273,3 +273,7 @@ if (existingUsers.docs.length === 0) {
 }
 
 console.log('Seed complete!')
+
+// The Cloudflare platform proxy keeps an open handle; exit explicitly so the
+// script terminates instead of hanging after the work is done.
+process.exit(0)
