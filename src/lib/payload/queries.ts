@@ -12,6 +12,7 @@ export interface CategoryNode {
   id: number | string
   name: string
   slug: string
+  description?: string | null
   sortOrder: number
   image?: { filename?: string | null; alt?: string | null } | null
   parent: { id: number | string; name: string; slug: string } | null
