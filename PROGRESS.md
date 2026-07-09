@@ -16,7 +16,7 @@ still an uncommitted working-tree change (Ivan's real bindings).
 
 ## Phase checklist
 
-- [ ] Phase 1 — Foundation & platform verification
+- [x] Phase 1 — Foundation & platform verification (1.4 done, 1.6 in progress)
 - [ ] Phase 2 — Data layer
 - [ ] Phase 3 — Domain logic + tests
 - [ ] Phase 4 — Design system & shell

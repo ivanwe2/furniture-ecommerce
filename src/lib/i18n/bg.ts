@@ -1,0 +1,85 @@
+export const bg = {
+  common: { addToCart: 'Добави', search: 'Търсене', close: 'Затвори',
+    back: 'Назад', home: 'Начало', retry: 'Опитай отново',
+    priceOnRequest: 'по запитване', vatIncluded: 'Цените са с включено ДДС.' },
+  nav: { categories: 'Категории', contact: 'Контакти', menu: 'Меню' },
+  home: { featured: 'Акценти', categoriesTitle: 'Категории',
+    heroCta: 'Разгледай каталога',
+    trust1: 'Дългогодишен опит с мебелен обков',
+    trust2: 'Плащане при доставка — наложен платеж',
+    trust3: 'Бърза връзка и консултация' },
+  catalog: { fromPrice: 'от {price}', inStock: 'в наличност',
+    outOfStock: 'изчерпан' },
+  category: { allIn: 'Всички продукти в категорията',
+    empty: 'Все още няма продукти в тази категория.' },
+  product: { itemsTitle: 'Артикули и цени', colName: 'Наименование',
+    colUnit: 'Мярка', colLength: 'Дължина (мм)', colColor: 'Цвят',
+    colSku: 'Код', colPrice: 'Цена', colQty: 'Количество',
+    added: 'Добавено', onRequest: 'по запитване',
+    inStockSummary: 'Артикули в наличност' },
+  search: { placeholder: 'Търси продукт или код…',
+    resultsFor: 'Резултати за', empty: 'Няма намерени продукти.' },
+  cart: { title: 'Количка', empty: 'Количката е празна.',
+    goShopping: 'Към каталога', total: 'Общо', remove: 'Премахни',
+    stale: 'Този артикул вече не е наличен и няма да бъде поръчан.',
+    codNote: 'Плащане при доставка (наложен платеж).',
+    deliveryNote: 'Доставката се заплаща на куриера по тарифа на Еконт/Спиди.',
+    checkout: 'Към поръчка' },
+  checkout: { title: 'Поръчка', name: 'Име и фамилия', phone: 'Телефон',
+    email: 'Имейл', method: 'Доставка до', methodAddress: 'Адрес',
+    methodEcont: 'Офис на Еконт', methodSpeedy: 'Офис на Спиди',
+    city: 'Град', addressLabel: 'Адрес за доставка',
+    officeLabel: 'Офис (име или адрес)', note: 'Бележка към поръчката',
+    consent: 'Съгласен съм с Общите условия и Политиката за поверителност.',
+    submit: 'Изпрати поръчката', submitting: 'Изпращане…',
+    successTitle: 'Благодарим за поръчката!',
+    successBody: 'Изпратихме потвърждение на имейла ви. Ще се свържем с вас по телефона за уточнение на доставката.',
+    orderNumber: 'Номер на поръчка' },
+  contact: { title: 'Контакти', message: 'Съобщение',
+    send: 'Изпрати', success: 'Съобщението е изпратено. Благодарим!',
+    aboutSku: 'Запитване относно артикул: ' },
+  errors: { generic: 'Възникна грешка. Опитайте отново.',
+    required: 'Полето е задължително.',
+    invalidEmail: 'Невалиден имейл адрес.',
+    invalidPhone: 'Невалиден телефонен номер.',
+    captcha: 'Моля, потвърдете, че не сте робот.',
+    rateLimited: 'Твърде много опити. Опитайте отново след няколко минути.',
+    cartStale: 'Част от артикулите вече не са налични. Прегледайте количката.',
+    consentRequired: 'Необходимо е съгласие с условията.',
+    pageTitle: 'Нещо се обърка' },
+  notFound: { title: 'Страницата не е намерена',
+    body: 'Потърсете продукт или разгледайте категориите.' },
+  footer: { info: 'Информация', categories: 'Категории',
+    workingHours: 'Работно време' },
+} as const;
+
+export type BgKeys = keyof typeof bg;
+
+type NestedKeys<T, Prefix extends string = ''> = {
+  [K in keyof T]: T[K] extends string
+    ? `${Prefix}${K & string}`
+    : T[K] extends object
+      ? NestedKeys<T[K], `${Prefix}${K & string}.`>
+      : never;
+}[keyof T];
+
+export type DotPath = NestedKeys<typeof bg>;
+
+function resolve(key: DotPath): string {
+  const parts = key.split('.');
+  let current: unknown = bg;
+  for (const part of parts) {
+    if (current == null || typeof current !== 'object') {
+      throw new TypeError(`Cannot resolve i18n path: ${key}`);
+    }
+    current = (current as Record<string, unknown>)[part];
+  }
+  if (typeof current !== 'string') {
+    throw new TypeError(`Expected string at i18n path: ${key}`);
+  }
+  return current;
+}
+
+export function t(key: DotPath): string {
+  return resolve(key);
+}
