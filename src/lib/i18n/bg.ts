@@ -93,3 +93,18 @@ function resolve(key: DotPath): string {
 export function t(key: DotPath): string {
   return resolve(key)
 }
+
+/**
+ * Loose lookup for dynamic keys (e.g. error keys returned by server actions).
+ * Returns the resolved Bulgarian string, or the key unchanged if it does not
+ * resolve. Never throws — unlike `t`, which is for statically-known keys.
+ */
+export function tSafe(key: string): string {
+  const parts = key.split('.')
+  let current: unknown = bg
+  for (const part of parts) {
+    if (current == null || typeof current !== 'object') return key
+    current = (current as Record<string, unknown>)[part]
+  }
+  return typeof current === 'string' ? current : key
+}
