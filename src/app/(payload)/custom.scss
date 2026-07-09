@@ -1,0 +1,9 @@
+/* Tint the Payload admin to the storefront's warm light palette
+   (ARCHITECTURE §8). The admin is also forced to light mode in
+   payload.config.ts (admin.theme: 'light'). Cards keep Payload's
+   near-white elevations, sitting on a cream page background. */
+html[data-theme='light'] {
+  --theme-bg: #f6f3ec; /* cream page background — same as the site */
+  --color-success-500: #8a6d3b; /* brass accent for links/highlights */
+  --theme-success-500: #8a6d3b;
+}

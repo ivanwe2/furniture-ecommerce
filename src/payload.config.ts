@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { sqliteD1Adapter } from '@payloadcms/db-d1-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { bg } from '@payloadcms/translations/languages/bg'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import { CloudflareContext, getCloudflareContext } from '@opennextjs/cloudflare'
@@ -53,9 +54,23 @@ const cloudflare =
 export default buildConfig({
   admin: {
     user: Users.slug,
+    theme: 'light',
+    meta: {
+      titleSuffix: '— Настех',
+    },
+    components: {
+      graphics: {
+        Logo: '/components/admin/Logo#Logo',
+        Icon: '/components/admin/Icon#Icon',
+      },
+    },
     importMap: {
       baseDir: path.resolve(dirname),
     },
+  },
+  i18n: {
+    supportedLanguages: { bg },
+    fallbackLanguage: 'bg',
   },
   collections: [Users, Media, Categories, Brands, Products, Orders, Pages],
   globals: [SiteSettings],
