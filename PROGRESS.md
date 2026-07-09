@@ -25,6 +25,12 @@
 - [x] Phase 5 — Catalog
   - [x] 5.3 ProductCard component
   - [x] 5.1 Home page (/)
+  - [x] 5.2 Category route (/kategoria/[...slug])
+  - [x] 5.4 Product page (/produkt/[slug])
+  - [x] 5.5 Brand page (/marka/[slug])
+  - [x] 5.6 Search page (/tarsene)
+  - [x] 5.7 Contact page (/kontakti)
+  - [x] 5.8 Loading skeletons
 - [ ] Phase 6 — Cart & COD checkout
 - [ ] Phase 7 — Content & compliance
 - [ ] Phase 8 — SEO & performance
