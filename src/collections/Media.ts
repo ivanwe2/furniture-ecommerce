@@ -10,11 +10,15 @@ export const Media: CollectionConfig = {
       name: 'alt',
       type: 'text',
       required: true,
+      label: 'Алтернативен текст',
+      admin: {
+        description: 'Опишете изображението за SEO и достъпност.',
+      },
     },
   ],
   upload: {
-    // These are not supported on Workers yet due to lack of sharp
     crop: false,
     focalPoint: false,
+    mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
   },
 }

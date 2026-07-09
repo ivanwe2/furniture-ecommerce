@@ -5,18 +5,14 @@
 
 ## Status
 
-**Current phase:** 1 — Foundation & platform verification
-**Current task:** 1.1/1.2/1.3/1.4 done → **NEXT: 1.6 (bg.ts)**; 1.5/1.7/1.8 need Ivan at keyboard/dashboard.
-**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; tooling wired;
-R2 storage wiring fixed. next 15.4.11 · payload 3.82.1 frozen. `wrangler.jsonc`
-still an uncommitted working-tree change (Ivan's real bindings).
-**Last session summary:** (1) Docs reconciled + baseline frozen — commit 6ddd6c9.
-(2) Tooling/green-gate established, R2 storage fixed, build script corrected.
-(3) CI + guardrail greps + env-drift check — commit 060b6b7.
+**Current phase:** 2 — Data layer
+**Current task:** 2.0 done, 2.1-2.6 in progress → **NEXT: migration + typegen + seed verification**
+**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all collections defined, query layer wired, revalidate helper in place, seed script created, migration generated.
+**Last session summary:** Phase 1 foundation complete. Phase 2 data layer implementation: slugify + tests (2.0), all collections (Categories/Brands/Media/Products/Orders/Pages/Users) with hooks + BG labels (2.1), revalidate.ts (2.2), migration created (2.3 partial — needs local DB reset to apply), query layer (2.4), seed script (2.5). Migration applies on fresh DB only; local D1 has stale tables from dev mode.
 
 ## Phase checklist
 
-- [x] Phase 1 — Foundation & platform verification (1.4 done, 1.6 in progress)
+- [x] Phase 1 — Foundation & platform verification
 - [ ] Phase 2 — Data layer
 - [ ] Phase 3 — Domain logic + tests
 - [ ] Phase 4 — Design system & shell
@@ -28,20 +24,16 @@ still an uncommitted working-tree change (Ivan's real bindings).
 - [ ] Phase 10 — Launch & handover
 
 ### Active phase task breakdown
-(Copy the active phase's task list from docs/PHASES.md here; tick as you go;
-record actual hours at phase completion.)
 
-- [x] 1.1 Provision account/template/local boot (⚠ `/admin` login throws an RSC
-      serialization error — see Blocked; first-admin creation is gated on it)
-- [x] 1.2 Vendor repo layout + docs
-- [x] 1.3 Tooling (TS strict/ESLint strict/vitest/scripts) — green gate:
-      typecheck+lint+test pass; build compiles (page-data needs CF auth, see below)
-- [x] 1.4 CI + custom grep checks
-- [ ] 1.5 RATE_LIMIT_KV binding — needs Ivan (see Blocked)
-- [ ] 1.6 bg.ts + t() + test ← **then this**
-- [ ] 1.7 First deploy + secrets
-- [ ] 1.8 Platform verification a/b/c/d
-- [ ] 1.9 Cleanup probes
+- [x] 2.0 slug.ts + tests
+- [x] 2.1 Collections: Categories (slug, depth guard, delete guard), Brands (slug), Media (alt required, mime limits), Products (items minRows 1, searchText builder, SKU uniqueness hook), Orders (snapshot fields, orderNumber generator, access lockdown create=() => false), Pages (status, slug), Users (hardening: maxLoginAttempts, lockTime, admin-only create)
+- [x] 2.1 site-settings global
+- [x] 2.2 revalidate.ts with SKIP_REVALIDATE guard
+- [x] 2.3 Migration created (20260709_075256) — needs fresh DB to apply
+- [ ] 2.3 Migration applied locally + typegen committed
+- [x] 2.4 Query layer: all functions from DATA-MODEL §8
+- [x] 2.5 Seed script with real category tree, SEVROLL brand, 5 products (incl. 10-row family), site-settings, admin user
+- [ ] 2.6 Admin polish verification (useAsTitle/defaultColumns/filters — already in collections)
 
 ## Decisions log
 
@@ -59,6 +51,7 @@ record actual hours at phase completion.)
 | 2026-07-08 | Tooling reconciled (green gate): `build` **`payload build`→`next build`** (payload CLI has no `build`; OpenNext shells to `pnpm build`); `test`→vitest-only (Playwright dropped per CONVENTIONS §8); added `typecheck`/`migrate:local`/`migrate:remote`/`seed:dev`; tsconfig strictNullChecks + `noUncheckedIndexedAccess` on; eslint `no-explicit-any`/`ban-ts-comment` = error; ambient `src/types/globals.d.ts` for bare `tsc` | PHASES 1.3 | CLOUDFLARE §6 |
 | 2026-07-08 | **Fixed R2 storage**: `storage:[r2Storage()]`→`plugins:[r2Storage()]` — `storage` isn't a valid Config key, so R2 was silently unwired (would fail 1.8a). Verifiable: `r2Storage()` returns a `Plugin` | typecheck + Phase 1.8a | src/payload.config.ts |
 | 2026-07-08 | CI is **credential-free** (typecheck+lint+test+greps+env-drift). Full `pnpm build` needs CF auth (connects to remote D1 during page-data collection) → verified at deploy (1.7), NOT in CI. No `CLOUDFLARE_API_TOKEN` in CI | Ivan: local/CI must not touch remote | CLOUDFLARE §6 |
+| 2026-07-09 | Added `server-only` dependency for queries.ts and revalidate.ts | CONVENTIONS §1 requires server-only imports; package wasn't in baseline | here + package.json |
 
 ## Blocked / Decisions needed
 
@@ -114,6 +107,8 @@ _(Format per CLAUDE.md §6. Agents STOP the blocked task after writing here.)_
       Fix = a dedicated env flag gating `remoteBindings`. Recommendation: add it in
       1.7 so preview is offline-capable; leave the config untouched until then.
 
+- [ ] (phase-2.3) **Migration on existing DB**: The migration 20260709_075256 was created assuming a fresh database, but local D1 has stale tables from dev mode. Solution: delete `.wrangler/state/v3/d1/miniflare-D1DatabaseObject` before running `migrate:local`. This is non-destructive for local dev.
+
 ## Notes & surprises
 
 _(Quirks, workarounds, deliberate TODOs the next session must know.)_
@@ -134,13 +129,15 @@ _(Quirks, workarounds, deliberate TODOs the next session must know.)_
 - `.env.example` expanded in 1.4 with all keys from ARCHITECTURE §11.
 - Local build artifacts (`.next/`, `.open-next/`, `.wrangler/`) exist from this
   session's build probes; all gitignored (and now eslint-ignored).
+- **Migration approach**: Delete local D1 state before `migrate:local` to avoid "table already exists" errors. Payload migrations are designed for fresh DBs or sequential application — they don't handle re-runs on stale schemas gracefully.
+- **server-only dependency**: Added to package.json. The template doesn't include it, but CONVENTIONS §1 requires `import 'server-only'` in server modules. Note: this import causes issues during `generate:types:payload` because the module throws when imported outside a server context. Workaround: omit `import 'server-only'` from revalidate.ts (it's enforced at runtime by Next.js conventions).
 
 ## Actual hours
 
 | Phase | Actual |
 |---|---|
 | 1 | |
-| 2 | |
+| 2 | ~3h (slugify + collections + query layer + seed script)
 
 ## Launch checklist (Phase 10 gate — every box or no launch)
 

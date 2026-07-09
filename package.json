@@ -41,7 +41,8 @@
     "next": "15.4.11",
     "payload": "3.82.1",
     "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react-dom": "19.2.1",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@playwright/test": "1.59.1",
