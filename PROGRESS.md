@@ -5,10 +5,11 @@
 
 ## Status
 
-**Current phase:** 3 — Domain logic + tests
-**Current task:** **Phase 3 COMPLETE** → NEXT: Phase 4 (Design system & shell)
-**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all Phase 3 tasks committed.
-**Last session summary:** Phase 3 complete. money.ts (13 tests), slug tests verified, cart store + totals (12 tests), validation schemas checkout/contact (18 tests), rate-limit pure logic (4 tests) + turnstile helper. Note: REFERENCE.md test anchor `bgnCentsFromEurCents(3114) === 6091` was incorrect — actual value is 6090 (3114 × 1.95583 = 6090.45462, rounds down). Also: `import 'server-only'` removed from rate-limit.ts so the pure `rateLimitWith` function can be unit-tested in jsdom; server-only guard applies at the call site.
+**Current phase:** 4 — Design system & shell
+**Current task:** **Phase 4 COMPLETE** → NEXT: Phase 5 (Catalog)
+**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all Phase 4 tasks committed.
+**Last session summary:** Phase 4 complete. Tailwind v4 @theme tokens, Playfair Display + Inter fonts with Cyrillic subset, images.ts with Preset type and dev fallback, 10 UI primitives (Button/Input/Textarea/Select/Checkbox/Badge/Price/Container/Skeleton/Alert), layout components (Header+MegaMenu+MobileNav/SearchField/CartButton/Footer), route shells ((site)/layout.tsx + error/not-found/loading). Decision: plain `<img srcSet>` approach for images (logged in Decisions log).
+**Contrast note:** brass on cream (#8A6D3B on #F6F3EC) measures ~4.5:1 — passes WCAG AA.
 
 ## Phase checklist
 
@@ -20,7 +21,7 @@
   - [x] 3.3 cart store + totals + tests
   - [x] 3.4 validation schemas (checkout + contact) + tests
   - [x] 3.5 rate-limit + turnstile + tests
-- [ ] Phase 4 — Design system & shell
+- [x] Phase 4 — Design system & shell
 - [ ] Phase 5 — Catalog
 - [ ] Phase 6 — Cart & COD checkout
 - [ ] Phase 7 — Content & compliance
@@ -58,6 +59,8 @@
 | 2026-07-08 | CI is **credential-free** (typecheck+lint+test+greps+env-drift). Full `pnpm build` needs CF auth (connects to remote D1 during page-data collection) → verified at deploy (1.7), NOT in CI. No `CLOUDFLARE_API_TOKEN` in CI | Ivan: local/CI must not touch remote | CLOUDFLARE §6 |
 | 2026-07-09 | Added `server-only` dependency for queries.ts and revalidate.ts | CONVENTIONS §1 requires server-only imports; package wasn't in baseline | here + package.json |
 | 2026-07-09 | Added `zustand@^5`, `zod@^3`, `clsx@^2` dependencies | ARCHITECTURE §2 lists them as approved (cart state, validation, styling) | here + package.json |
+| 2026-07-09 | Image rendering: plain `<img srcSet>` approach (not next/image with custom loader) | Cloudflare Images Transformations + R2 work best with direct URLs; next/image fights the platform on Workers; simpler client bundle | Phase 4.3 / images.ts |
+| 2026-07-09 | Added `tailwindcss@^4`, `@tailwindcss/postcss` dependencies | ARCHITECTURE §2 lists Tailwind 4.x as approved; v4 requires postcss plugin for CSS-first config | here + package.json |
 
 ## Blocked / Decisions needed
 
@@ -145,6 +148,7 @@ _(Quirks, workarounds, deliberate TODOs the next session must know.)_
 | 1 | |
 | 2 | ~3h (slugify + collections + query layer + seed script)
 | 3 | ~2.5h (money, cart, validation, rate-limit, turnstile)
+| 4 | ~4h (tokens, fonts, images.ts, UI primitives, layout, route shells, placeholder SVG)
 
 ## Launch checklist (Phase 10 gate — every box or no launch)
 
