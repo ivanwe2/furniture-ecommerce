@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { imageUrl, imageSrcSet } from '@/lib/images'
+import { imageUrl } from '@/lib/images'
 import type { Media } from '@/payload-types'
 
 interface GalleryProps {

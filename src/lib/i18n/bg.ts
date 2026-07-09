@@ -51,9 +51,9 @@ export const bg = {
     body: 'Потърсете продукт или разгледайте категориите.' },
   footer: { info: 'Информация', categories: 'Категории',
     workingHours: 'Работно време' },
-} as const;
+} as const
 
-export type BgKeys = keyof typeof bg;
+export type BgKeys = keyof typeof bg
 
 type NestedKeys<T, Prefix extends string = ''> = {
   [K in keyof T]: T[K] extends string
@@ -61,25 +61,25 @@ type NestedKeys<T, Prefix extends string = ''> = {
     : T[K] extends object
       ? NestedKeys<T[K], `${Prefix}${K & string}.`>
       : never;
-}[keyof T];
+}[keyof T]
 
-export type DotPath = NestedKeys<typeof bg>;
+export type DotPath = NestedKeys<typeof bg>
 
 function resolve(key: DotPath): string {
-  const parts = key.split('.');
-  let current: unknown = bg;
+  const parts = key.split('.')
+  let current: unknown = bg
   for (const part of parts) {
     if (current == null || typeof current !== 'object') {
-      throw new TypeError(`Cannot resolve i18n path: ${key}`);
+      throw new TypeError(`Cannot resolve i18n path: ${key}`)
     }
-    current = (current as Record<string, unknown>)[part];
+    current = (current as Record<string, unknown>)[part]
   }
   if (typeof current !== 'string') {
-    throw new TypeError(`Expected string at i18n path: ${key}`);
+    throw new TypeError(`Expected string at i18n path: ${key}`)
   }
-  return current;
+  return current
 }
 
 export function t(key: DotPath): string {
-  return resolve(key);
+  return resolve(key)
 }

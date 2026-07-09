@@ -21,7 +21,7 @@ export default function Footer({ categories }: FooterProps) {
               Настех ООД — мебелен обков
             </p>
             <p className="mt-1 text-sm text-steel">
-              г. Пловдив, бул. "Васил Левски" 55
+              г. Пловдив, бул. &quot;Васил Левски&quot; 55
             </p>
             <Link href="tel:+359888000000" className="text-sm text-brass hover:underline">
               +359 888 000 000

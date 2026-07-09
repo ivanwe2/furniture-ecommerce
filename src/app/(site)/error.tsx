@@ -4,7 +4,7 @@ import { t } from '@/lib/i18n/bg'
 import { Button } from '@/components/ui'
 
 export default function Error({
-  error,
+  error: _error,
   reset,
 }: {
   error: Error & { digest?: string }

@@ -1,31 +1,34 @@
 import Link from 'next/link'
 import { Price } from '@/components/ui/Price'
 import { imageUrl, imageSrcSet } from '@/lib/images'
-import type { Product } from '@/payload-types'
+import type { Media, Product } from '@/payload-types'
 
 interface ProductCardProps {
-  product: Pick<Product, 'name' | 'slug' | 'items'> & {
-    gallery?: { image: { filename?: string | null; alt?: string } }[]
-    category?: { name: string }
+  product: Pick<Product, 'name' | 'slug'> & {
+    items?: NonNullable<Product['items']>
+    gallery?: NonNullable<Product['gallery']>
+    category?: number | { name: string }
   }
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const coverImage = product.gallery?.[0]?.image
+  const coverImage = (product.gallery?.[0]?.image as Media | null) ?? null
   const items = product.items ?? []
   const hasItems = items.length > 0
   const minPrice = hasItems ? Math.min(...items.map((i) => i.priceEurCents)) : null
   const singleItem = hasItems && items.length === 1
 
+  const categoryName = typeof product.category === 'object' && product.category?.name ? product.category.name : undefined
+
   return (
     <Link href={`/produkt/${product.slug}`} className="group block">
       {/* Image */}
       <div className="aspect-[4/3] w-full overflow-hidden rounded bg-cream">
-        {coverImage?.filename ? (
+        {coverImage && typeof coverImage === 'object' && 'filename' in coverImage && coverImage.filename ? (
           <img
             src={imageUrl(coverImage, 'card')}
             srcSet={imageSrcSet(coverImage, ['thumb', 'card'])}
-            alt={coverImage.alt ?? product.name}
+            alt={(coverImage as Media).alt ?? product.name}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
@@ -52,8 +55,8 @@ export function ProductCard({ product }: ProductCardProps) {
         <h3 className="line-clamp-2 text-sm font-medium text-ink transition-colors group-hover:text-brass">
           {product.name}
         </h3>
-        {product.category && (
-          <p className="text-xs text-steel">{product.category.name}</p>
+        {categoryName && (
+          <p className="text-xs text-steel">{categoryName}</p>
         )}
         <div className="flex items-baseline gap-2">
           {singleItem ? (

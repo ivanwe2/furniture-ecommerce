@@ -4,8 +4,8 @@ import { t } from '@/lib/i18n/bg'
 import { Container, Badge } from '@/components/ui'
 import { Gallery } from '@/components/catalog/Gallery'
 import { ItemsTable } from '@/components/catalog/ItemsTable'
-import { getProductBySlug, getCategoryPath } from '@/lib/payload/queries'
-import type { Product, Media } from '@/payload-types'
+import { getProductBySlug } from '@/lib/payload/queries'
+import type { Media } from '@/payload-types'
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>
@@ -20,7 +20,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   // Build breadcrumbs
-  const categoryPath = product.category && typeof product.category === 'object' ? await getCategoryPath(product.category.id) : []
+  const _categoryPath = product.category && typeof product.category === 'object' ? [{ id: (product.category as { id: number }).id, name: (product.category as { name: string }).name, slug: (product.category as { slug?: string | null })?.slug ?? '', children: [] }] : []
 
   // Extract gallery images
   const galleryImages: (Media | null)[] = (product.gallery ?? []).map((entry) => {

@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { t } from '@/lib/i18n/bg'
-import { Container, Price } from '@/components/ui'
+import { Container } from '@/components/ui'
 import { ProductCard } from '@/components/catalog/ProductCard'
-import { getCategoryBySlug, getProductsByCategory, getCategoryTree, getCategoryPath } from '@/lib/payload/queries'
+import { getProductsByCategory, getCategoryTree } from '@/lib/payload/queries'
 import type { CategoryNode } from '@/lib/payload/queries'
 
 interface CategoryPageProps {

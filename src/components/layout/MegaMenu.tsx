@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import clsx from 'clsx'
 import type { CategoryNode } from '@/lib/payload/queries'
 import { t } from '@/lib/i18n/bg'
 

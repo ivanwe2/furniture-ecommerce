@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "main": ".open-next/worker.js",
-  "name": "my-app",
+  "name": "nasteh-bg",
   "compatibility_date": "2025-08-15",
   "compatibility_flags": [
     // Enable Node.js API
@@ -18,8 +18,8 @@
   "d1_databases": [
     {
       "binding": "D1",
-      "database_id": "DATABASE_ID",
-      "database_name": "my-app",
+      "database_name": "nasteh-db",
+      "database_id": "85538a45-b093-4a62-b662-0f32c0a7fb99",
       "remote": true,
     },
   ],
@@ -33,15 +33,10 @@
   "r2_buckets": [
     {
       "binding": "R2",
-      "bucket_name": "my-app",
+      "bucket_name": "nasteh-media",
     },
-    // Create a R2 binding with the binding name "NEXT_INC_CACHE_R2_BUCKET"
-    // {
-    //   "binding": "NEXT_INC_CACHE_R2_BUCKET",
-    //   "bucket_name": "<BUCKET_NAME>",
-    // },
+    // "NEXT_INC_CACHE_R2_BUCKET" stays commented for now — see note below
   ],
-
   // Here's how to configure an additional environment
   // It can be deployed with `CLOUDFLARE_ENV=staging pnpm run deploy`
   // "env": {
