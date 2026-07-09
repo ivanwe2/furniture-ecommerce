@@ -1,0 +1,86 @@
+@import 'tailwindcss';
+
+/* Design tokens — ARCHITECTURE §8. Fonts come from next/font (see layout). */
+@theme {
+  --color-cream: #f6f3ec;
+  --color-sand: #eae4d6;
+  --color-ink: #23211d;
+  --color-steel: #6e7378;
+  --color-brass: #8a6d3b;
+  --color-ok: #3e6b4f;
+  --color-danger: #8c3b2e;
+
+  --font-display: var(--font-display-src), Georgia, 'Times New Roman', serif;
+  --font-body: var(--font-body-src), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-body);
+  }
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+  }
+}
+
+/* Accessible skip link — visually hidden until focused. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 50;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-ink);
+  color: var(--color-cream);
+  border-radius: 0 0 0.375rem 0;
+}
+.skip-link:focus {
+  left: 0;
+}
+
+/* Items table collapses to stacked cards on mobile (same DOM, no element swap).
+   Cells opt in with a `data-label` attribute; see components/catalog. */
+@media (max-width: 767px) {
+  .items-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .items-table tr {
+    display: block;
+    border: 1px solid var(--color-sand);
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .items-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.375rem 0;
+    border: 0;
+  }
+  .items-table td[data-label]::before {
+    content: attr(data-label);
+    color: var(--color-steel);
+    font-weight: 500;
+  }
+  .items-table td.actions::before {
+    content: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
