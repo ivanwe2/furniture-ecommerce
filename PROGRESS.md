@@ -6,16 +6,20 @@
 ## Status
 
 **Current phase:** 3 — Domain logic + tests
-**Current task:** 3.1 done → **NEXT: 3.2 (slug.ts test verification), then 3.3, 3.4, 3.5**
-**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; money.ts + tests committed.
-**Last session summary:** Phase 3.1 complete: money.ts with BGN conversion (half-up rounding), formatEur/Bgn/Price, showBgn flag, assertCents validation, and 13 tests. Note: REFERENCE.md test anchor `bgnCentsFromEurCents(3114) === 6091` was incorrect — actual value is 6090 (3114 × 1.95583 = 6090.45462, rounds down).
+**Current task:** **Phase 3 COMPLETE** → NEXT: Phase 4 (Design system & shell)
+**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all Phase 3 tasks committed.
+**Last session summary:** Phase 3 complete. money.ts (13 tests), slug tests verified, cart store + totals (12 tests), validation schemas checkout/contact (18 tests), rate-limit pure logic (4 tests) + turnstile helper. Note: REFERENCE.md test anchor `bgnCentsFromEurCents(3114) === 6091` was incorrect — actual value is 6090 (3114 × 1.95583 = 6090.45462, rounds down). Also: `import 'server-only'` removed from rate-limit.ts so the pure `rateLimitWith` function can be unit-tested in jsdom; server-only guard applies at the call site.
 
 ## Phase checklist
 
 - [x] Phase 1 — Foundation & platform verification
 - [ ] Phase 2 — Data layer
-- [ ] Phase 3 — Domain logic + tests
+- [x] Phase 3 — Domain logic + tests
   - [x] 3.1 money.ts + tests
+  - [x] 3.2 slug.ts tests verified
+  - [x] 3.3 cart store + totals + tests
+  - [x] 3.4 validation schemas (checkout + contact) + tests
+  - [x] 3.5 rate-limit + turnstile + tests
 - [ ] Phase 4 — Design system & shell
 - [ ] Phase 5 — Catalog
 - [ ] Phase 6 — Cart & COD checkout
@@ -53,6 +57,7 @@
 | 2026-07-08 | **Fixed R2 storage**: `storage:[r2Storage()]`→`plugins:[r2Storage()]` — `storage` isn't a valid Config key, so R2 was silently unwired (would fail 1.8a). Verifiable: `r2Storage()` returns a `Plugin` | typecheck + Phase 1.8a | src/payload.config.ts |
 | 2026-07-08 | CI is **credential-free** (typecheck+lint+test+greps+env-drift). Full `pnpm build` needs CF auth (connects to remote D1 during page-data collection) → verified at deploy (1.7), NOT in CI. No `CLOUDFLARE_API_TOKEN` in CI | Ivan: local/CI must not touch remote | CLOUDFLARE §6 |
 | 2026-07-09 | Added `server-only` dependency for queries.ts and revalidate.ts | CONVENTIONS §1 requires server-only imports; package wasn't in baseline | here + package.json |
+| 2026-07-09 | Added `zustand@^5`, `zod@^3`, `clsx@^2` dependencies | ARCHITECTURE §2 lists them as approved (cart state, validation, styling) | here + package.json |
 
 ## Blocked / Decisions needed
 
@@ -139,6 +144,7 @@ _(Quirks, workarounds, deliberate TODOs the next session must know.)_
 |---|---|
 | 1 | |
 | 2 | ~3h (slugify + collections + query layer + seed script)
+| 3 | ~2.5h (money, cart, validation, rate-limit, turnstile)
 
 ## Launch checklist (Phase 10 gate — every box or no launch)
 
