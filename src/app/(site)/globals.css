@@ -40,6 +40,50 @@
   left: 0;
 }
 
+/* Landing hero — warm layered background with a slow breathing glow, so the
+   panel reads as welcoming rather than flat. No external asset (a real photo
+   can be layered in later). Motion is disabled under prefers-reduced-motion
+   by the global rule below. */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(130% 120% at 100% 0%, rgba(138, 109, 59, 0.14), transparent 55%),
+    linear-gradient(175deg, var(--color-sand) 0%, var(--color-cream) 62%);
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(35, 33, 29, 0.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+.hero-glow {
+  position: absolute;
+  top: -25%;
+  right: -12%;
+  width: 42rem;
+  height: 42rem;
+  max-width: 90vw;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(138, 109, 59, 0.22), transparent 68%);
+  filter: blur(8px);
+  pointer-events: none;
+  animation: hero-breathe 9s ease-in-out infinite;
+}
+@keyframes hero-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.14);
+    opacity: 1;
+  }
+}
+
 /* Items table collapses to stacked cards on mobile (same DOM, no element swap).
    Cells opt in with a `data-label` attribute; see components/catalog. */
 @media (max-width: 767px) {

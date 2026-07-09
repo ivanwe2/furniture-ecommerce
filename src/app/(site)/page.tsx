@@ -34,21 +34,37 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-cream py-16 sm:py-24">
+      <section className="hero">
+        <div className="hero-glow" aria-hidden="true" />
         <Container>
-          <div className="max-w-2xl space-y-6">
+          <div className="relative max-w-2xl py-20 sm:py-28">
+            <p className="mb-5 inline-flex items-center rounded-full border border-brass/30 bg-cream/60 px-3 py-1 text-xs font-medium uppercase tracking-wider text-brass">
+              {t('home.heroEyebrow')}
+            </p>
             {settings.heroTitle && (
-              <h1 className="text-3xl font-bold text-ink sm:text-4xl">{settings.heroTitle}</h1>
+              <h1 className="font-display text-4xl font-bold leading-tight text-ink sm:text-5xl">
+                {settings.heroTitle}
+              </h1>
             )}
             {settings.heroSubtitle && (
-              <p className="text-lg text-steel">{settings.heroSubtitle}</p>
+              <p className="mt-5 max-w-xl text-lg leading-relaxed text-steel">
+                {settings.heroSubtitle}
+              </p>
             )}
-            <Link
-              href="/category/mebelen-obkov"
-              className="inline-flex items-center rounded bg-brass px-6 py-3 text-sm font-medium text-cream transition-colors hover:bg-brass/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 ring-offset-cream"
-            >
-              {t('home.heroCta')}
-            </Link>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/category/mebelen-obkov"
+                className="inline-flex items-center rounded-md bg-brass px-6 py-3 text-sm font-medium text-cream shadow-sm transition-colors hover:bg-brass/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 ring-offset-cream"
+              >
+                {t('home.heroCta')}
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-flex items-center rounded-md border border-ink/15 bg-cream/70 px-6 py-3 text-sm font-medium text-ink transition-colors hover:border-brass/40 hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 ring-offset-cream"
+              >
+                {t('nav.contact')}
+              </Link>
+            </div>
           </div>
         </Container>
       </section>

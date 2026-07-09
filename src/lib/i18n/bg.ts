@@ -4,6 +4,7 @@ export const bg = {
     priceOnRequest: 'по запитване', vatIncluded: 'Цените са с включено ДДС.' },
   nav: { categories: 'Категории', contact: 'Контакти', menu: 'Меню' },
   home: { featured: 'Акценти', categoriesTitle: 'Категории',
+    heroEyebrow: 'Обков и механизми за мебели',
     heroCta: 'Разгледай каталога',
     trust1: 'Дългогодишен опит с мебелен обков',
     trust2: 'Плащане при доставка — наложен платеж',

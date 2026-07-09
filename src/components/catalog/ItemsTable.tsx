@@ -98,7 +98,7 @@ export function ItemsTable({ items, productSlug, productName }: ItemsTableProps)
                       onClick={() => handleAdd(item)}
                       disabled={isAdded}
                       className={clsx(
-                        'inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-medium transition-colors',
+                        'inline-flex min-w-[7rem] items-center justify-center rounded px-3 py-1.5 text-xs font-medium transition-colors',
                         isAdded
                           ? 'bg-ok/20 text-ok'
                           : 'bg-brass text-cream hover:bg-brass/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 ring-offset-sand',
