@@ -1,5 +1,6 @@
 'use client'
 
+import { Price } from '@/components/ui'
 import { useCart } from '@/lib/cart/store'
 import { t } from '@/lib/i18n/bg'
 import clsx from 'clsx'
@@ -129,29 +130,6 @@ export function ItemsTable({ items, productSlug, productName }: ItemsTableProps)
       </table>
     </div>
   )
-}
-
-function Price({ eurCents }: { eurCents: number }) {
-  const formatEur = (c: number) => {
-    return new Intl.NumberFormat('bg-BG', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-    }).format(c / 100)
-  }
-
-  const showBgn = process.env.NEXT_PUBLIC_SHOW_BGN === 'true'
-
-  if (showBgn) {
-    const bgnCents = Math.round(eurCents * 1.95583)
-    return (
-      <span className="tabular-nums">
-        {formatEur(eurCents)} ({new Intl.NumberFormat('bg-BG', { minimumFractionDigits: 2 }).format(bgnCents / 100)} лв.)
-      </span>
-    )
-  }
-
-  return <span className="tabular-nums">{formatEur(eurCents)}</span>
 }
 
 function QtyStepper({ sku, min = 1, max = 999 }: { sku: string; min?: number; max?: number }) {

@@ -5,10 +5,10 @@
 
 ## Status
 
-**Current phase:** 6 — Cart & COD checkout
-**Current task:** **Phase 6 COMPLETE** → NEXT: Phase 7 (Content & compliance)
-**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all Phase 6 tasks committed. Build fails on `pnpm build` due to missing D1 tables (pre-existing, not caused by this phase — needs fresh DB or local migration).
-**Last session summary:** Phase 6 complete. Implemented cart page `/kolichka` with server-parent + client-child pattern (hydration-safe skeleton, resolved lines from zustand, stale flagging for out-of-stock items, qty stepper, remove button). Added `resolveCartLines()` query in payload/queries.ts and `computeTotals()` in cart/totals.ts. Cart page fetches all published products on server, builds resolution map, passes to client. All strings from bg.ts, prices via money.ts.
+**Current phase:** 7 — Content & compliance
+**Current task:** **Phase 7 COMPLETE** → NEXT: Phase 8 (SEO & performance)
+**Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all Phase 7 tasks committed. Build fails on `pnpm build` due to missing D1 tables (pre-existing, not caused by this phase — needs fresh DB or local migration).
+**Last session summary:** Phase 7 complete. Implemented `[pageSlug]` dynamic route with server-parent/client-child pattern for Lexical rich text rendering. Seeded five legal pages as drafts in seed script (obshti-usloviya, politika-za-poveritelnost, dostavka-i-plashtane, pravo-na-otkaz, biskvitki) with "(ЧЕРНОВА — за одобрение)" marker. Added CookieNotice client component with localStorage-dismissed key `nasteh-cookie-notice`. Footer already had legal links (verified live). Replaced local Price component in ItemsTable with ui/Price from money.ts — all price rendering now goes through formatPrice. Flag verification: NEXT_PUBLIC_SHOW_BGN=false → single-currency everywhere; true → dual display via money.ts. No hardcoded € or лв. outside money.ts.
 **Contrast note:** brass on cream (#8A6D3B on #F6F3EC) measures ~4.5:1 — passes WCAG AA.
 
 ## Phase checklist
@@ -39,7 +39,7 @@
   - [ ] 6.5 Order server action (`src/actions/order.ts`)
   - [ ] 6.6 Email templates & sending
   - [ ] 6.7 Success page `/poruchka/uspeshna`
-- [ ] Phase 7 — Content & compliance
+- [x] Phase 7 — Content & compliance
 - [ ] Phase 8 — SEO & performance
 - [ ] Phase 9 — Import & seeding
 - [ ] Phase 10 — Launch & handover

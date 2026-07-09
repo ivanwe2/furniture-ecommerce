@@ -51,6 +51,7 @@ export const bg = {
     body: 'Потърсете продукт или разгледайте категориите.' },
   footer: { info: 'Информация', categories: 'Категории',
     workingHours: 'Работно време' },
+  cookie: { notice: 'Този сайт използва бисквитки само с техническа цел — запазване на съдържанието на количката.', learnMore: 'Научете повече', dismiss: 'Разбрах' },
 } as const
 
 export type BgKeys = keyof typeof bg

@@ -2,6 +2,7 @@ import { FontProvider } from '@/components/providers/font-provider'
 import { Container } from '@/components/ui'
 import { Header } from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import CookieNotice from '@/components/layout/CookieNotice'
 import { getCategoryTree } from '@/lib/payload/queries'
 
 export default async function SiteLayout({
@@ -26,6 +27,7 @@ export default async function SiteLayout({
         </Container>
 
         <Footer categories={categories} />
+        <CookieNotice />
       </div>
     </FontProvider>
   )

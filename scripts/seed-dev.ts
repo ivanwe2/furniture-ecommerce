@@ -10,7 +10,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const p = await getPayload({ config })
 
-async function upsert(collection: 'categories' | 'brands' | 'products', slugField: string, slug: string, data: Record<string, unknown>) {
+async function upsert(collection: 'categories' | 'brands' | 'products' | 'pages', slugField: string, slug: string, data: Record<string, unknown>) {
   const existing = await p.find({
     collection,
     depth: 0,
@@ -20,6 +20,21 @@ async function upsert(collection: 'categories' | 'brands' | 'products', slugFiel
     return p.update({ collection, id: existing.docs[0].id, data: data as never })
   }
   return p.create({ collection, data: data as never, draft: false })
+}
+
+function makeContent(text: string) {
+  return {
+    root: {
+      type: 'root',
+      children: [
+        { type: 'paragraph', children: [{ type: 'text', text }] },
+      ],
+      direction: null,
+      format: '',
+      indent: 0,
+      version: 1,
+    },
+  }
 }
 
 // Categories — real tree from old nasteh.bg
@@ -187,6 +202,55 @@ if (existingSettings) {
       heroSubtitle: 'Официален представител на водещи марки. Плащане при доставка.',
       social: { facebook: 'https://facebook.com/nastehbg' },
     },
+  })
+}
+
+// Legal pages as DRAFTS (Phase 7.2)
+console.log('Seeding legal pages (drafts)...')
+const legalPages = [
+  {
+    slug: 'obshti-usloviya',
+    title: 'Общи условия (ЧЕРНОВА — за одобрение)',
+    content: makeContent(
+      'Настоящите общи условия уреждат отношенията между Настех ООД и клиентите при поръчки на продукти чрез интернет магазина. Поръчката се счита за сключена след потвърждение от продавача. Плащането е наложен платеж при доставка. Продавачът си запазва правото да откаже поръчка без мотивация.',
+    ),
+  },
+  {
+    slug: 'politika-za-poveritelnost',
+    title: 'Политика за поверителност (ЧЕРНОВА — за одобрение)',
+    content: makeContent(
+      'Настех ООД обработва лични данни на клиентите само с цел изпълнение на поръчка и доставка. Данните не се предават на трети страни, освен на куриерската фирма за необходимата доставка. Клиентът може да упражни правата си по ЗЗЛД чрез имейл до info@nasteh.bg.',
+    ),
+  },
+  {
+    slug: 'dostavka-i-plashtane',
+    title: 'Доставка и плащане (ЧЕРНОВА — за одобрение)',
+    content: makeContent(
+      'Доставката се извършва до адрес или офис на куриерска фирма (Еконт / Спиди). Плащането е наложен платеж — сумата се заплаща при получаване на пратката. Цените са с включено ДДС и са в български левове, като ще бъдат конвертирани в евро към края на 2026 г.',
+    ),
+  },
+  {
+    slug: 'pravo-na-otkaz',
+    title: 'Право на отказ — 14 дни (ЧЕРНОВА — за одобрение)',
+    content: makeContent(
+      'Клиентът има право да откаже договора в срок от 14 дни от получаването на стоката, без да посочва причина. За упражняване на правото на отказ се изисква писмено уведомление до Настех ООД. Стоката трябва да бъде върната в оригиналното си състояние.',
+    ),
+  },
+  {
+    slug: 'biskvitki',
+    title: 'Бисквитки (ЧЕРНОВА — за одобрение)',
+    content: makeContent(
+      'Този сайт използва бисквитки само с техническа цел — запазване на съдържанието на количката между преглежданията. Не се използват проследяващи или маркетингови бисквитки. Данните от количката се съхраняват локално във вашия браузър.',
+    ),
+  },
+]
+
+for (const page of legalPages) {
+  await upsert('pages', 'slug', page.slug, {
+    title: page.title,
+    slug: page.slug,
+    status: 'draft',
+    content: page.content,
   })
 }
 
