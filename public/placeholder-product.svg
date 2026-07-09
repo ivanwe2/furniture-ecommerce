@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" fill="none">
+  <rect width="480" height="360" fill="#EAE4D6"/>
+  <g stroke="#6E7378" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Hinge (петля) -->
+    <ellipse cx="240" cy="180" rx="50" ry="80"/>
+    <rect x="230" y="90" width="20" height="180" rx="10"/>
+    <!-- Screw holes -->
+    <circle cx="240" cy="115" r="6" fill="#EAE4D6" stroke="#6E7378"/>
+    <circle cx="240" cy="245" r="6" fill="#EAE4D6" stroke="#6E7378"/>
+    <!-- Cross pins -->
+    <line x1="234" y1="115" x2="246" y2="115"/>
+    <line x1="240" y1="109" x2="240" y2="121"/>
+    <line x1="234" y1="245" x2="246" y2="245"/>
+    <line x1="240" y1="239" x2="240" y2="251"/>
+  </g>
+  <text x="240" y="310" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6E7378" font-weight="500">НАСТЕХ — мебелен обков</text>
+</svg>
