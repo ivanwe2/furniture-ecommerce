@@ -22,6 +22,16 @@ export function bgnCentsFromEurCents(eurCents: number): number {
   return rem * 2 >= 100000 ? q + 1 : q
 }
 
+/** BGN cents → EUR cents, HALF-UP at the cent. Integer in, integer out. */
+export function eurCentsFromBgnCents(bgnCents: number): number {
+  assertCents(bgnCents)
+  // bgnCents / 1.95583 = bgnCents * 100000 / 195583
+  const num = bgnCents * 100000
+  const q = Math.floor(num / 195583)
+  const rem = num % 195583
+  return rem * 2 >= 195583 ? q + 1 : q
+}
+
 export function formatBgn(bgnCents: number): string {
   return `${numFmt.format(bgnCents / 100)} лв.`
 }

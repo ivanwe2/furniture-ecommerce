@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   BGN_PER_EUR,
   bgnCentsFromEurCents,
+  eurCentsFromBgnCents,
   formatBgn,
   formatEur,
   formatPrice,
@@ -49,6 +50,35 @@ describe('bgnCentsFromEurCents', () => {
 
   it('throws on negative input', () => {
     expect(() => bgnCentsFromEurCents(-1)).toThrow()
+  })
+})
+
+describe('eurCentsFromBgnCents', () => {
+  it('converts known values: 6091 BGN → 3114 EUR (6091 / 1.95583 = 3114.28…)', () => {
+    expect(eurCentsFromBgnCents(6091)).toBe(3114)
+  })
+
+  it('converts exact: 3114 × 1.95583 = 6090.45462 → round to 6090 BGN, back to 3114 EUR', () => {
+    const bgn = bgnCentsFromEurCents(3114)
+    const eur = eurCentsFromBgnCents(bgn)
+    expect(eur).toBe(3114)
+  })
+
+  it('rounds half-up at boundary', () => {
+    // 196 BGN / 1.95583 = 100.21… → 100 EUR
+    expect(eurCentsFromBgnCents(196)).toBe(100)
+  })
+
+  it('handles zero', () => {
+    expect(eurCentsFromBgnCents(0)).toBe(0)
+  })
+
+  it('throws on non-integer input', () => {
+    expect(() => eurCentsFromBgnCents(12.5)).toThrow()
+  })
+
+  it('throws on negative input', () => {
+    expect(() => eurCentsFromBgnCents(-1)).toThrow()
   })
 })
 
