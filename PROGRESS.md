@@ -6,8 +6,7 @@
 ## Status
 
 **Current phase:** 1 — Foundation & platform verification
-**Current task:** 1.1/1.2/1.3 done → **NEXT: 1.4 (CI), then 1.6 (bg.ts)**;
-1.5/1.7/1.8 need Ivan at keyboard/dashboard.
+**Current task:** 1.1/1.2/1.3/1.4 done → **NEXT: 1.6 (bg.ts)**; 1.5/1.7/1.8 need Ivan at keyboard/dashboard.
 **Repo state:** green gate (`typecheck`+`lint`+`test`) passes; tooling wired;
 R2 storage wiring fixed. next 15.4.11 · payload 3.82.1 frozen. `wrangler.jsonc`
 still an uncommitted working-tree change (Ivan's real bindings).
@@ -37,7 +36,7 @@ record actual hours at phase completion.)
 - [x] 1.2 Vendor repo layout + docs
 - [x] 1.3 Tooling (TS strict/ESLint strict/vitest/scripts) — green gate:
       typecheck+lint+test pass; build compiles (page-data needs CF auth, see below)
-- [ ] 1.4 CI + custom grep checks ← **NEXT (incoming agent)**
+- [x] 1.4 CI + custom grep checks
 - [ ] 1.5 RATE_LIMIT_KV binding — needs Ivan (see Blocked)
 - [ ] 1.6 bg.ts + t() + test ← **then this**
 - [ ] 1.7 First deploy + secrets

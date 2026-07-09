@@ -1,0 +1,52 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Guardrail — no hex colors in components
+        run: |
+          ! grep -rEn '#[0-9a-fA-F]{3,8}\b' src/app src/components --include='*.tsx' --include='*.ts' || (echo 'Hex color outside tokens' && exit 1)
+
+      - name: Guardrail — no /cdn-cgi/image/ outside images.ts
+        run: |
+          ! grep -rn '/cdn-cgi/image/' src --exclude=images.ts || (echo '/cdn-cgi/image/ outside images.ts' && exit 1)
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      # NO pnpm build here — it requires CF auth (remote D1 connection)
+      # to collect page data during ISR generation. Build is verified at
+      # deploy time (Phase 1.7) under Ivan's Cloudflare account.
+
+      - name: Env key-drift check
+        run: |
+          EXPECTED=$(grep -oP '^[A-Z_]+(?==)' .env.example | sort)
+          ACTUAL=$(cat .github/workflows/env-keys.txt | sort)
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "ERROR: .env.example keys have drifted from committed list."
+            echo "Expected (from .env.example):"
+            echo "$EXPECTED"
+            echo "Committed (from env-keys.txt):"
+            echo "$ACTUAL"
+            diff <(echo "$EXPECTED") <(echo "$ACTUAL") || true
+            exit 1
+          fi
