@@ -5,8 +5,8 @@
 
 ## Status
 
-**Current phase:** 8 — SEO & performance
-**Current task:** **Phase 8 COMPLETE** → NEXT: Phase 9 (Import & seeding)
+**Current phase:** 9 — Import & seeding
+**Current task:** **Phase 9 COMPLETE** → NEXT: Phase 10 (Launch & handover)
 **Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all Phase 7 tasks committed. Build fails on `pnpm build` due to missing D1 tables (pre-existing, not caused by this phase — needs fresh DB or local migration).
 **Last session summary:** Phase 8 complete. Implemented generateMetadata on every route (home, category, product with SEO overrides + OG image, brand, search, cart/checkout noindex, contact, legal pages) with canonical URLs and unique BG meta descriptions via bg.ts seo keys. Added sitemap.ts (published products, categories, brands, pages) and robots.ts (disallow /admin, /kolichka, /poruchka). Created BreadcrumbList JSON-LD on category/product pages and LocalBusiness JSON-LD on contact page. Built redirect middleware with data/redirects.csv + scripts/gen-redirects.ts generator. Refactored kontakti page to server-parent/client-child pattern for metadata support.
 **Contrast note:** brass on cream (#8A6D3B on #F6F3EC) measures ~4.5:1 — passes WCAG AA.
@@ -41,7 +41,7 @@
   - [ ] 6.7 Success page `/poruchka/uspeshna`
 - [x] Phase 7 — Content & compliance
 - [x] Phase 8 — SEO & performance
-- [ ] Phase 9 — Import & seeding
+- [x] Phase 9 — Import & seeding
 - [ ] Phase 10 — Launch & handover
 
 ### Active phase task breakdown
@@ -166,6 +166,7 @@ _(Quirks, workarounds, deliberate TODOs the next session must know.)_
 | 4 | ~4h (tokens, fonts, images.ts, UI primitives, layout, route shells, placeholder SVG)
 | 5 | ~3.5h (product card, home page, category, product detail, brand, search, contact, loading skeletons)
 | 6 | ~2h (cart page with server-parent/client-child pattern, resolveCartLines query, computeTotals)
+| 9 | ~3h (eurCentsFromBgnCents in money.ts, import-products.ts with CSV parsing/grouping/BGN→EUR/dry-run/report, ADMIN-GUIDE.bg.md, import-template.csv)
 
 ## Launch checklist (Phase 10 gate — every box or no launch)
 
