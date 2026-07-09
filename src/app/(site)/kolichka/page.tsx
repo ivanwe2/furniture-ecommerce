@@ -1,6 +1,12 @@
 import { CartClient } from '@/components/cart/CartClient'
 import { getAllPublishedProducts } from '@/lib/payload/queries'
 
+export async function generateMetadata() {
+  return {
+    robots: { index: false, follow: true },
+  }
+}
+
 export default async function CartPage() {
   const products = await getAllPublishedProducts()
 

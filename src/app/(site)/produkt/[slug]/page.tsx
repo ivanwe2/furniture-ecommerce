@@ -4,11 +4,37 @@ import { t } from '@/lib/i18n/bg'
 import { Container, Badge } from '@/components/ui'
 import { Gallery } from '@/components/catalog/Gallery'
 import { ItemsTable } from '@/components/catalog/ItemsTable'
+import BreadcrumbList from '@/components/seo/BreadcrumbList'
 import { getProductBySlug } from '@/lib/payload/queries'
+import { imageUrl } from '@/lib/images'
 import type { Media } from '@/payload-types'
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>
+}
+
+export async function generateMetadata({ params }: ProductPageProps) {
+  const resolvedParams = await params
+  const product = await getProductBySlug(resolvedParams.slug)
+  if (!product) return { title: 'Продукт не е намерен' }
+  const siteName = t('seo.siteName')
+  const seoTitle = product.seo?.title ?? `${product.name} | ${siteName}`
+  const seoDesc = product.seo?.description ?? t('seo.productDesc').replace('{name}', product.name)
+  const firstImage = product.gallery?.[0]?.image
+  return {
+    title: seoTitle,
+    description: seoDesc,
+    alternates: { canonical: `/produkt/${product.slug}` },
+    openGraph: {
+      title: seoTitle,
+      description: seoDesc,
+      type: 'website',
+      url: `/produkt/${product.slug}`,
+      images: firstImage && typeof firstImage === 'object' && 'filename' in firstImage
+        ? [{ url: imageUrl(firstImage as Media, 'og'), width: 1200, height: 630 }] as const
+        : undefined,
+    },
+  }
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -41,8 +67,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const categoryName = typeof product.category === 'object' && product.category?.name ? (product.category as { name: string }).name : undefined
   const categorySlug = typeof product.category === 'object' && product.category?.slug ? (product.category as { slug?: string | null })?.slug : undefined
 
+  // Build JSON-LD breadcrumbs
+  const jsonLdBreadcrumbs = [
+    { name: t('common.home'), url: '/' },
+    ...(categorySlug ? [{ name: categoryName ?? '', url: `/kategoria/${categorySlug}` }] : []),
+    { name: product.name, url: `/produkt/${product.slug}` },
+  ]
+
   return (
-    <Container className="py-8">
+    <>
+      <BreadcrumbList items={jsonLdBreadcrumbs} />
+      <Container className="py-8">
       {/* Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex items-center gap-2 text-sm text-steel">
@@ -121,6 +156,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </section>
       )}
     </Container>
+    </>
   )
 }
 

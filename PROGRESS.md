@@ -5,10 +5,10 @@
 
 ## Status
 
-**Current phase:** 7 — Content & compliance
-**Current task:** **Phase 7 COMPLETE** → NEXT: Phase 8 (SEO & performance)
+**Current phase:** 8 — SEO & performance
+**Current task:** **Phase 8 COMPLETE** → NEXT: Phase 9 (Import & seeding)
 **Repo state:** green gate (`typecheck`+`lint`+`test`) passes; all Phase 7 tasks committed. Build fails on `pnpm build` due to missing D1 tables (pre-existing, not caused by this phase — needs fresh DB or local migration).
-**Last session summary:** Phase 7 complete. Implemented `[pageSlug]` dynamic route with server-parent/client-child pattern for Lexical rich text rendering. Seeded five legal pages as drafts in seed script (obshti-usloviya, politika-za-poveritelnost, dostavka-i-plashtane, pravo-na-otkaz, biskvitki) with "(ЧЕРНОВА — за одобрение)" marker. Added CookieNotice client component with localStorage-dismissed key `nasteh-cookie-notice`. Footer already had legal links (verified live). Replaced local Price component in ItemsTable with ui/Price from money.ts — all price rendering now goes through formatPrice. Flag verification: NEXT_PUBLIC_SHOW_BGN=false → single-currency everywhere; true → dual display via money.ts. No hardcoded € or лв. outside money.ts.
+**Last session summary:** Phase 8 complete. Implemented generateMetadata on every route (home, category, product with SEO overrides + OG image, brand, search, cart/checkout noindex, contact, legal pages) with canonical URLs and unique BG meta descriptions via bg.ts seo keys. Added sitemap.ts (published products, categories, brands, pages) and robots.ts (disallow /admin, /kolichka, /poruchka). Created BreadcrumbList JSON-LD on category/product pages and LocalBusiness JSON-LD on contact page. Built redirect middleware with data/redirects.csv + scripts/gen-redirects.ts generator. Refactored kontakti page to server-parent/client-child pattern for metadata support.
 **Contrast note:** brass on cream (#8A6D3B on #F6F3EC) measures ~4.5:1 — passes WCAG AA.
 
 ## Phase checklist
@@ -40,7 +40,7 @@
   - [ ] 6.6 Email templates & sending
   - [ ] 6.7 Success page `/poruchka/uspeshna`
 - [x] Phase 7 — Content & compliance
-- [ ] Phase 8 — SEO & performance
+- [x] Phase 8 — SEO & performance
 - [ ] Phase 9 — Import & seeding
 - [ ] Phase 10 — Launch & handover
 

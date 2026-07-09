@@ -10,6 +10,24 @@ interface BrandPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
+export async function generateMetadata({ params }: BrandPageProps) {
+  const resolvedParams = await params
+  const brand = await getBrandBySlug(resolvedParams.slug)
+  if (!brand) return { title: 'Марка не е намерена' }
+  const siteName = t('seo.siteName')
+  return {
+    title: `${brand.name} | ${siteName}`,
+    description: t('seo.brandDesc').replace('{name}', brand.name),
+    alternates: { canonical: `/marka/${brand.slug}` },
+    openGraph: {
+      title: `${brand.name} | ${siteName}`,
+      description: t('seo.brandDesc').replace('{name}', brand.name),
+      type: 'website',
+      url: `/marka/${brand.slug}`,
+    },
+  }
+}
+
 export default async function BrandPage({ params, searchParams }: BrandPageProps) {
   const resolvedParams = await params
   const resolvedSearch = await searchParams

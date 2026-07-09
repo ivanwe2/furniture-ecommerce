@@ -6,6 +6,23 @@ import { getSettings, getCategoryTree, getFeaturedProducts, getBrandBySlug } fro
 import { imageUrl, imageSrcSet } from '@/lib/images'
 import type { Media } from '@/payload-types'
 
+export async function generateMetadata() {
+  const settings = await getSettings()
+  const siteName = t('seo.siteName')
+  const description = t('seo.homeDesc')
+  return {
+    title: siteName,
+    description,
+    alternates: { canonical: '/' },
+    openGraph: {
+      title: siteName,
+      description,
+      type: 'website',
+      url: '/',
+    },
+  }
+}
+
 export default async function HomePage() {
   const [settings, categories, featured, sevroll] = await Promise.all([
     getSettings(),

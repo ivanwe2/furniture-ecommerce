@@ -8,6 +8,25 @@ interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
+export async function generateMetadata({ searchParams }: SearchPageProps) {
+  const resolvedSearch = await searchParams
+  const qRaw = Array.isArray(resolvedSearch.q) ? resolvedSearch.q[0] : (resolvedSearch.q ?? '')
+  const q = typeof qRaw === 'string' ? qRaw : ''
+  if (q.trim()) {
+    return {
+      title: `Резултати за "${q}" | Настех`,
+      description: t('seo.searchDesc').replace('{q}', q),
+      alternates: { canonical: `/tarsene?q=${encodeURIComponent(q)}` },
+      robots: { index: false, follow: true },
+    }
+  }
+  return {
+    title: 'Търсене | Настех — мебелен обков',
+    description: t('seo.searchDesc').replace('{q}', ''),
+    alternates: { canonical: '/tarsene' },
+  }
+}
+
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const resolvedSearch = await searchParams
   const qRaw = Array.isArray(resolvedSearch.q) ? resolvedSearch.q[0] : (resolvedSearch.q ?? '')

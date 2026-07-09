@@ -3,12 +3,34 @@ import { notFound } from 'next/navigation'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { ProductCard } from '@/components/catalog/ProductCard'
+import BreadcrumbList from '@/components/seo/BreadcrumbList'
 import { getProductsByCategory, getCategoryTree } from '@/lib/payload/queries'
 import type { CategoryNode } from '@/lib/payload/queries'
 
 interface CategoryPageProps {
   params: Promise<{ slug: string[] }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export async function generateMetadata({ params }: CategoryPageProps) {
+  const resolvedParams = await params
+  const slugParts = Array.isArray(resolvedParams.slug) ? resolvedParams.slug : [resolvedParams.slug]
+  const categorySlug = slugParts[slugParts.length - 1] ?? ''
+  const tree = await getCategoryTree()
+  const category = await findCategoryBySlug(tree, categorySlug)
+  if (!category) return { title: 'Категория не е намерена' }
+  const siteName = t('seo.siteName')
+  return {
+    title: `${category.name} | ${siteName}`,
+    description: t('seo.categoryDesc').replace('{name}', category.name),
+    alternates: { canonical: `/kategoria/${categorySlug}` },
+    openGraph: {
+      title: `${category.name} | ${siteName}`,
+      description: t('seo.categoryDesc').replace('{name}', category.name),
+      type: 'website',
+      url: `/kategoria/${categorySlug}`,
+    },
+  }
 }
 
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
@@ -33,8 +55,17 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   // Find subcategories (direct children of this category)
   const subcategories = category.children ?? []
 
+  // Build JSON-LD breadcrumbs
+  const jsonLdBreadcrumbs = [
+    { name: t('common.home'), url: '/' },
+    ...breadcrumbs.map((b) => ({ name: b.name, url: `/kategoria/${b.slug}` })),
+    { name: category.name, url: `/kategoria/${categorySlug}` },
+  ]
+
   return (
-    <Container className="py-8">
+    <>
+      <BreadcrumbList items={jsonLdBreadcrumbs} />
+      <Container className="py-8">
       {/* Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex items-center gap-2 text-sm text-steel">
@@ -143,6 +174,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         )}
       </section>
     </Container>
+    </>
   )
 }
 
