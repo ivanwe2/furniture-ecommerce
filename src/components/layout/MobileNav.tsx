@@ -11,25 +11,69 @@ interface MobileNavProps {
   categories: CategoryNode[]
 }
 
-function renderCategoryTree(nodes: CategoryNode[], depth: number = 0) {
+/** Indented subtree shown when a top-level category is expanded. */
+function renderSubtree(nodes: CategoryNode[], depth: number, onNavigate: () => void) {
   return nodes.map((node) => (
-    <li key={node.id} className="border-b border-sand last:border-b-0">
+    <li key={node.id}>
       <Link
         href={`/category/${node.slug}`}
-        className={clsx(
-          'block py-3 text-sm hover:text-brass transition-colors',
-          depth === 0 && 'font-medium text-ink',
-          depth > 0 && `pl-${depth * 4}`, // dynamic indent per level
-          depth > 0 && 'text-steel',
-        )}
+        onClick={onNavigate}
+        className="block py-2 text-sm text-steel hover:text-brass transition-colors"
+        style={{ paddingLeft: `${depth}rem` }}
       >
         {node.name}
       </Link>
       {node.children.length > 0 && (
-        <ul>{renderCategoryTree(node.children, depth + 1)}</ul>
+        <ul>{renderSubtree(node.children, depth + 1, onNavigate)}</ul>
       )}
     </li>
   ))
+}
+
+/** Top-level category row: name links to the category, chevron toggles children. */
+function CategoryItem({ node, onNavigate }: { node: CategoryNode; onNavigate: () => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const hasChildren = node.children.length > 0
+
+  return (
+    <li className="border-b border-sand last:border-b-0">
+      <div className="flex items-center justify-between">
+        <Link
+          href={`/category/${node.slug}`}
+          onClick={onNavigate}
+          className="block flex-1 py-3 text-sm font-medium text-ink hover:text-brass transition-colors"
+        >
+          {node.name}
+        </Link>
+        {hasChildren && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-label={t('nav.subcategories')}
+            className="p-2 text-steel hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass rounded"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={clsx('h-4 w-4 transition-transform', expanded && 'rotate-180')}
+              aria-hidden="true"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        )}
+      </div>
+      {hasChildren && expanded && (
+        <ul className="pb-2">{renderSubtree(node.children, 1, onNavigate)}</ul>
+      )}
+    </li>
+  )
 }
 
 export function MobileNav({ categories }: MobileNavProps) {
@@ -121,7 +165,11 @@ export function MobileNav({ categories }: MobileNavProps) {
             </div>
 
             <nav className="p-4">
-              <ul>{renderCategoryTree(categories)}</ul>
+              <ul>
+                {categories.map((node) => (
+                  <CategoryItem key={node.id} node={node} onNavigate={() => setOpen(false)} />
+                ))}
+              </ul>
             </nav>
 
             <div className="p-4 border-t border-sand space-y-3">
