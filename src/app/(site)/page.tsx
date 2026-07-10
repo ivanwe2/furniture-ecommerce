@@ -35,7 +35,8 @@ export default async function HomePage() {
     <>
       {/* Hero */}
       <section className="hero">
-        <div className="hero-glow" aria-hidden="true" />
+        <div className="hero-photo" aria-hidden="true" />
+        <div className="hero-overlay" aria-hidden="true" />
         <Container>
           <div className="relative max-w-2xl py-20 sm:py-28">
             <p className="mb-5 inline-flex items-center rounded-full border border-brass/30 bg-cream/60 px-3 py-1 text-xs font-medium uppercase tracking-wider text-brass">

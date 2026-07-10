@@ -40,47 +40,43 @@
   left: 0;
 }
 
-/* Landing hero — warm layered background with a slow breathing glow, so the
-   panel reads as welcoming rather than flat. No external asset (a real photo
-   can be layered in later). Motion is disabled under prefers-reduced-motion
-   by the global rule below. */
+/* Landing hero — a warm interior photo (public/hero.jpg) under a cream veil
+   that keeps the dark heading readable. The gradient on `.hero` is the
+   fallback if the image ever fails to load. Swap public/hero.jpg to change
+   the picture; no code change needed. */
 .hero {
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(130% 120% at 100% 0%, rgba(138, 109, 59, 0.14), transparent 55%),
-    linear-gradient(175deg, var(--color-sand) 0%, var(--color-cream) 62%);
+  background: linear-gradient(175deg, var(--color-sand) 0%, var(--color-cream) 62%);
 }
-.hero::after {
-  content: '';
+.hero-photo {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(35, 33, 29, 0.05) 1px, transparent 1px);
-  background-size: 22px 22px;
+  background-image: url('/hero.jpg');
+  background-size: cover;
+  background-position: center;
   pointer-events: none;
 }
-.hero-glow {
+.hero-overlay {
   position: absolute;
-  top: -25%;
-  right: -12%;
-  width: 42rem;
-  height: 42rem;
-  max-width: 90vw;
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgba(138, 109, 59, 0.22), transparent 68%);
-  filter: blur(8px);
+  inset: 0;
   pointer-events: none;
-  animation: hero-breathe 9s ease-in-out infinite;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(246, 243, 236, 0.95) 0%,
+      rgba(246, 243, 236, 0.82) 45%,
+      rgba(246, 243, 236, 0.3) 100%
+    ),
+    linear-gradient(0deg, rgba(246, 243, 236, 0.55) 0%, rgba(246, 243, 236, 0) 42%);
 }
-@keyframes hero-breathe {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.65;
-  }
-  50% {
-    transform: scale(1.14);
-    opacity: 1;
+@media (max-width: 767px) {
+  .hero-overlay {
+    background: linear-gradient(
+      180deg,
+      rgba(246, 243, 236, 0.82) 0%,
+      rgba(246, 243, 236, 0.9) 100%
+    );
   }
 }
 
