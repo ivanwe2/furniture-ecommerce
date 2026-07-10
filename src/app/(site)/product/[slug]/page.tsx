@@ -5,6 +5,7 @@ import { Container, Badge } from '@/components/ui'
 import { Gallery } from '@/components/catalog/Gallery'
 import { ItemsTable } from '@/components/catalog/ItemsTable'
 import BreadcrumbList from '@/components/seo/BreadcrumbList'
+import ProductJsonLd from '@/components/seo/ProductJsonLd'
 import { getProductBySlug } from '@/lib/payload/queries'
 import { imageUrl } from '@/lib/images'
 import type { Media } from '@/payload-types'
@@ -74,9 +75,34 @@ export default async function ProductPage({ params }: ProductPageProps) {
     { name: product.name, url: `/product/${product.slug}` },
   ]
 
+  // Product structured data (price range + availability)
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nasteh.bg'
+  const prices = items.map((i) => i.priceEurCents)
+  const lowPrice = prices.length > 0 ? Math.min(...prices) : 0
+  const highPrice = prices.length > 0 ? Math.max(...prices) : 0
+  const firstGalleryImage = galleryImages.find((img): img is Media => img != null)
+  const jsonLdImageRaw = firstGalleryImage ? imageUrl(firstGalleryImage, 'og') : null
+  const jsonLdImage = jsonLdImageRaw
+    ? jsonLdImageRaw.startsWith('http')
+      ? jsonLdImageRaw
+      : `${siteUrl}${jsonLdImageRaw}`
+    : null
+
   return (
     <>
       <BreadcrumbList items={jsonLdBreadcrumbs} />
+      <ProductJsonLd
+        name={product.name}
+        description={product.seo?.description ?? t('seo.productDesc').replace('{name}', product.name)}
+        image={jsonLdImage}
+        brandName={brandName}
+        categoryName={categoryName}
+        lowPriceEurCents={lowPrice}
+        highPriceEurCents={highPrice}
+        offerCount={items.length}
+        inStock={hasInStockItem}
+        url={`${siteUrl}/product/${product.slug}`}
+      />
       <Container className="py-8">
       {/* Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="mb-6">
