@@ -5,6 +5,7 @@ import { MegaMenu } from './MegaMenu'
 import { MobileNav } from './MobileNav'
 import { SearchField } from './SearchField'
 import { CartButton } from './CartButton'
+import { BrandLogo } from './BrandLogo'
 import type { CategoryNode } from '@/lib/payload/queries'
 
 interface HeaderProps {
@@ -17,8 +18,8 @@ export function Header({ categories }: HeaderProps) {
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center gap-4 lg:gap-8">
           {/* Logo */}
-          <Link href="/" className="shrink-0">
-            <span className="text-xl font-bold text-ink tracking-tight">НАСТЕХ</span>
+          <Link href="/" className="shrink-0" aria-label="Настех - начало">
+            <BrandLogo />
           </Link>
 
           {/* Desktop nav + search + cart */}
