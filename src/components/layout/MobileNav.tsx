@@ -6,6 +6,7 @@ import clsx from 'clsx'
 import type { CategoryNode } from '@/lib/payload/queries'
 import { t } from '@/lib/i18n/bg'
 import { Button } from '@/components/ui'
+import { SearchField } from './SearchField'
 
 interface MobileNavProps {
   categories: CategoryNode[]
@@ -162,6 +163,10 @@ export function MobileNav({ categories }: MobileNavProps) {
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </Button>
+            </div>
+
+            <div className="p-4 pb-0">
+              <SearchField onSubmit={() => setOpen(false)} />
             </div>
 
             <nav className="p-4">

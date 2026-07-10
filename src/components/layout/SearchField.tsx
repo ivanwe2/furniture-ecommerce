@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { t } from '@/lib/i18n/bg'
 import { Input } from '@/components/ui'
 
-export function SearchField({ className }: { className?: string }) {
+export function SearchField({ className, onSubmit }: { className?: string; onSubmit?: () => void }) {
   const router = useRouter()
 
   return (
@@ -15,7 +15,10 @@ export function SearchField({ className }: { className?: string }) {
         e.preventDefault()
         const form = e.currentTarget
         const q = (form.elements.namedItem('q') as HTMLInputElement)?.value?.trim()
-        if (q) router.push(`/search?q=${encodeURIComponent(q)}`)
+        if (q) {
+          router.push(`/search?q=${encodeURIComponent(q)}`)
+          onSubmit?.()
+        }
       }}
     >
       <Input
