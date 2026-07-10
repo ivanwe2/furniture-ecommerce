@@ -1,21 +1,29 @@
 import clsx from 'clsx'
 
 /**
- * Настех brand lockup: a circular "Н" monogram + wordmark. Keeps the original
- * logo's circular-monogram concept but recolors it to the brand palette —
- * steel/ink mark (was grey) and a brass wordmark (was red).
+ * Настех brand lockup: the circular badge (graphite disc, bold "Н", brass
+ * diagonal swoosh, steel rim highlight) + wordmark. A faithful modernization
+ * of the original emblem — grey → graphite/steel, red → brass.
  */
 export function BrandLogo({ className }: { className?: string }) {
   return (
     <span className={clsx('inline-flex items-center gap-2.5', className)}>
-      <svg viewBox="0 0 44 44" className="h-9 w-9 shrink-0" aria-hidden="true">
-        <circle cx="22" cy="22" r="19" fill="none" stroke="#6e7378" strokeWidth="2.6" />
-        <path
-          d="M16 13.5 V30.5 M28 13.5 V30.5 M16 22 H28"
-          stroke="#23211d"
-          strokeWidth="3.4"
-          strokeLinecap="round"
-        />
+      <svg viewBox="0 0 64 64" className="h-9 w-9 shrink-0" aria-hidden="true">
+        <defs>
+          <clipPath id="nasteh-badge-clip">
+            <circle cx="32" cy="32" r="28" />
+          </clipPath>
+        </defs>
+        <circle cx="32" cy="32" r="28" fill="#35332d" />
+        <g clipPath="url(#nasteh-badge-clip)">
+          <rect x="-8" y="35" width="80" height="13" rx="6.5" fill="#8a6d3b" transform="rotate(-38 32 32)" />
+        </g>
+        <path d="M13 21 A28 28 0 0 1 43 10.5" fill="none" stroke="#7a8085" strokeWidth="3.4" strokeLinecap="round" />
+        <g stroke="#f4f0e6" strokeWidth="6.2" strokeLinecap="round">
+          <line x1="22" y1="20" x2="22" y2="44" />
+          <line x1="42" y1="20" x2="42" y2="44" />
+          <line x1="22" y1="32" x2="42" y2="32" />
+        </g>
       </svg>
       <span className="text-xl font-bold tracking-[0.14em] text-brass">НАСТЕХ</span>
     </span>
