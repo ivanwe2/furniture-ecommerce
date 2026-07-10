@@ -37,7 +37,7 @@ function makeContent(text: string) {
   }
 }
 
-// Categories — real tree from old nasteh.bg
+// Categories - real tree from old nasteh.bg
 const categories = [
   { name: 'Мебелен обков', slug: 'mebelen-obkov' },
   { name: 'Дръжки', slug: 'drzhki', parent: 'mebelen-obkov' },
@@ -92,7 +92,7 @@ await upsert('products', 'slug', 'drzhka-comfort-16', {
   description: '',
   items: [
     {
-      name: 'Дръжка Comfort 16 II — Сребро',
+      name: 'Дръжка Comfort 16 II - Сребро',
       sku: '02730',
       unit: 'бр.',
       priceEurCents: 158,
@@ -111,13 +111,13 @@ await upsert('products', 'slug', 'plzgashta-sistema-comfort', {
   brand: sevrollBrand.id,
   description: '',
   items: [
-    { name: 'Дръжка Comfort 16 II — бр.', sku: '02718', unit: 'бр.', lengthMm: 16, color: 'Сребро', priceEurCents: 158, inStock: true },
-    { name: 'Дръжка Comfort 16 II — бр.', sku: '02719', unit: 'бр.', lengthMm: 16, color: 'Злато', priceEurCents: 172, inStock: true },
-    { name: 'Дръжка Comfort 32 — бр.', sku: '02720', unit: 'бр.', lengthMm: 32, color: 'Сребро', priceEurCents: 195, inStock: true },
-    { name: 'Дръжка Comfort 32 — бр.', sku: '02721', unit: 'бр.', lengthMm: 32, color: 'Злато', priceEurCents: 212, inStock: true },
-    { name: 'Пант Comfort — чифт', sku: '02722', unit: 'чифт', color: 'Сребро', priceEurCents: 385, inStock: true },
-    { name: 'Пант Comfort — чифт', sku: '02723', unit: 'чифт', color: 'Злато', priceEurCents: 420, inStock: true },
-    { name: 'Механизъм чекмедже — компл.', sku: '02724', unit: 'компл.', priceEurCents: 1250, inStock: true },
+    { name: 'Дръжка Comfort 16 II - бр.', sku: '02718', unit: 'бр.', lengthMm: 16, color: 'Сребро', priceEurCents: 158, inStock: true },
+    { name: 'Дръжка Comfort 16 II - бр.', sku: '02719', unit: 'бр.', lengthMm: 16, color: 'Злато', priceEurCents: 172, inStock: true },
+    { name: 'Дръжка Comfort 32 - бр.', sku: '02720', unit: 'бр.', lengthMm: 32, color: 'Сребро', priceEurCents: 195, inStock: true },
+    { name: 'Дръжка Comfort 32 - бр.', sku: '02721', unit: 'бр.', lengthMm: 32, color: 'Злато', priceEurCents: 212, inStock: true },
+    { name: 'Пант Comfort - чифт', sku: '02722', unit: 'чифт', color: 'Сребро', priceEurCents: 385, inStock: true },
+    { name: 'Пант Comfort - чифт', sku: '02723', unit: 'чифт', color: 'Злато', priceEurCents: 420, inStock: true },
+    { name: 'Механизъм чекмедже - компл.', sku: '02724', unit: 'компл.', priceEurCents: 1250, inStock: true },
     { name: 'Повдигач Comfort', sku: '02725', unit: 'бр.', priceEurCents: 890, inStock: false },
     { name: 'Релса пълно изваждане 400мм', sku: '02726', unit: 'м', lengthMm: 400, priceEurCents: 560, inStock: true },
     { name: 'Релса пълно изваждане 500мм', sku: '02727', unit: 'м', lengthMm: 500, priceEurCents: 680, inStock: true },
@@ -134,7 +134,7 @@ await upsert('products', 'slug', 'pant-hettich-170', {
   brand: undefined,
   description: '',
   items: [
-    { name: 'Пант Hettich 170° — Сребро', sku: 'HET-170-SR', unit: 'чифт', color: 'Сребро', priceEurCents: 450, inStock: false },
+    { name: 'Пант Hettich 170° - Сребро', sku: 'HET-170-SR', unit: 'чифт', color: 'Сребро', priceEurCents: 450, inStock: false },
   ],
   featured: false,
 })
@@ -148,7 +148,7 @@ await upsert('products', 'slug', 'drzhka-nova-kolektsiya', {
   brand: undefined,
   description: '',
   items: [
-    { name: 'Дръжка Нова колекция — Черен мат', sku: 'NK-001', unit: 'бр.', color: 'Черен мат', priceEurCents: 220, inStock: true },
+    { name: 'Дръжка Нова колекция - Черен мат', sku: 'NK-001', unit: 'бр.', color: 'Черен мат', priceEurCents: 220, inStock: true },
   ],
   featured: false,
 })
@@ -162,7 +162,7 @@ await upsert('products', 'slug', 'podpora-za-kuchka', {
   brand: undefined,
   description: '',
   items: [
-    { name: 'Подпора — стандартна', sku: 'PD-001', unit: 'бр.', priceEurCents: 340, inStock: true },
+    { name: 'Подпора - стандартна', sku: 'PD-001', unit: 'бр.', priceEurCents: 340, inStock: true },
   ],
   featured: false,
 })
@@ -180,14 +180,14 @@ if (existingSettings) {
       city: 'Пловдив',
       phones: [{ number: '+359 32 671 585' }],
       email: 'info@nasteh.bg',
-      workingHours: 'Пон–Пет: 09:00–18:00\nСъб: 09:00–14:00',
-      heroTitle: 'Мебелен обков — качествени решения за вашия дом',
+      workingHours: 'Пон-Пет: 09:00-18:00\nСъб: 09:00-14:00',
+      heroTitle: 'Мебелен обков - качествени решения за вашия дом',
       heroSubtitle: 'Официален представител на водещи марки. Плащане при доставка.',
       social: { facebook: 'https://facebook.com/nastehbg' },
     },
   })
 } else {
-  // Globals don't have createGlobal — just update (it creates if missing)
+  // Globals don't have createGlobal - just update (it creates if missing)
   await p.updateGlobal({
     slug: 'site-settings',
     data: {
@@ -197,8 +197,8 @@ if (existingSettings) {
       city: 'Пловдив',
       phones: [{ number: '+359 32 671 585' }],
       email: 'info@nasteh.bg',
-      workingHours: 'Пон–Пет: 09:00–18:00\nСъб: 09:00–14:00',
-      heroTitle: 'Мебелен обков — качествени решения за вашия дом',
+      workingHours: 'Пон-Пет: 09:00-18:00\nСъб: 09:00-14:00',
+      heroTitle: 'Мебелен обков - качествени решения за вашия дом',
       heroSubtitle: 'Официален представител на водещи марки. Плащане при доставка.',
       social: { facebook: 'https://facebook.com/nastehbg' },
     },
@@ -210,37 +210,37 @@ console.log('Seeding legal pages (drafts)...')
 const legalPages = [
   {
     slug: 'terms',
-    title: 'Общи условия (ЧЕРНОВА — за одобрение)',
+    title: 'Общи условия (ЧЕРНОВА - за одобрение)',
     content: makeContent(
       'Настоящите общи условия уреждат отношенията между Настех ООД и клиентите при поръчки на продукти чрез интернет магазина. Поръчката се счита за сключена след потвърждение от продавача. Плащането е наложен платеж при доставка. Продавачът си запазва правото да откаже поръчка без мотивация.',
     ),
   },
   {
     slug: 'privacy',
-    title: 'Политика за поверителност (ЧЕРНОВА — за одобрение)',
+    title: 'Политика за поверителност (ЧЕРНОВА - за одобрение)',
     content: makeContent(
       'Настех ООД обработва лични данни на клиентите само с цел изпълнение на поръчка и доставка. Данните не се предават на трети страни, освен на куриерската фирма за необходимата доставка. Клиентът може да упражни правата си по ЗЗЛД чрез имейл до info@nasteh.bg.',
     ),
   },
   {
     slug: 'delivery-payment',
-    title: 'Доставка и плащане (ЧЕРНОВА — за одобрение)',
+    title: 'Доставка и плащане (ЧЕРНОВА - за одобрение)',
     content: makeContent(
-      'Доставката се извършва до адрес или офис на куриерска фирма (Еконт / Спиди). Плащането е наложен платеж — сумата се заплаща при получаване на пратката. Цените са с включено ДДС и са в български левове, като ще бъдат конвертирани в евро към края на 2026 г.',
+      'Доставката се извършва до адрес или офис на куриерска фирма (Еконт / Спиди). Плащането е наложен платеж - сумата се заплаща при получаване на пратката. Цените са с включено ДДС и са в български левове, като ще бъдат конвертирани в евро към края на 2026 г.',
     ),
   },
   {
     slug: 'returns',
-    title: 'Право на отказ — 14 дни (ЧЕРНОВА — за одобрение)',
+    title: 'Право на отказ - 14 дни (ЧЕРНОВА - за одобрение)',
     content: makeContent(
       'Клиентът има право да откаже договора в срок от 14 дни от получаването на стоката, без да посочва причина. За упражняване на правото на отказ се изисква писмено уведомление до Настех ООД. Стоката трябва да бъде върната в оригиналното си състояние.',
     ),
   },
   {
     slug: 'cookies',
-    title: 'Бисквитки (ЧЕРНОВА — за одобрение)',
+    title: 'Бисквитки (ЧЕРНОВА - за одобрение)',
     content: makeContent(
-      'Този сайт използва бисквитки само с техническа цел — запазване на съдържанието на количката между преглежданията. Не се използват проследяващи или маркетингови бисквитки. Данните от количката се съхраняват локално във вашия браузър.',
+      'Този сайт използва бисквитки само с техническа цел - запазване на съдържанието на количката между преглежданията. Не се използват проследяващи или маркетингови бисквитки. Данните от количката се съхраняват локално във вашия браузър.',
     ),
   },
 ]

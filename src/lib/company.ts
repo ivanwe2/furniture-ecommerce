@@ -16,7 +16,7 @@ export const company = {
   email: 'nastehsales@gmail.com',
   emailHref: 'mailto:nastehsales@gmail.com',
   workingHours: {
-    weekdays: 'Пон–Пет: 08:30–17:30',
-    saturday: 'Съб: 09:00–14:00',
+    weekdays: 'Пон-Пет: 08:30-17:30',
+    saturday: 'Съб: 09:00-14:00',
   },
 } as const

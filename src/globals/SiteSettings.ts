@@ -47,14 +47,14 @@ export const SiteSettings: GlobalConfig = {
     {
       name: 'workingHours',
       type: 'textarea',
-      defaultValue: 'Пон–Пет: 08:30–17:30\nСъб: 09:00–14:00',
+      defaultValue: 'Пон-Пет: 08:30-17:30\nСъб: 09:00-14:00',
       label: 'Работно време',
     },
-    { name: 'heroTitle', type: 'text', label: 'Начална страница — заглавие' },
+    { name: 'heroTitle', type: 'text', label: 'Начална страница - заглавие' },
     {
       name: 'heroSubtitle',
       type: 'textarea',
-      label: 'Начална страница — подзаглавие',
+      label: 'Начална страница - подзаглавие',
     },
     { name: 'announcement', type: 'text', label: 'Обявление (лента)' },
     {

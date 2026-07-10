@@ -11,7 +11,7 @@ const ORDER_INBOX_EMAIL = process.env.ORDER_INBOX_EMAIL ?? ''
 
 async function sendEmail(to: string, subject: string, html: string, text: string, replyTo?: string) {
   if (!RESEND_API_KEY) {
-    console.log('[email] dev mode — skipped', { to, subject })
+    console.log('[email] dev mode - skipped', { to, subject })
     return
   }
 
@@ -60,7 +60,7 @@ export async function sendOrderEmails(order: Order, customerEmail: string) {
   if (ORDER_INBOX_EMAIL) {
     await sendEmail(
       ORDER_INBOX_EMAIL,
-      `Нова поръчка ${orderNumber} — ${totalFormatted}`,
+      `Нова поръчка ${orderNumber} - ${totalFormatted}`,
       orderOwnerHtml({ orderNumber, totalEurCents: order.totalEurCents, customerName: order.customer.name, customerPhone: order.customer.phone, customerEmail: order.customer.email, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, note: order.customer.note, lines }),
       orderOwnerText({ orderNumber, totalEurCents: order.totalEurCents, customerName: order.customer.name, customerPhone: order.customer.phone, customerEmail: order.customer.email, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, note: order.customer.note, lines }),
     )
@@ -69,7 +69,7 @@ export async function sendOrderEmails(order: Order, customerEmail: string) {
   // Customer email
   await sendEmail(
     customerEmail,
-    `Потвърждение на поръчка ${orderNumber} — Настех`,
+    `Потвърждение на поръчка ${orderNumber} - Настех`,
     orderCustomerHtml({ orderNumber, totalEurCents: order.totalEurCents, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, lines }),
     orderCustomerText({ orderNumber, totalEurCents: order.totalEurCents, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, lines }),
     ORDER_INBOX_EMAIL,
@@ -81,7 +81,7 @@ export async function sendContactEmail(data: { name: string; email: string; phon
 
   await sendEmail(
     ORDER_INBOX_EMAIL,
-    `Запитване от сайта — ${data.name}`,
+    `Запитване от сайта - ${data.name}`,
     contactOwnerHtml({ name: data.name, email: data.email, phone: data.phone, message: data.message }),
     contactOwnerText({ name: data.name, email: data.email, phone: data.phone, message: data.message }),
   )
@@ -102,7 +102,7 @@ function orderOwnerHtml(d: {
 <strong style="font-size:18px;color:#8A6D3B;">НАСТЕХ</strong>
 </td></tr>
 <tr><td style="padding:20px;">
-<h2 style="margin:0 0 12px;font-size:16px;">Нова поръчка ${d.orderNumber} — ${formatEur(d.totalEurCents)}</h2>
+<h2 style="margin:0 0 12px;font-size:16px;">Нова поръчка ${d.orderNumber} - ${formatEur(d.totalEurCents)}</h2>
 <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:16px;">
 <tr><td style="padding:4px 0;font-size:14px;"><strong>Клиент:</strong> ${d.customerName}</td></tr>
 <tr><td style="padding:4px 0;font-size:14px;"><a href="tel:${d.customerPhone}" style="color:#8A6D3B;">${d.customerPhone}</a></td></tr>
@@ -110,7 +110,7 @@ function orderOwnerHtml(d: {
 </table>
 <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:16px;">
 <tr><td style="padding:4px 0;font-size:14px;"><strong>Доставка:</strong> ${d.deliveryMethod}</td></tr>
-<tr><td style="padding:4px 0;font-size:14px;">${d.city} — ${d.addressOrOffice}</td></tr>
+<tr><td style="padding:4px 0;font-size:14px;">${d.city} - ${d.addressOrOffice}</td></tr>
 </table>
 <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin-bottom:16px;">
 <tr style="background:#d4cfc5;"><th style="padding:8px;text-align:left;font-size:12px;">Артикул</th><th style="padding:8px;text-align:center;font-size:12px;">Код</th><th style="padding:8px;text-align:right;font-size:12px;">Цена</th><th style="padding:8px;text-align:center;font-size:12px;">Кол.</th><th style="padding:8px;text-align:right;font-size:12px;">Общо</th></tr>
@@ -133,11 +133,11 @@ function orderOwnerText(d: {
   lines: OrderLine[]
 }): string {
   return [
-    `Нова поръчка ${d.orderNumber} — ${formatEur(d.totalEurCents)}`,
+    `Нова поръчка ${d.orderNumber} - ${formatEur(d.totalEurCents)}`,
     '',
     `Клиент: ${d.customerName}`, `${d.customerPhone}`, `${d.customerEmail}`,
     '',
-    `Доставка: ${d.deliveryMethod}`, `${d.city} — ${d.addressOrOffice}`,
+    `Доставка: ${d.deliveryMethod}`, `${d.city} - ${d.addressOrOffice}`,
     '',
     ...d.lines.map(l => `${l.itemName} (${l.itemSku}) x${l.qty} = ${formatEur(l.lineTotalEurCents)}`),
     '',
@@ -165,7 +165,7 @@ function orderCustomerHtml(d: {
 ${d.lines.map(l => `<tr style="border-bottom:1px solid #d4cfc5;"><td style="padding:8px;font-size:13px;">${l.itemName}</td><td style="padding:8px;text-align:center;font-size:12px;font-family:monospace;">${l.itemSku}</td><td style="padding:8px;text-align:right;font-size:13px;">${formatEur(l.unitPriceEurCents)}</td><td style="padding:8px;text-align:center;font-size:13px;">${l.qty}</td><td style="padding:8px;text-align:right;font-size:13px;">${formatEur(l.lineTotalEurCents)}</td></tr>`).join('')}
 <tr style="background:#d4cfc5;"><td colspan="4" style="padding:8px;text-align:right;font-weight:bold;font-size:14px;">Общо:</td><td style="padding:8px;text-align:right;font-size:14px;font-weight:bold;">${formatEur(d.totalEurCents)}</td></tr>
 </table>
-<p style="font-size:13px;color:#6b6559;margin:0 0 12px;"><strong>Доставка:</strong> ${d.deliveryMethod} — ${d.addressOrOffice}, ${d.city}</p>
+<p style="font-size:13px;color:#6b6559;margin:0 0 12px;"><strong>Доставка:</strong> ${d.deliveryMethod} - ${d.addressOrOffice}, ${d.city}</p>
 <p style="font-size:13px;color:#6b6559;margin:0 0 12px;">Плащане при доставка (наложен платеж).</p>
 <hr style="border:none;border-top:1px solid #d4cfc5;margin:16px 0;"/>
 <p style="font-size:12px;color:#6b6559;margin:0;"><strong>Продавач:</strong> ${company.name}, ${company.addressLine}, гр. ${company.city}</p>
@@ -185,14 +185,14 @@ function orderCustomerText(d: {
   lines: OrderLine[]
 }): string {
   return [
-    `Потвърждение на поръчка ${d.orderNumber} — Настех`,
+    `Потвърждение на поръчка ${d.orderNumber} - Настех`,
     '',
     'Благодарим Ви за поръчката. Ще се свържем с Вас по телефона за потвърждение.',
     '',
     ...d.lines.map(l => `${l.itemName} (${l.itemSku}) x${l.qty} = ${formatEur(l.lineTotalEurCents)}`),
     `Общо: ${formatEur(d.totalEurCents)}`,
     '',
-    `Доставка: ${d.deliveryMethod} — ${d.addressOrOffice}, ${d.city}`,
+    `Доставка: ${d.deliveryMethod} - ${d.addressOrOffice}, ${d.city}`,
     'Плащане при доставка (наложен платеж).',
     '',
     `${company.name} · ${company.addressLine}, гр. ${company.city}`,
@@ -209,7 +209,7 @@ function contactOwnerHtml(d: { name: string; email: string; phone?: string; mess
 <strong style="font-size:18px;color:#8A6D3B;">НАСТЕХ</strong>
 </td></tr>
 <tr><td style="padding:20px;">
-<h2 style="margin:0 0 12px;font-size:16px;">Запитване от сайта — ${d.name}</h2>
+<h2 style="margin:0 0 12px;font-size:16px;">Запитване от сайта - ${d.name}</h2>
 <table cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:16px;">
 <tr><td style="padding:4px 0;font-size:14px;"><strong>Име:</strong> ${d.name}</td></tr>
 ${d.email ? `<tr><td style="padding:4px 0;font-size:14px;"><a href="mailto:${d.email}" style="color:#8A6D3B;">${d.email}</a></td></tr>` : ''}
@@ -227,7 +227,7 @@ ${company.name} · ${company.addressLine}, гр. ${company.city} · ${company.ph
 
 function contactOwnerText(d: { name: string; email: string; phone?: string; message: string }): string {
   return [
-    `Запитване от сайта — ${d.name}`,
+    `Запитване от сайта - ${d.name}`,
     '',
     `Име: ${d.name}`,
     d.email ? `Имейл: ${d.email}` : '',

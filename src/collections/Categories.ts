@@ -49,7 +49,7 @@ export const Categories: CollectionConfig = {
         if (!data.slug && data.name) {
           data.slug = slugify(data.name)
         }
-        // Depth guard — walk parent chain, max 3 levels
+        // Depth guard - walk parent chain, max 3 levels
         if (data.parent) {
           let depth = 1
           let currentId: number | string | null = typeof data.parent === 'object' ? data.parent.id : data.parent
@@ -81,7 +81,7 @@ export const Categories: CollectionConfig = {
           where: { category: { equals: id } },
         })
         if (products.docs.length > 0) {
-          throw new Error('Не може да се изтрие — има продукти в тази категория. Преместете ги първо.')
+          throw new Error('Не може да се изтрие - има продукти в тази категория. Преместете ги първо.')
         }
         // Block if any category has this as parent
         const children = await req.payload.find({
@@ -91,7 +91,7 @@ export const Categories: CollectionConfig = {
           where: { parent: { equals: id } },
         })
         if (children.docs.length > 0) {
-          throw new Error('Не може да се изтрие — има подкатегории. Преместете ги първо.')
+          throw new Error('Не може да се изтрие - има подкатегории. Преместете ги първо.')
         }
       },
     ],

@@ -56,7 +56,7 @@ export default buildConfig({
     user: Users.slug,
     theme: 'light',
     meta: {
-      titleSuffix: '— Настех',
+      titleSuffix: ' - Настех',
     },
     components: {
       graphics: {

@@ -89,7 +89,7 @@ export function ItemsTable({ items, productSlug, productName }: ItemsTableProps)
                       max={999}
                     />
                   ) : (
-                    <span className="text-xs text-steel">—</span>
+                    <span className="text-xs text-steel">-</span>
                   )}
                 </td>
                 <td className="actions px-4 py-3">

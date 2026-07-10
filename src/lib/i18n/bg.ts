@@ -10,7 +10,7 @@ export const bg = {
     heroEyebrow: 'Обков и механизми за мебели',
     heroCta: 'Разгледай каталога',
     trust1: 'Дългогодишен опит с мебелен обков',
-    trust2: 'Плащане при доставка — наложен платеж',
+    trust2: 'Плащане при доставка - наложен платеж',
     trust3: 'Бърза връзка и консултация' },
   catalog: { fromPrice: 'от {price}', from: 'от', inStock: 'в наличност',
     outOfStock: 'изчерпан' },
@@ -24,8 +24,8 @@ export const bg = {
     inStockSummary: 'Артикули в наличност',
     notFoundTitle: 'Продукт не е намерен',
     qtyDecrease: 'Намали количество', qtyIncrease: 'Увеличи количество',
-    galleryOpen: 'Отвори {name} — снимка {n}', photoAlt: 'Снимка {n}',
-    galleryZoom: '{name} — увеличено изображение',
+    galleryOpen: 'Отвори {name} - снимка {n}', photoAlt: 'Снимка {n}',
+    galleryZoom: '{name} - увеличено изображение',
     prevPhoto: 'Предишна снимка', nextPhoto: 'Следваща снимка' },
   search: { placeholder: 'Търси продукт или код…',
     resultsFor: 'Резултати за', empty: 'Няма намерени продукти.',
@@ -70,16 +70,16 @@ export const bg = {
   legal: { terms: 'Общи условия', privacy: 'Политика за поверителност',
     deliveryPayment: 'Доставка и плащане', returns: 'Право на отказ',
     cookies: 'Бисквитки' },
-  cookie: { notice: 'Този сайт използва бисквитки само с техническа цел — запазване на съдържанието на количката.', learnMore: 'Научете повече', dismiss: 'Разбрах' },
+  cookie: { notice: 'Този сайт използва бисквитки само с техническа цел - запазване на съдържанието на количката.', learnMore: 'Научете повече', dismiss: 'Разбрах' },
   seo: {
-    siteName: 'Настех — мебелен обков',
-    homeDesc: 'Онлайн каталог с мебелен обков — ъгли, щифтове, панти, механизми и аксесоари за мебели. Плащане при доставка (наложен платеж).',
-    categoryDesc: 'Продукти в категория {name} — мебелен обков от Настех.',
-    productDesc: '{name} — артикули, цени и наличности. Мебелен обков от Настех.',
-    brandDesc: 'Продукти на марка {name} — мебелен обков от Настех.',
+    siteName: 'Настех - мебелен обков',
+    homeDesc: 'Онлайн каталог с мебелен обков - ъгли, щифтове, панти, механизми и аксесоари за мебели. Плащане при доставка (наложен платеж).',
+    categoryDesc: 'Продукти в категория {name} - мебелен обков от Настех.',
+    productDesc: '{name} - артикули, цени и наличности. Мебелен обков от Настех.',
+    brandDesc: 'Продукти на марка {name} - мебелен обков от Настех.',
     searchDesc: 'Резултати от търсенето за "{q}" в каталога на Настех.',
-    contactDesc: 'Контакти, адрес и работно време на Настех ООД — мебелен обков в Пловдив.',
-    pageDesc: '{title} — информация от Настех.',
+    contactDesc: 'Контакти, адрес и работно време на Настех ООД - мебелен обков в Пловдив.',
+    pageDesc: '{title} - информация от Настех.',
   },
 } as const
 
@@ -117,7 +117,7 @@ export function t(key: DotPath): string {
 /**
  * Loose lookup for dynamic keys (e.g. error keys returned by server actions).
  * Returns the resolved Bulgarian string, or the key unchanged if it does not
- * resolve. Never throws — unlike `t`, which is for statically-known keys.
+ * resolve. Never throws - unlike `t`, which is for statically-known keys.
  */
 export function tSafe(key: string): string {
   const parts = key.split('.')
