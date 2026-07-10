@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useCart } from '@/lib/cart/store'
-import { Badge } from '@/components/ui'
 
 export function CartButton() {
   const lines = useCart((s) => s.lines)
@@ -26,9 +25,9 @@ export function CartButton() {
         <path d="M16 10a4 4 0 01-8 0" />
       </svg>
       {totalQty > 0 && (
-        <Badge className="absolute -right-1.5 -top-1.5 bg-brass text-cream min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full">
+        <span className="absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brass px-1 text-[11px] font-semibold leading-none text-cream ring-2 ring-cream">
           {totalQty}
-        </Badge>
+        </span>
       )}
     </Link>
   )
