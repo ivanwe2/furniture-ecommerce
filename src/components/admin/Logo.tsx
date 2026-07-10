@@ -6,7 +6,7 @@
 export function Logo() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', lineHeight: 1 }}>
-      <span style={{ fontSize: '38px', fontWeight: 700, letterSpacing: '0.14em', color: '#8a6d3b' }}>
+      <span style={{ fontSize: '38px', fontWeight: 700, letterSpacing: '0.14em', color: 'var(--nasteh-brass)' }}>
         НАСТЕХ
       </span>
       <span
@@ -14,7 +14,7 @@ export function Logo() {
           fontSize: '12px',
           letterSpacing: '0.3em',
           textTransform: 'uppercase',
-          color: 'var(--theme-elevation-600, #6e7378)',
+          color: 'var(--theme-elevation-600, var(--nasteh-steel))',
         }}
       >
         мебелен обков

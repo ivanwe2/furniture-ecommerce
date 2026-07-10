@@ -14,12 +14,12 @@ export function BrandLogo({ className }: { className?: string }) {
             <circle cx="32" cy="32" r="28" />
           </clipPath>
         </defs>
-        <circle cx="32" cy="32" r="28" fill="#35332d" />
+        <circle cx="32" cy="32" r="28" className="fill-graphite" />
         <g clipPath="url(#nasteh-badge-clip)">
-          <rect x="-8" y="35" width="80" height="13" rx="6.5" fill="#8a6d3b" transform="rotate(-38 32 32)" />
+          <rect x="-8" y="35" width="80" height="13" rx="6.5" className="fill-brass" transform="rotate(-38 32 32)" />
         </g>
-        <path d="M13 21 A28 28 0 0 1 43 10.5" fill="none" stroke="#7a8085" strokeWidth="3.4" strokeLinecap="round" />
-        <g stroke="#f4f0e6" strokeWidth="6.2" strokeLinecap="round">
+        <path d="M13 21 A28 28 0 0 1 43 10.5" fill="none" className="stroke-steel" strokeWidth="3.4" strokeLinecap="round" />
+        <g className="stroke-cream" strokeWidth="6.2" strokeLinecap="round">
           <line x1="22" y1="20" x2="22" y2="44" />
           <line x1="42" y1="20" x2="42" y2="44" />
           <line x1="22" y1="32" x2="42" y2="32" />

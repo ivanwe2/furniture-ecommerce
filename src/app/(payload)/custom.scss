@@ -7,3 +7,13 @@ html[data-theme='light'] {
   --color-success-500: #8a6d3b; /* brass accent for links/highlights */
   --theme-success-500: #8a6d3b;
 }
+
+/* Brand palette for the admin logo/icon (the Настех badge). Mirrors the
+   storefront tokens; kept here because the admin runs outside Tailwind, so
+   the SVG components reference these vars instead of raw hex. */
+:root {
+  --nasteh-graphite: #35332d;
+  --nasteh-brass: #8a6d3b;
+  --nasteh-cream: #f4f0e6;
+  --nasteh-steel: #6e7378;
+}

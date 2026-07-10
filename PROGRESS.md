@@ -277,6 +277,17 @@ _(Format per CLAUDE.md §6. Agents STOP the blocked task after writing here.)_
 
 _(Quirks, workarounds, deliberate TODOs the next session must know.)_
 
+- **CI has guardrails the local gate does NOT** (`.github/workflows/ci.yml`): a
+  grep that fails on any hex color in `src/app`/`src/components` `.tsx`/`.ts`, and
+  one banning `/cdn-cgi/image/` outside `images.ts`. `pnpm typecheck && lint &&
+  test` all pass locally without catching these — so a hex literal in a component
+  turns CI red on push. The logo/admin-branding SVGs tripped it; fixed by
+  tokenizing (storefront: `fill-graphite`/`fill-brass`/`stroke-cream`/`stroke-steel`
+  Tailwind utilities from `@theme`; admin runs outside Tailwind so `Icon.tsx`/
+  `Logo.tsx` use `--nasteh-*` CSS vars defined in `(payload)/custom.scss`). Added
+  `--color-graphite` token. Run those two greps before committing any SVG/color.
+  `src/app/icon.svg` keeps raw hex — it's a `.svg` asset, not matched by the grep.
+
 - `wrangler.jsonc` carries Ivan's real bindings (D1 id `85538a45-…`, bucket
   `nasteh-media`, worker `nasteh-bg`) but was an **uncommitted working-tree
   change** at session start — commit it deliberately (platform config, no
