@@ -13,7 +13,7 @@ interface BrandPageProps {
 export async function generateMetadata({ params }: BrandPageProps) {
   const resolvedParams = await params
   const brand = await getBrandBySlug(resolvedParams.slug)
-  if (!brand) return { title: 'Марка не е намерена' }
+  if (!brand) return { title: t('brand.notFoundTitle') }
   const siteName = t('seo.siteName')
   return {
     title: `${brand.name} | ${siteName}`,
@@ -104,14 +104,14 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
                 </Link>
               )}
               <span className="text-sm text-steel">
-                Страница {page ?? 1} от {totalPages}
+                {t('common.pageOf').replace('{page}', String(page ?? 1)).replace('{total}', String(totalPages))}
               </span>
               {(page ?? 1) < totalPages && (
                 <Link
                   href={`/brand/${resolvedParams.slug}?page=${(page ?? 1) + 1}`}
                   className="rounded bg-sand px-3 py-2 text-sm font-medium text-ink hover:bg-sand/80 transition-colors"
                 >
-                  Напред
+                  {t('common.next')}
                 </Link>
               )}
             </nav>

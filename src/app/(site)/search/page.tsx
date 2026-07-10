@@ -14,14 +14,14 @@ export async function generateMetadata({ searchParams }: SearchPageProps) {
   const q = typeof qRaw === 'string' ? qRaw : ''
   if (q.trim()) {
     return {
-      title: `Резултати за "${q}" | Настех`,
+      title: `${t('search.resultsFor')} "${q}" | ${t('seo.siteName')}`,
       description: t('seo.searchDesc').replace('{q}', q),
       alternates: { canonical: `/search?q=${encodeURIComponent(q)}` },
       robots: { index: false, follow: true },
     }
   }
   return {
-    title: 'Търсене | Настех — мебелен обков',
+    title: `${t('search.title')} | ${t('seo.siteName')}`,
     description: t('seo.searchDesc').replace('{q}', ''),
     alternates: { canonical: '/search' },
   }
@@ -52,7 +52,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </li>
           <li className="flex items-center gap-2">
             <span aria-hidden="true">/</span>
-            <span className="text-ink">Търсене</span>
+            <span className="text-ink">{t('search.title')}</span>
           </li>
         </ol>
       </nav>
@@ -63,7 +63,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           {t('search.resultsFor')}: &ldquo;{q}&rdquo;
         </h1>
       ) : (
-        <h1 className="mb-6 text-xl font-semibold text-ink">Търсене</h1>
+        <h1 className="mb-6 text-xl font-semibold text-ink">{t('search.title')}</h1>
       )}
 
       {/* Results */}
@@ -84,7 +84,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           {q.trim() ? (
             <p className="text-steel">{t('search.empty')}</p>
           ) : null}
-          <p className="mt-2 text-sm text-steel">Разгледайте категориите:</p>
+          <p className="mt-2 text-sm text-steel">{t('search.browsePrompt')}</p>
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             {categories.map((cat) => (
               <Link

@@ -74,7 +74,7 @@ export function CartClient({ resolution }: CartClientProps) {
         <div className="rounded-lg border border-sand bg-cream p-6 space-y-4">
           <h2 className="text-base font-semibold text-ink">{t('cart.total')}</h2>
           <div className="flex justify-between items-baseline">
-            <span className="text-sm text-steel">{result.ok.length} {result.ok.length === 1 ? 'артикул' : 'артикула'}</span>
+            <span className="text-sm text-steel">{result.ok.length} {result.ok.length === 1 ? t('cart.itemSingular') : t('cart.itemPlural')}</span>
             <Price eurCents={result.subtotalEurCents} className="text-lg font-semibold" />
           </div>
           <p className="text-xs text-steel">{t('cart.codNote')}</p>
@@ -150,7 +150,7 @@ function StaleLineItem({ line, remove }: {
     <div className="flex flex-col gap-2 rounded-lg border border-sand bg-cream p-4 opacity-60 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
         <span className="font-medium text-ink">{line.productSlug}</span>
-        <p className="mt-0.5 text-xs font-mono text-steel">{line.sku} · {line.qty} бр.</p>
+        <p className="mt-0.5 text-xs font-mono text-steel">{line.sku} · {line.qty} {t('common.unitDefault')}</p>
       </div>
       <Alert variant="danger" className="text-xs max-w-[280px]">
         {t('cart.stale')}
@@ -176,7 +176,7 @@ function QtyStepper({ value, onChange, clamp }: {
       <button
         onClick={() => onChange(clamp(value - 1))}
         className="h-8 w-8 rounded bg-sand text-ink hover:bg-sand/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass flex items-center justify-center"
-        aria-label="Намали количество"
+        aria-label={t('product.qtyDecrease')}
       >
         −
       </button>
@@ -189,12 +189,12 @@ function QtyStepper({ value, onChange, clamp }: {
           onChange(clamp(raw))
         }}
         className="h-8 w-12 rounded bg-transparent text-center text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-brass"
-        aria-label="Количество"
+        aria-label={t('product.colQty')}
       />
       <button
         onClick={() => onChange(clamp(value + 1))}
         className="h-8 w-8 rounded bg-sand text-ink hover:bg-sand/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass flex items-center justify-center"
-        aria-label="Увеличи количество"
+        aria-label={t('product.qtyIncrease')}
       >
         +
       </button>

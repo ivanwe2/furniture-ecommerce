@@ -84,8 +84,8 @@ export default function ContactPageClient() {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-ink">{t('store.workingHours')}</h3>
-            <p className="mt-1 text-sm text-steel">Пон–Пет: 08:30–17:30</p>
-            <p className="text-sm text-steel">Съб: 09:00–14:00</p>
+            <p className="mt-1 text-sm text-steel">{company.workingHours.weekdays}</p>
+            <p className="text-sm text-steel">{company.workingHours.saturday}</p>
           </div>
         </div>
 

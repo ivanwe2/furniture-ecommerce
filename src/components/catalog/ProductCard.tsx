@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Price } from '@/components/ui/Price'
 import { imageUrl, imageSrcSet } from '@/lib/images'
+import { t } from '@/lib/i18n/bg'
 import type { Media, Product } from '@/payload-types'
 
 interface ProductCardProps {
@@ -63,7 +64,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <Price eurCents={items[0]!.priceEurCents} />
           ) : minPrice !== null ? (
             <span className="text-sm text-ink">
-              {'от '}
+              {t('catalog.from')}{' '}
               <Price eurCents={minPrice} />
             </span>
           ) : null}

@@ -52,11 +52,11 @@ export default function Footer({ categories }: FooterProps) {
             <h3 className="text-sm font-semibold text-ink">{t('footer.info')}</h3>
             <ul className="mt-2 space-y-1.5">
               {[
-                { href: '/terms', label: 'Общи условия' },
-                { href: '/privacy', label: 'Политика за поверителност' },
-                { href: '/delivery-payment', label: 'Доставка и плащане' },
-                { href: '/returns', label: 'Право на отказ' },
-                { href: '/cookies', label: 'Бисквитки' },
+                { href: '/terms', label: t('legal.terms') },
+                { href: '/privacy', label: t('legal.privacy') },
+                { href: '/delivery-payment', label: t('legal.deliveryPayment') },
+                { href: '/returns', label: t('legal.returns') },
+                { href: '/cookies', label: t('legal.cookies') },
                 { href: '/contact', label: t('nav.contact') },
               ].map((link) => (
                 <li key={link.href}>
@@ -74,16 +74,14 @@ export default function Footer({ categories }: FooterProps) {
           {/* Working hours */}
           <div>
             <h3 className="text-sm font-semibold text-ink">{t('footer.workingHours')}</h3>
-            <p className="mt-2 text-sm text-steel">
-              Пон–Пет: 08:30–17:30
-            </p>
-            <p className="text-sm text-steel">Съб: 09:00–14:00</p>
+            <p className="mt-2 text-sm text-steel">{company.workingHours.weekdays}</p>
+            <p className="text-sm text-steel">{company.workingHours.saturday}</p>
           </div>
         </div>
 
         {/* Bottom line */}
         <div className="border-t border-steel/20 py-4 text-center text-xs text-steel">
-          © {year} Настех ООД. {t('common.vatIncluded')}
+          © {year} {company.name}. {t('common.vatIncluded')}
         </div>
       </Container>
     </footer>

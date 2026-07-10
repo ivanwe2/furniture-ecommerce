@@ -5,12 +5,13 @@ import ContactPageClient from './client'
 
 export async function generateMetadata() {
   const siteName = t('seo.siteName')
+  const contactTitle = `${t('nav.contact')} | ${siteName}`
   return {
-    title: `Контакти | ${siteName}`,
+    title: contactTitle,
     description: t('seo.contactDesc'),
     alternates: { canonical: '/contact' },
     openGraph: {
-      title: `Контакти | ${siteName}`,
+      title: contactTitle,
       description: t('seo.contactDesc'),
       type: 'website',
       url: '/contact',

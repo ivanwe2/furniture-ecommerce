@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: CategoryPageProps) {
   const categorySlug = slugParts[slugParts.length - 1] ?? ''
   const tree = await getCategoryTree()
   const category = await findCategoryBySlug(tree, categorySlug)
-  if (!category) return { title: 'Категория не е намерена' }
+  if (!category) return { title: t('category.notFoundTitle') }
   const siteName = t('seo.siteName')
   return {
     title: `${category.name} | ${siteName}`,
@@ -94,7 +94,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       {/* Subcategories (non-leaf) */}
       {subcategories.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-4 text-lg font-semibold text-ink">Категории</h2>
+          <h2 className="mb-4 text-lg font-semibold text-ink">{t('nav.categories')}</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {subcategories.map((sub) => (
               <Link
@@ -151,14 +151,14 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                   </Link>
                 )}
                 <span className="text-sm text-steel">
-                  Страница {page ?? 1} от {totalPages}
+                  {t('common.pageOf').replace('{page}', String(page ?? 1)).replace('{total}', String(totalPages))}
                 </span>
                 {(page ?? 1) < totalPages && (
                   <Link
                     href={`/category/${categorySlug}?page=${(page ?? 1) + 1}`}
                     className="rounded bg-sand px-3 py-2 text-sm font-medium text-ink hover:bg-sand/80 transition-colors"
                   >
-                    Напред
+                    {t('common.next')}
                   </Link>
                 )}
               </nav>

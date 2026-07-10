@@ -1,5 +1,6 @@
 import { CartClient } from '@/components/cart/CartClient'
 import { getAllPublishedProducts } from '@/lib/payload/queries'
+import { t } from '@/lib/i18n/bg'
 
 export async function generateMetadata() {
   return {
@@ -19,7 +20,7 @@ export default async function CartPage() {
         productSlug: product.slug,
         sku: item.sku,
         name: item.name,
-        unit: item.unit ?? 'бр.',
+        unit: item.unit ?? t('common.unitDefault'),
         priceEurCents: item.priceEurCents,
         inStock: item.inStock !== false,
       })

@@ -68,7 +68,7 @@ export function ItemsTable({ items, productSlug, productName }: ItemsTableProps)
                 )}
               >
                 <td className="px-4 py-3 text-ink" data-label={t('product.colName')}>{item.name}</td>
-                <td className="px-4 py-3 text-steel" data-label={t('product.colUnit')}>{item.unit ?? 'бр.'}</td>
+                <td className="px-4 py-3 text-steel" data-label={t('product.colUnit')}>{item.unit ?? t('common.unitDefault')}</td>
                 {hasLength && <td className="px-4 py-3 text-steel tabular-nums" data-label={t('product.colLength')}>{item.lengthMm ?? ''}</td>}
                 {hasColor && <td className="px-4 py-3 text-steel" data-label={t('product.colColor')}>{item.color ?? ''}</td>}
                 <td className="px-4 py-3 font-mono text-steel" data-label={t('product.colSku')}>{item.sku}</td>
@@ -155,7 +155,7 @@ function QtyStepper({ sku, min = 1, max = 999 }: { sku: string; min?: number; ma
           setQtyAction(sku, clamped)
         }}
         className="h-8 w-8 rounded bg-sand text-ink hover:bg-sand/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass flex items-center justify-center"
-        aria-label="Намали количество"
+        aria-label={t('product.qtyDecrease')}
       >
         −
       </button>
@@ -165,7 +165,7 @@ function QtyStepper({ sku, min = 1, max = 999 }: { sku: string; min?: number; ma
         value={qty}
         onChange={handleChange}
         className="h-8 w-12 rounded bg-transparent text-center text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-brass"
-        aria-label="Количество"
+        aria-label={t('product.colQty')}
       />
       <button
         onClick={() => {
@@ -174,7 +174,7 @@ function QtyStepper({ sku, min = 1, max = 999 }: { sku: string; min?: number; ma
           setQtyAction(sku, clamped)
         }}
         className="h-8 w-8 rounded bg-sand text-ink hover:bg-sand/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass flex items-center justify-center"
-        aria-label="Увеличи количество"
+        aria-label={t('product.qtyIncrease')}
       >
         +
       </button>

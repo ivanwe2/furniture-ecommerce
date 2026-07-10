@@ -1,3 +1,5 @@
+import { company } from '@/lib/company'
+
 export default function LocalBusiness({
   name,
   address,
@@ -15,7 +17,7 @@ export default function LocalBusiness({
     name,
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'Пловдив',
+      addressLocality: company.city,
       streetAddress: address,
       addressCountry: 'BG',
     },

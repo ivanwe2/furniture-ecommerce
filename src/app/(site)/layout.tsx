@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Playfair_Display, Inter } from 'next/font/google'
+import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { Header } from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -24,11 +25,10 @@ const body = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Настех — мебелен обков',
-    template: '%s | Настех — мебелен обков',
+    default: t('seo.siteName'),
+    template: `%s | ${t('seo.siteName')}`,
   },
-  description:
-    'Онлайн каталог с мебелен обков — ъгли, щифтове, панти, механизми и аксесоари. Плащане при доставка (наложен платеж).',
+  description: t('seo.homeDesc'),
 }
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -39,7 +39,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <body>
         <div className="flex min-h-screen flex-col">
           <a href="#main" className="skip-link">
-            Прескочи към съдържанието
+            {t('common.skipToContent')}
           </a>
 
           <Header categories={categories} />

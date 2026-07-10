@@ -16,7 +16,7 @@ interface ProductPageProps {
 export async function generateMetadata({ params }: ProductPageProps) {
   const resolvedParams = await params
   const product = await getProductBySlug(resolvedParams.slug)
-  if (!product) return { title: 'Продукт не е намерен' }
+  if (!product) return { title: t('product.notFoundTitle') }
   const siteName = t('seo.siteName')
   const seoTitle = product.seo?.title ?? `${product.name} | ${siteName}`
   const seoDesc = product.seo?.description ?? t('seo.productDesc').replace('{name}', product.name)

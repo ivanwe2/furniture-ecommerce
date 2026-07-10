@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { imageUrl } from '@/lib/images'
+import { t } from '@/lib/i18n/bg'
 import type { Media } from '@/payload-types'
 
 interface GalleryProps {
@@ -44,7 +45,7 @@ export function Gallery({ images, productName }: GalleryProps) {
         <button
           onClick={() => setLightboxOpen(true)}
           className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-          aria-label={`Отвори ${productName} - снимка ${currentIndex + 1}`}
+          aria-label={t('product.galleryOpen').replace('{name}', productName).replace('{n}', String(currentIndex + 1))}
         >
           <img
             src={imageUrl(mainImage, 'detail')}
@@ -68,7 +69,7 @@ export function Gallery({ images, productName }: GalleryProps) {
             >
               <img
                 src={imageUrl(img, 'thumb')}
-                alt={img.alt ?? `Снимка ${i + 1}`}
+                alt={img.alt ?? t('product.photoAlt').replace('{n}', String(i + 1))}
                 className="h-full w-full object-cover"
               />
             </button>
@@ -83,12 +84,12 @@ export function Gallery({ images, productName }: GalleryProps) {
           onClick={() => setLightboxOpen(false)}
           role="dialog"
           aria-modal="true"
-          aria-label={productName + ' - увеличено изображение'}
+          aria-label={t('product.galleryZoom').replace('{name}', productName)}
         >
           <button
             className="absolute right-4 top-4 text-white hover:text-brass transition-colors"
             onClick={() => setLightboxOpen(false)}
-            aria-label="Затвори"
+            aria-label={t('common.close')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
@@ -101,7 +102,7 @@ export function Gallery({ images, productName }: GalleryProps) {
                 e.stopPropagation()
                 setCurrentIndex((prev) => (prev - 1 + validImages.length) % validImages.length)
               }}
-              aria-label="Предишна снимка"
+              aria-label={t('product.prevPhoto')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8"><path d="M15 19l-7-7 7-7" /></svg>
             </button>
@@ -125,7 +126,7 @@ export function Gallery({ images, productName }: GalleryProps) {
                 e.stopPropagation()
                 setCurrentIndex((prev) => (prev + 1) % validImages.length)
               }}
-              aria-label="Следваща снимка"
+              aria-label={t('product.nextPhoto')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8"><path d="M9 5l7 7-7 7" /></svg>
             </button>
