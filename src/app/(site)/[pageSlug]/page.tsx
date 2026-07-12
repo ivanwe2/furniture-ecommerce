@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { getPage } from '@/lib/payload/queries'
-import PageSlugClient from './client'
+import { RichText } from '@/components/richtext/RichText'
 
 interface Props {
   params: Promise<{ pageSlug: string }>
@@ -36,8 +36,8 @@ export default async function PageSlug({ params }: Props) {
   return (
     <Container className="py-8">
       <h1 className="mb-6 text-2xl font-bold text-ink">{page.title}</h1>
-      <div className="prose prose-ink max-w-none">
-        <PageSlugClient content={page.content ?? null} />
+      <div className="max-w-3xl">
+        <RichText content={page.content} />
       </div>
     </Container>
   )
