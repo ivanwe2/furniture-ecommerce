@@ -6,6 +6,7 @@ import { Gallery } from '@/components/catalog/Gallery'
 import { ItemsTable } from '@/components/catalog/ItemsTable'
 import BreadcrumbList from '@/components/seo/BreadcrumbList'
 import ProductJsonLd from '@/components/seo/ProductJsonLd'
+import { RichText } from '@/components/richtext/RichText'
 import { getProductBySlug } from '@/lib/payload/queries'
 import { imageUrl } from '@/lib/images'
 import type { Media } from '@/payload-types'
@@ -195,23 +196,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
       {/* Description */}
       {product.description && (
-        <section className="mt-12">
-          <RichTextRenderer content={product.description} />
+        <section className="mt-12 max-w-3xl">
+          <RichText content={product.description} />
         </section>
       )}
     </Container>
     </>
-  )
-}
-
-// Simple rich text renderer for Lexical content
-function RichTextRenderer({ content }: { content: Record<string, unknown> }) {
-  // For now, render as plain JSON-LD placeholder
-  // Full Lexical rendering would need @payloadcms/richtext-react
-  return (
-    <div className="prose prose-ink max-w-none">
-      {/* Rich text will be rendered here once @payloadcms/richtext-react is configured */}
-      <pre className="rounded bg-sand p-4 text-xs overflow-auto">{JSON.stringify(content, null, 2)}</pre>
-    </div>
   )
 }
