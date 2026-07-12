@@ -1,15 +1,15 @@
 import Link from 'next/link'
 import { Container } from '@/components/ui'
-import { company } from '@/lib/company'
 import { t } from '@/lib/i18n/bg'
-import type { CategoryNode } from '@/lib/payload/queries'
+import { getCompany, type CategoryNode } from '@/lib/payload/queries'
 
 interface FooterProps {
   categories: CategoryNode[]
 }
 
-export default function Footer({ categories }: FooterProps) {
+export default async function Footer({ categories }: FooterProps) {
   const year = new Date().getFullYear()
+  const company = await getCompany()
 
   return (
     <footer className="bg-sand mt-auto border-t border-steel/20">

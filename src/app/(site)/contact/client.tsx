@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
-import { company } from '@/lib/company'
+import type { CompanyInfo } from '@/lib/company'
 import { t, tSafe } from '@/lib/i18n/bg'
 import { Container, Input, Textarea, Button, Alert, Turnstile } from '@/components/ui'
 import { submitContact } from '@/actions/contact'
 
-export default function ContactPageClient() {
+export default function ContactPageClient({ company }: { company: CompanyInfo }) {
   const [isPending, startTransition] = useTransition()
   const [turnstileToken, setTurnstileToken] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
