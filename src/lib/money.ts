@@ -1,16 +1,23 @@
 export const BGN_PER_EUR = 1.95583
 
-const eurFmt = new Intl.NumberFormat('bg-BG', {
-  style: 'currency', currency: 'EUR', minimumFractionDigits: 2,
-})
-
-const numFmt = new Intl.NumberFormat('bg-BG', {
-  minimumFractionDigits: 2, maximumFractionDigits: 2,
-})
+/**
+ * Format non-negative integer cents in the Bulgarian style: comma decimal
+ * separator, space thousands separator, always two decimals. Deliberately
+ * implemented WITHOUT Intl.NumberFormat so the output is byte-identical on the
+ * server (Cloudflare Workers) and in the browser - the two runtimes ship
+ * different ICU/locale data, and that mismatch caused React hydration errors
+ * (#418) on every price.
+ */
+function formatAmount(cents: number): string {
+  const whole = Math.floor(cents / 100)
+  const frac = cents % 100
+  const wholeStr = String(whole).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  return `${wholeStr},${String(frac).padStart(2, '0')}`
+}
 
 export function formatEur(cents: number): string {
   assertCents(cents)
-  return eurFmt.format(cents / 100)
+  return `${formatAmount(cents)} €`
 }
 
 /** EUR cents → BGN cents, HALF-UP at the cent. Integer in, integer out. */
@@ -33,7 +40,8 @@ export function eurCentsFromBgnCents(bgnCents: number): number {
 }
 
 export function formatBgn(bgnCents: number): string {
-  return `${numFmt.format(bgnCents / 100)} лв.`
+  assertCents(bgnCents)
+  return `${formatAmount(bgnCents)} лв.`
 }
 
 export function showBgn(): boolean {

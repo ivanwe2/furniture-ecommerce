@@ -31,6 +31,13 @@ export const metadata: Metadata = {
   description: t('seo.homeDesc'),
 }
 
+// Render every storefront page live from the DB. On-demand revalidation
+// (revalidateTag in the collection hooks) does NOT work on Cloudflare until the
+// OpenNext incremental cache is wired (deferred), so static pages would stay
+// frozen at build time and admin edits would never appear. Traffic is tiny, so
+// per-request rendering is fine. Revisit when the page cache is added.
+export const dynamic = 'force-dynamic'
+
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   const categories = await getCategoryTree()
 

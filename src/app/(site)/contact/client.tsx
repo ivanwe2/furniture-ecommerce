@@ -137,7 +137,7 @@ export default function ContactPageClient({ company }: { company: CompanyInfo })
 
           <Turnstile onToken={setTurnstileToken} />
 
-          <Button type="submit" pending={isPending} className="w-full">
+          <Button type="submit" pending={isPending} disabled={!turnstileToken} className="w-full">
             {isPending ? t('checkout.submitting') : t('contact.send')}
           </Button>
         </form>
