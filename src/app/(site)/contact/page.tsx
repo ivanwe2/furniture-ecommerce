@@ -1,5 +1,5 @@
 import { t } from '@/lib/i18n/bg'
-import { company } from '@/lib/company'
+import { getCompany } from '@/lib/payload/queries'
 import LocalBusiness from '@/components/seo/LocalBusiness'
 import ContactPageClient from './client'
 
@@ -19,16 +19,18 @@ export async function generateMetadata() {
   }
 }
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const company = await getCompany()
   return (
     <>
       <LocalBusiness
         name={company.name}
         address={company.addressLine}
+        city={company.city}
         telephone={company.phoneHref.replace('tel:', '')}
         email={company.email}
       />
-      <ContactPageClient />
+      <ContactPageClient company={company} />
     </>
   )
 }

@@ -7,7 +7,18 @@
  * as owner-editable defaults; wiring that global into the storefront is a
  * post-launch item.
  */
-export const company = {
+export interface CompanyInfo {
+  name: string
+  city: string
+  addressLine: string
+  phoneDisplay: string
+  phoneHref: string
+  email: string
+  emailHref: string
+  workingHours: { weekdays: string; saturday: string }
+}
+
+export const company: CompanyInfo = {
   name: 'Настех ООД',
   city: 'Пловдив',
   addressLine: 'ул. „Жан Жорес“ 9',
@@ -19,4 +30,4 @@ export const company = {
     weekdays: 'Пон-Пет: 08:30-17:30',
     saturday: 'Съб: 09:00-14:00',
   },
-} as const
+}

@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import type { Category, Product } from '@/payload-types'
+import { company as companyDefaults, type CompanyInfo } from '@/lib/company'
 
 async function p() {
   return getPayload({ config })
@@ -310,6 +311,43 @@ export const getSettings = unstable_cache(
   ['settings'],
   { tags: ['settings'] },
 )
+
+/** Build a `tel:` href from a display number, normalising BG numbers. */
+function telHref(display: string): string {
+  const digits = display.replace(/[^\d+]/g, '')
+  if (digits.startsWith('+')) return `tel:${digits}`
+  if (digits.startsWith('359')) return `tel:+${digits}`
+  if (digits.startsWith('0')) return `tel:+359${digits.slice(1)}`
+  return `tel:${digits}`
+}
+
+/**
+ * Store contact details, sourced from the `site-settings` global so the owner
+ * can edit them in the admin. Falls back per-field to the `company.ts` defaults
+ * when a setting is empty, so the storefront is never left without contact info.
+ */
+export async function getCompany(): Promise<CompanyInfo> {
+  const s = await getSettings()
+  const phone = s?.phones?.[0]?.number?.trim() || companyDefaults.phoneDisplay
+  const email = s?.email?.trim() || companyDefaults.email
+  const hoursLines = String(s?.workingHours ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+  return {
+    name: s?.companyName?.trim() || companyDefaults.name,
+    city: s?.city?.trim() || companyDefaults.city,
+    addressLine: s?.addressLine?.trim() || companyDefaults.addressLine,
+    phoneDisplay: phone,
+    phoneHref: telHref(phone),
+    email,
+    emailHref: `mailto:${email}`,
+    workingHours: {
+      weekdays: hoursLines[0] ?? companyDefaults.workingHours.weekdays,
+      saturday: hoursLines[1] ?? companyDefaults.workingHours.saturday,
+    },
+  }
+}
 
 export function getAllSlugsForSitemap() {
   return unstable_cache(
