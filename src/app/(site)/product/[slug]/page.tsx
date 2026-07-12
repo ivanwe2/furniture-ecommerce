@@ -14,13 +14,31 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>
 }
 
+/** Flatten a Lexical rich-text value to a trimmed plain-text excerpt for meta. */
+function richTextExcerpt(content: unknown, max = 160): string {
+  const parts: string[] = []
+  const walk = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return
+    const n = node as { text?: unknown; children?: unknown }
+    if (typeof n.text === 'string') parts.push(n.text)
+    if (Array.isArray(n.children)) n.children.forEach(walk)
+  }
+  if (content && typeof content === 'object' && 'root' in content) {
+    walk((content as { root: unknown }).root)
+  }
+  const text = parts.join(' ').replace(/\s+/g, ' ').trim()
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text
+}
+
 export async function generateMetadata({ params }: ProductPageProps) {
   const resolvedParams = await params
   const product = await getProductBySlug(resolvedParams.slug)
   if (!product) return { title: t('product.notFoundTitle') }
   const siteName = t('seo.siteName')
   const seoTitle = product.seo?.title ?? `${product.name} | ${siteName}`
-  const seoDesc = product.seo?.description ?? t('seo.productDesc').replace('{name}', product.name)
+  const seoDesc =
+    product.seo?.description ??
+    (richTextExcerpt(product.description) || t('seo.productDesc').replace('{name}', product.name))
   const firstImage = product.gallery?.[0]?.image
   return {
     title: seoTitle,
