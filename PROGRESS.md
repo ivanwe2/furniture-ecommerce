@@ -5,19 +5,42 @@
 
 ## Status
 
-**Current phase:** Repair/verification pass over the overnight build (was
-falsely marked "Phase 10 complete"; many phases had unmet ACs).
-**Current task:** Feature-complete storefront, verified locally end-to-end.
-Remaining before launch: Ivan's Cloudflare/deploy tasks + real content + an
-i18n inline-string cleanup (see Blocked/Remaining).
+**Current phase:** LIVE on Cloudflare at the interim `*.workers.dev` URL
+(deployed 2026-07-12/13 via Cloudflare Workers Builds). Pre-domain, pre-redesign.
+**Current task (next session):** a full visual **REDESIGN**. Ivan is preparing a
+design template (via Claude design) from customer feedback and will hand it over.
+Until then the site runs on the current design.
 **Repo state:** green gate (`typecheck` + `lint` 0 errors + `test` 65) passes.
-`pnpm dev` works fully; migration applies to a fresh D1; seed idempotent.
-Full purchase flow verified via Playwright (order lands in D1 with correct
-server-computed totals). Admin `/admin` loads (RSC error fixed).
-**Last session summary (2026-07-09 repair):** Audited the overnight output —
-green gate was passing but the site was non-functional (unstyled, no checkout,
-broken migration, admin RSC error). Fixed all of it; see "2026-07-09 repair"
-below. Routes are now English (Ivan's decision).
+main is **branch-protected** (PR + `verify` CI required); all work goes via
+feature branches + squash-merged PRs (Decisions log 2026-07-11/12).
+
+**Live deployment state (2026-07-13):**
+- URL: https://nasteh-bg.nastehsales.workers.dev · Workers **Paid** plan · account
+  `061903067be16a178866adb12584641c`. Custom domain nasteh.bg **not yet wired**.
+- CD: **Cloudflare Workers Builds** on push to `main` (build `npx opennextjs-
+  cloudflare build`, deploy `npx opennextjs-cloudflare deploy`; non-prod branch
+  builds OFF; build caching ON). Build log: Worker → Deployments → build history.
+  Local `pnpm deploy` is DEAD on Windows (OpenNext/esbuild vs pnpm symlinks).
+- Build vars (dashboard): `PAYLOAD_SECRET`, `NEXT_PUBLIC_SHOW_BGN=true`,
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (real), `NEXT_PUBLIC_SITE_URL=`
+  `https://nasteh-bg.nastehsales.workers.dev` — INTERIM; switch to https://nasteh.bg
+  at domain cutover. It ALSO builds the media URL (see images.ts), not just SEO.
+- Runtime secrets (wrangler): `PAYLOAD_SECRET`, `TURNSTILE_SECRET_KEY` (real),
+  `ORDER_INBOX_EMAIL=nastehsales@gmail.com`. `RESEND_API_KEY` NOT set → order/
+  contact emails only LOG until Resend + domain verification.
+- Contact info now editable from the `site-settings` global via `getCompany()`
+  (footer/contact/LocalBusiness); emails still use `company.ts` defaults (follow-up).
+- Workers Logs ON (`observability`). Rate-limit KV wired + active. Turnstile real.
+- Admin: first owner user created (nastehsales@gmail.com).
+- Incremental page cache **DEFERRED** (needs R2 + separate D1 tag cache + DO
+  queue; do it post-redesign). `nasteh-cache` bucket may be deleted/recreated.
+- Legal pages: drafted to EU/BG standard as a Claude artifact (needs lawyer
+  review + manual entry as drafts) — NOT yet in the DB. Real product content +
+  real categories still to be entered by the owner (seed had only demo data).
+
+**Prior session (2026-07-09 repair):** made the non-functional overnight build
+work (styling, checkout, migration, admin RSC); see "2026-07-09 repair" below.
+Routes are English (Ivan's decision).
 
 ## Phase checklist
 
