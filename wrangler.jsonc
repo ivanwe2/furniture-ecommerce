@@ -11,6 +11,11 @@
     // see https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public
     "global_fetch_strictly_public",
   ],
+  // Workers Logs - production observability (included on the paid plan:
+  // 20M events/mo, 7-day retention). View under the Worker's Observability tab.
+  "observability": {
+    "enabled": true,
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",
