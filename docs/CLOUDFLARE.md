@@ -40,7 +40,7 @@ the template's pattern — keep the template's access helper):
 | D1 | d1_databases | `D1` | Payload database (real: `nasteh-db`, id `85538a45-…`) |
 | R2 | r2_buckets | `R2` | media originals (real: `nasteh-media`) |
 | R2 | r2_buckets | `NEXT_INC_CACHE_R2_BUCKET` | OpenNext incremental cache (ISR/tags) — commented out until wired (Phase 8) |
-| KV | kv_namespaces | `RATE_LIMIT_KV` | rate-limit counters (create in Phase 1.5) |
+| KV | kv_namespaces | `RATE_LIMIT_KV` | rate-limit counters (real id `c245cbd8…`, preview `306dc8a1…`; created 2026-07-12) |
 | Assets | assets | `ASSETS` | static assets |
 
 Binding names follow the **template's** defaults (`D1`, `R2`, `ASSETS`) — this

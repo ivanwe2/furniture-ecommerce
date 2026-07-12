@@ -247,13 +247,12 @@ _(Format per CLAUDE.md §6. Agents STOP the blocked task after writing here.)_
       NomenclaturesService.getOffices.json` (HTTP Basic); Speedy `POST
       api.speedy.bg/v1/location/office` + `/location/site` (creds in JSON body).
 
-- [ ] (phase-1.5) **Ivan — create the rate-limit KV namespace** (needs your CF
-      account). At the keyboard:
-        npx wrangler kv namespace create RATE_LIMIT_KV
-        npx wrangler kv namespace create RATE_LIMIT_KV --preview
-      Then add a `kv_namespaces` entry to `wrangler.jsonc` binding `RATE_LIMIT_KV`
-      with the returned `id` (+ `preview_id`), fill the ID in CLOUDFLARE §3, and
-      commit `wrangler.jsonc`. (No code depends on it until Phase 3.)
+- [x] (phase-1.5) **Rate-limit KV namespace created + wired (2026-07-12).**
+      Prod id `c245cbd850184f1fa01a59d96f55eb48`, preview id
+      `306dc8a138db4ffab92e8fe5bf2b04aa`; `kv_namespaces` binding `RATE_LIMIT_KV`
+      added to `wrangler.jsonc`, id recorded in CLOUDFLARE §3. Local dev uses a
+      LOCAL KV (Ivan chose "no" to remote). This flips the app rate-limiter from
+      fail-open to ACTIVE in production once deployed.
 
 - [ ] (phase-1.7) **Ivan — first deploy + secrets** (needs your CF account):
         - Secrets on the Worker:
