@@ -37,6 +37,13 @@
     },
     // "NEXT_INC_CACHE_R2_BUCKET" stays commented for now — see note below
   ],
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT_KV",
+      "id": "c245cbd850184f1fa01a59d96f55eb48",
+      "preview_id": "306dc8a138db4ffab92e8fe5bf2b04aa",
+    },
+  ],
   // Here's how to configure an additional environment
   // It can be deployed with `CLOUDFLARE_ENV=staging pnpm run deploy`
   // "env": {
