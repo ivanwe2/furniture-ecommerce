@@ -7,7 +7,6 @@ import { imageUrl, imageSrcSet } from '@/lib/images'
 import type { Media } from '@/payload-types'
 
 export async function generateMetadata() {
-  const settings = await getSettings()
   const siteName = t('seo.siteName')
   const description = t('seo.homeDesc')
   return {

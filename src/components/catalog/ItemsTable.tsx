@@ -19,10 +19,9 @@ interface ItemRow {
 interface ItemsTableProps {
   items: ItemRow[]
   productSlug: string
-  productName: string
 }
 
-export function ItemsTable({ items, productSlug, productName }: ItemsTableProps) {
+export function ItemsTable({ items, productSlug }: ItemsTableProps) {
   const add = useCart((s) => s.add)
   const [addedSku, setAddedSku] = useState<string | null>(null)
 

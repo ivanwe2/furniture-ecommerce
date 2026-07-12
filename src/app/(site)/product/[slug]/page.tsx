@@ -171,7 +171,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       {items.length > 0 && (
         <section className="mt-12">
           <h2 className="mb-4 text-lg font-semibold text-ink">{t('product.itemsTitle')}</h2>
-          <ItemsTable items={items} productSlug={product.slug ?? ''} productName={product.name} />
+          <ItemsTable items={items} productSlug={product.slug ?? ''} />
         </section>
       )}
 

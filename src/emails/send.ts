@@ -76,7 +76,7 @@ export async function sendOrderEmails(order: Order, customerEmail: string) {
   )
 }
 
-export async function sendContactEmail(data: { name: string; email: string; phone?: string; message: string }, ip: string) {
+export async function sendContactEmail(data: { name: string; email: string; phone?: string; message: string }, _ip: string) {
   if (!ORDER_INBOX_EMAIL) return
 
   await sendEmail(
