@@ -20,13 +20,15 @@ export async function generateMetadata({ params }: CategoryPageProps) {
   const category = await findCategoryBySlug(tree, categorySlug)
   if (!category) return { title: t('category.notFoundTitle') }
   const siteName = t('seo.siteName')
+  const metaTitle = `${category.name} | ${siteName}`
+  const metaDesc = category.description?.trim() || t('seo.categoryDesc').replace('{name}', category.name)
   return {
-    title: `${category.name} | ${siteName}`,
-    description: t('seo.categoryDesc').replace('{name}', category.name),
+    title: metaTitle,
+    description: metaDesc,
     alternates: { canonical: `/category/${categorySlug}` },
     openGraph: {
-      title: `${category.name} | ${siteName}`,
-      description: t('seo.categoryDesc').replace('{name}', category.name),
+      title: metaTitle,
+      description: metaDesc,
       type: 'website',
       url: `/category/${categorySlug}`,
     },

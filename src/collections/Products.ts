@@ -116,10 +116,24 @@ export const Products: CollectionConfig = {
     {
       name: 'seo',
       type: 'group',
-      label: 'SEO',
+      label: 'SEO (по желание)',
+      admin: {
+        description:
+          'Не е задължително. Ако оставите полетата празни, заглавието и описанието за търсачки се генерират автоматично от името и описанието на продукта. Попълнете само ако искате различен текст.',
+      },
       fields: [
-        { name: 'title', type: 'text' },
-        { name: 'description', type: 'textarea' },
+        {
+          name: 'title',
+          type: 'text',
+          label: 'Заглавие за търсачки',
+          admin: { description: 'Празно = „Име на продукта | Настех".' },
+        },
+        {
+          name: 'description',
+          type: 'textarea',
+          label: 'Описание за търсачки',
+          admin: { description: 'Празно = автоматично от описанието на продукта.' },
+        },
       ],
     },
   ],
