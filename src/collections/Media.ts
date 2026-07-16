@@ -17,6 +17,9 @@ export const Media: CollectionConfig = {
     },
   ],
   upload: {
+    // Uploads land on local disk (the `media` Docker volume in production).
+    // Relative paths resolve from cwd — `media` = /app/media in the container.
+    staticDir: process.env.MEDIA_DIR || 'media',
     crop: false,
     focalPoint: false,
     mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
