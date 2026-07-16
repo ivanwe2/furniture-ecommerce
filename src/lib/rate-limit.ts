@@ -1,43 +1,38 @@
-type KVLike = {
-  get(k: string): Promise<string | null>
-  put(k: string, v: string, o?: { expirationTtl?: number }): Promise<void>
-}
+type Bucket = { count: number; resetAt: number }
 
-export async function rateLimitWith(
-  kv: KVLike,
+/**
+ * Pure fixed-window counter over an in-memory store. Exposed for tests; the
+ * window bucket is derived from the wall clock so callers hold no state.
+ */
+export function rateLimitWith(
+  store: Map<string, Bucket>,
   key: string,
   { windowSec, max }: { windowSec: number; max: number },
-): Promise<{ allowed: boolean; retryAfterSec: number }> {
+): { allowed: boolean; retryAfterSec: number } {
   const bucket = Math.floor(Date.now() / 1000 / windowSec)
   const k = `${key}:${bucket}`
-  const current = Number((await kv.get(k)) ?? '0')
+  const current = store.get(k)?.count ?? 0
   if (current >= max) return { allowed: false, retryAfterSec: windowSec }
-  await kv.put(k, String(current + 1), { expirationTtl: windowSec * 2 })
+  store.set(k, { count: current + 1, resetAt: (bucket + 1) * windowSec * 1000 })
   return { allowed: true, retryAfterSec: 0 }
 }
 
 /**
- * Server entry point: reads the RATE_LIMIT_KV binding via the Cloudflare
- * context and applies the fixed-window limit. Fails OPEN (with a warning) when
- * the binding is absent — the rate limit is a soft gate; Turnstile is the hard
- * one (ARCHITECTURE §7). The dynamic import keeps this module test-safe: the
- * pure `rateLimitWith` above can be imported without pulling in Workers APIs.
+ * Server entry point: a single-instance in-memory fixed-window limit
+ * (ARCHITECTURE §7). We run one container, so an in-process Map IS the whole
+ * rate-limit surface — no KV, no Redis. This is the SOFT gate; Turnstile is the
+ * hard one. The counter lives in module state for the process lifetime.
  */
+const store = new Map<string, Bucket>()
+
 export async function rateLimit(
   key: string,
   opts: { windowSec: number; max: number },
 ): Promise<{ allowed: boolean; retryAfterSec: number }> {
-  let kv: KVLike | undefined
-  try {
-    const { getCloudflareContext } = await import('@opennextjs/cloudflare')
-    const { env } = await getCloudflareContext({ async: true })
-    kv = (env as unknown as Record<string, KVLike | undefined>).RATE_LIMIT_KV
-  } catch {
-    // Not inside a Cloudflare context (some build/test paths) — fall through.
+  // Opportunistic sweep so the Map can't grow unbounded across many IPs/buckets.
+  if (store.size > 5000) {
+    const now = Date.now()
+    for (const [k, b] of store) if (b.resetAt <= now) store.delete(k)
   }
-  if (!kv) {
-    console.warn('[ratelimit] RATE_LIMIT_KV binding missing — soft limit skipped (Turnstile is the hard gate)')
-    return { allowed: true, retryAfterSec: 0 }
-  }
-  return rateLimitWith(kv, key, opts)
+  return rateLimitWith(store, key, opts)
 }
