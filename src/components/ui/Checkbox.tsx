@@ -15,15 +15,15 @@ export function Checkbox({ id, className, label, ...props }: CheckboxProps) {
         id={checkboxId}
         type="checkbox"
         className={clsx(
-          'h-4 w-4 rounded border border-steel bg-cream text-brass',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-1 ring-offset-cream',
+          'mt-0.5 h-4 w-4 shrink-0 border border-ink/30 bg-raised accent-brass',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-1 ring-offset-raised',
           'cursor-pointer',
           className,
         )}
         {...props}
       />
       {label && checkboxId && (
-        <label htmlFor={checkboxId} className="text-sm text-ink leading-tight cursor-pointer">
+        <label htmlFor={checkboxId} className="cursor-pointer text-sm leading-snug text-ink2">
           {label}
         </label>
       )}
