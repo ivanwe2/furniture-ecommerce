@@ -1,0 +1,43 @@
+# Настех — self-hosted deployment.
+#
+# The client's sysadmin runs a reverse proxy (nginx/Caddy/Traefik) that
+# terminates TLS for nasteh.bg and proxies to this app on port 3000. TLS,
+# DNS, and mail are the sysadmin's responsibility — this stack is just the app.
+#
+#   1. cp .env.example .env   # then fill it in (see DEPLOY.md)
+#   2. docker compose up -d --build
+#
+# Persistent state lives in two named volumes: `data` (SQLite DB) and `media`
+# (uploaded images). Back both up (see DEPLOY.md).
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nasteh-bg:latest
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      # host:container — the reverse proxy forwards to 127.0.0.1:3000
+      - "3000:3000"
+    volumes:
+      - data:/app/data # SQLite database (replaces Cloudflare D1)
+      - media:/app/media # uploaded images (replaces Cloudflare R2)
+    healthcheck:
+      # robots.txt is static (no DB) — a cheap liveness probe
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/robots.txt').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  data:
+  media:

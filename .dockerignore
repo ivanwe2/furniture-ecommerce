@@ -1,0 +1,26 @@
+# deps & build output — reinstalled/rebuilt inside the image
+node_modules
+.next
+.open-next
+.wrangler
+
+# secrets & local data — never bake into the image
+.env
+.env.*
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+/media
+/data
+/backups
+
+# vcs & CI
+.git
+.github
+
+# test / report artifacts
+/coverage
+/test-results
+/playwright-report
+/blob-report

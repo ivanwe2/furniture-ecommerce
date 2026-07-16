@@ -42,6 +42,12 @@ next-env.d.ts
 
 /media
 
+# Local SQLite database files (dev)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
 # Playwright
 node_modules/
 /test-results/
@@ -49,6 +55,6 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 
-# OpenNext
+# Stale Cloudflare/OpenNext build artifacts (retired platform) — never commit
 .open-next
 .wrangler

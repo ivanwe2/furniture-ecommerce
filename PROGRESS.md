@@ -29,8 +29,19 @@ flipped in ARCHITECTURE §1/§2/§3/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12/
      `SMTP_HOST` unset; auth omitted when `SMTP_USER` empty (supports a no-auth
      local relay). nodemailer@9 verified on Node 24 (offline jsonTransport).
      **PR #6 TODO:** add `nodemailer` to `serverExternalPackages` in next.config.
-  6. Container: `next.config` `output:'standalone'`, Dockerfile,
-     docker-compose.yml, .env.example, .dockerignore; remove wrangler/opennext.
+  6. ✅ Container: `Dockerfile` (multi-stage, `node:24-bookworm-slim`,
+     `payload migrate && next start`, non-root, volume-friendly ownership),
+     `docker-compose.yml` (app + `data`/`media` volumes + healthcheck),
+     `.dockerignore`, `.env.example` + `env-keys.txt` overhaul (SMTP/DATABASE_URI/
+     MEDIA_DIR in; RESEND/MEDIA_HOST out), `next.config` serverExternalPackages
+     `['sharp','nodemailer']`, `sitemap.ts` force-dynamic (so `next build` needs
+     no DB). Removed deps `@opennextjs/cloudflare`+`wrangler`; deleted
+     `wrangler.jsonc`/`open-next.config.ts`/`cloudflare-env.d.ts`; dropped the CF
+     deploy/preview/types scripts + `cloudflare` field; renamed package to
+     `nasteh-bg`. Regenerated admin `importMap.js` (dropped stale `storage-r2`
+     ref — caught by `next build`). **`pnpm build` verified green locally**
+     (all site routes + sitemap dynamic; no build-time DB). Docker image itself
+     is UNBUILT here (no daemon) — sysadmin builds on their infra.
   7. Cutover doc: D1→SQLite export/import + R2→disk media lift.
 
 _Migration notes:_ the existing D1-generated migration
