@@ -13,7 +13,9 @@ dark 4-col footer) → **✅ R3** homepage (engineering-overlay hero + lazy WebG
 hinge + fallback, category cards + dark catalog CTA, numbered trust band; adds
 `three`) → **✅ R4** catalog (PR #26 — editorial ProductCard, category grid +
 subcategory chips, product detail + technical items table, brand, search; shared
-`Breadcrumbs` + `Pagination`) → R5 cart/checkout → R6 contact/legal/primitives →
+`Breadcrumbs` + `Pagination`) → **✅ R5** cart/checkout (PR #27 — editorial cart
+line items + sticky summary, checkout summary + bordered delivery-method
+selector, square success confirmation) → R6 contact/legal/primitives →
 R7 admin touch-ups. Logo files added by Ivan (`public/logos/nasteh-*.png`).
 **R3 note:** the old homepage featured-products grid + SEVROLL brand strip are
 removed — the 1A design's homepage is hero → categories → trust only. Category

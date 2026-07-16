@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import clsx from 'clsx'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { t, tSafe } from '@/lib/i18n/bg'
@@ -58,15 +59,15 @@ export function CheckoutForm({ resolution }: CheckoutFormProps) {
 
   if (totals.ok.length === 0) {
     return (
-      <Container className="py-16">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <h1 className="text-xl font-semibold text-ink">{t('checkout.title')}</h1>
-          <p className="text-steel">{t('cart.empty')}</p>
+      <Container className="py-16 sm:py-24">
+        <div className="flex flex-col items-center gap-5 text-center">
+          <div className="font-mono text-xs uppercase tracking-[0.16em] text-brass-dark">{t('checkout.title')}</div>
+          <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink">{t('cart.empty')}</h1>
           <Link
             href="/"
-            className="inline-flex items-center justify-center rounded bg-brass px-5 py-2.5 text-sm font-medium text-cream hover:bg-brass/90"
+            className="mt-1 inline-flex items-center justify-center gap-2 bg-brass px-6 py-3 text-sm font-semibold text-raised transition hover:brightness-90"
           >
-            {t('cart.goShopping')}
+            {t('cart.goShopping')} <span aria-hidden="true">→</span>
           </Link>
         </div>
       </Container>
@@ -116,27 +117,33 @@ export function CheckoutForm({ resolution }: CheckoutFormProps) {
   }
 
   return (
-    <Container className="py-8">
-      <h1 className="mb-6 text-xl font-semibold text-ink">{t('checkout.title')}</h1>
+    <Container className="py-8 sm:py-10">
+      <div className="mx-auto max-w-lg">
+        <div className="mb-7 border-b border-ink/12 pb-5">
+          <div className="mb-2 font-mono text-xs uppercase tracking-[0.16em] text-brass-dark">{t('cart.title')}</div>
+          <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
+            {t('checkout.title')}
+          </h1>
+        </div>
 
-      <div className="mx-auto max-w-lg space-y-6">
+        <div className="space-y-6">
         {/* Order summary (collapsed) */}
-        <details className="rounded-lg border border-sand bg-cream">
+        <details className="border border-ink/14 bg-raised">
           <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-medium text-ink">
-            <span>{t('cart.total')}</span>
-            <Price eurCents={totals.subtotalEurCents} className="font-semibold" />
+            <span className="font-mono text-xs uppercase tracking-[0.12em] text-steel">{t('cart.total')}</span>
+            <Price eurCents={totals.subtotalEurCents} className="font-mono text-base font-semibold text-ink" />
           </summary>
-          <ul className="border-t border-sand px-4 py-3 space-y-2">
+          <ul className="space-y-2 border-t border-ink/10 px-4 py-3">
             {totals.ok.map((line) => (
               <li key={line.sku} className="flex items-baseline justify-between gap-3 text-sm">
                 <span className="min-w-0 flex-1 text-ink">
                   {line.name} <span className="text-steel">× {line.qty}</span>
                 </span>
-                <Price eurCents={line.priceEurCents * line.qty} className="shrink-0 tabular-nums" />
+                <Price eurCents={line.priceEurCents * line.qty} className="shrink-0 font-mono tabular-nums text-ink" />
               </li>
             ))}
           </ul>
-          <p className="border-t border-sand px-4 py-2 text-xs text-steel">{t('cart.codNote')}</p>
+          <p className="border-t border-ink/10 px-4 py-2 text-xs text-steel">{t('cart.codNote')}</p>
         </details>
 
         {totals.stale.length > 0 && (
@@ -177,8 +184,10 @@ export function CheckoutForm({ resolution }: CheckoutFormProps) {
           />
 
           {/* Delivery method */}
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-ink">{t('checkout.method')}</legend>
+          <fieldset className="space-y-2.5">
+            <legend className="mb-1 font-mono text-xs uppercase tracking-[0.12em] text-steel">
+              {t('checkout.method')}
+            </legend>
             {(
               [
                 ['address', t('checkout.methodAddress')],
@@ -186,14 +195,20 @@ export function CheckoutForm({ resolution }: CheckoutFormProps) {
                 ['speedy', t('checkout.methodSpeedy')],
               ] as const
             ).map(([value, label]) => (
-              <label key={value} className="flex items-center gap-2 text-sm text-ink">
+              <label
+                key={value}
+                className={clsx(
+                  'flex cursor-pointer items-center gap-3 border px-4 py-3 text-sm transition-colors',
+                  method === value ? 'border-brass bg-sand/50 text-ink' : 'border-ink/15 text-ink2 hover:border-ink/30',
+                )}
+              >
                 <input
                   type="radio"
                   name="method"
                   value={value}
                   checked={method === value}
                   onChange={() => setMethod(value)}
-                  className="h-4 w-4 border-steel text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                  className="h-4 w-4 accent-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                 />
                 {label}
               </label>
@@ -235,6 +250,7 @@ export function CheckoutForm({ resolution }: CheckoutFormProps) {
             {isPending ? t('checkout.submitting') : t('checkout.submit')}
           </Button>
         </form>
+        </div>
       </div>
     </Container>
   )

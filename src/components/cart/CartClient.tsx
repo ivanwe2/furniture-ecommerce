@@ -5,7 +5,6 @@ import { t } from '@/lib/i18n/bg'
 import { useCart, type CartLine } from '@/lib/cart/store'
 import { computeTotals, type ResolvedLine as TotalsResolvedLine } from '@/lib/cart/totals'
 import { Container, Price, Skeleton, Alert } from '@/components/ui'
-import clsx from 'clsx'
 import React, { useState, useCallback } from 'react'
 
 interface CartClientProps {
@@ -24,12 +23,15 @@ export function CartClient({ resolution }: CartClientProps) {
 
   if (lines.length === 0) {
     return (
-      <Container className="py-16">
-        <div className="flex flex-col items-center justify-center gap-4 text-center">
-          <h1 className="text-xl font-semibold text-ink">{t('cart.title')}</h1>
-          <p className="text-steel">{t('cart.empty')}</p>
-          <Link href="/" className="mt-2 inline-flex items-center justify-center rounded bg-brass px-5 py-2.5 text-sm font-medium text-cream hover:bg-brass/90">
-            {t('cart.goShopping')}
+      <Container className="py-16 sm:py-24">
+        <div className="flex flex-col items-center justify-center gap-5 text-center">
+          <div className="font-mono text-xs uppercase tracking-[0.16em] text-brass-dark">{t('cart.title')}</div>
+          <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink">{t('cart.empty')}</h1>
+          <Link
+            href="/"
+            className="mt-1 inline-flex items-center justify-center gap-2 bg-brass px-6 py-3 text-sm font-semibold text-raised transition hover:brightness-90"
+          >
+            {t('cart.goShopping')} <span aria-hidden="true">→</span>
           </Link>
         </div>
       </Container>
@@ -56,12 +58,19 @@ export function CartClient({ resolution }: CartClientProps) {
   const result = computeTotals({ lines, resolution: resolvedMap })
 
   return (
-    <Container className="py-8">
-      <h1 className="mb-6 text-xl font-semibold text-ink">{t('cart.title')}</h1>
+    <Container className="py-8 sm:py-10">
+      <div className="mb-7 flex items-baseline justify-between gap-4 border-b border-ink/12 pb-5">
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
+          {t('cart.title')}
+        </h1>
+        <span className="font-mono text-xs uppercase tracking-[0.1em] text-steel">
+          {result.ok.length} {result.ok.length === 1 ? t('cart.itemSingular') : t('cart.itemPlural')}
+        </span>
+      </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px]">
         {/* Line items */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {result.ok.map((line) => (
             <CartLineItem key={line.sku} line={line} setQty={setQty} remove={remove} />
           ))}
@@ -71,22 +80,22 @@ export function CartClient({ resolution }: CartClientProps) {
         </div>
 
         {/* Summary card */}
-        <div className="rounded-lg border border-sand bg-cream p-6 space-y-4">
-          <h2 className="text-base font-semibold text-ink">{t('cart.total')}</h2>
-          <div className="flex justify-between items-baseline">
-            <span className="text-sm text-steel">{result.ok.length} {result.ok.length === 1 ? t('cart.itemSingular') : t('cart.itemPlural')}</span>
-            <Price eurCents={result.subtotalEurCents} className="text-lg font-semibold" />
+        <div className="h-fit border border-ink/14 bg-raised p-6 lg:sticky lg:top-24">
+          <h2 className="font-mono text-xs uppercase tracking-[0.16em] text-steel">{t('cart.total')}</h2>
+          <div className="mt-4 flex items-baseline justify-between border-b border-ink/10 pb-4">
+            <span className="text-sm text-steel">
+              {result.ok.length} {result.ok.length === 1 ? t('cart.itemSingular') : t('cart.itemPlural')}
+            </span>
+            <Price eurCents={result.subtotalEurCents} className="font-mono text-xl font-semibold text-ink" />
           </div>
-          <p className="text-xs text-steel">{t('cart.codNote')}</p>
-          <p className="text-xs text-steel">{t('cart.deliveryNote')}</p>
+          <p className="mt-4 text-xs leading-relaxed text-steel">{t('cart.codNote')}</p>
+          <p className="mt-2 text-xs leading-relaxed text-steel">{t('cart.deliveryNote')}</p>
           {result.ok.length > 0 && (
             <Link
               href="/checkout"
-              className={clsx(
-                'block w-full rounded bg-brass px-5 py-2.5 text-center text-sm font-medium text-cream hover:bg-brass/90',
-              )}
+              className="mt-5 flex w-full items-center justify-center gap-2 bg-brass px-5 py-3 text-sm font-semibold text-raised transition hover:brightness-90"
             >
-              {t('cart.checkout')}
+              {t('cart.checkout')} <span aria-hidden="true">→</span>
             </Link>
           )}
         </div>
@@ -115,24 +124,24 @@ function CartLineItem({ line, setQty, remove }: {
   const lineTotal = line.priceEurCents * qty
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-sand bg-cream p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 border border-ink/14 bg-raised p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
-        <Link href={`/product/${line.productSlug}`} className="font-medium text-ink hover:text-brass transition-colors">
+        <Link href={`/product/${line.productSlug}`} className="font-display font-semibold text-ink transition-colors hover:text-brass">
           {line.name}
         </Link>
-        <p className="mt-0.5 text-xs font-mono text-steel">{line.sku} · {line.unit}</p>
+        <p className="mt-1 font-mono text-xs text-steel">{line.sku} · {line.unit}</p>
       </div>
 
-      <div className="flex items-center gap-4 sm:gap-6">
-        <Price eurCents={line.priceEurCents} />
+      <div className="flex items-center gap-4 sm:gap-5">
+        <Price eurCents={line.priceEurCents} className="font-mono text-sm text-steel" />
 
         <QtyStepper value={qty} onChange={handleQtyChange} clamp={clamp} />
 
-        <Price eurCents={lineTotal} className="min-w-[80px] text-right" />
+        <Price eurCents={lineTotal} className="min-w-[80px] text-right font-mono font-semibold text-ink" />
 
         <button
           onClick={() => remove(line.sku)}
-          className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded bg-sand text-steel hover:text-danger transition-colors"
+          className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center border border-ink/15 text-steel transition-colors hover:border-danger hover:text-danger"
           aria-label={t('cart.remove')}
         >
           ×
@@ -147,17 +156,17 @@ function StaleLineItem({ line, remove }: {
   remove: (sku: string) => void
 }) {
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-sand bg-cream p-4 opacity-60 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 border border-ink/14 bg-raised p-4 opacity-70 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
-        <span className="font-medium text-ink">{line.productSlug}</span>
-        <p className="mt-0.5 text-xs font-mono text-steel">{line.sku} · {line.qty} {t('common.unitDefault')}</p>
+        <span className="font-display font-semibold text-ink">{line.productSlug}</span>
+        <p className="mt-1 font-mono text-xs text-steel">{line.sku} · {line.qty} {t('common.unitDefault')}</p>
       </div>
-      <Alert variant="danger" className="text-xs max-w-[280px]">
+      <Alert variant="danger" className="max-w-[280px] text-xs">
         {t('cart.stale')}
       </Alert>
       <button
         onClick={() => remove(line.sku)}
-        className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded bg-sand text-steel hover:text-danger transition-colors"
+        className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center border border-ink/15 text-steel transition-colors hover:border-danger hover:text-danger"
         aria-label={t('cart.remove')}
       >
         ×
@@ -171,11 +180,14 @@ function QtyStepper({ value, onChange, clamp }: {
   onChange: (v: number) => void
   clamp: (q: number) => number
 }) {
+  const stepBtn =
+    'flex h-8 w-8 items-center justify-center border border-ink/20 text-ink transition-colors hover:border-brass hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass'
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center">
       <button
         onClick={() => onChange(clamp(value - 1))}
-        className="h-8 w-8 rounded bg-sand text-ink hover:bg-sand/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass flex items-center justify-center"
+        className={stepBtn}
         aria-label={t('product.qtyDecrease')}
       >
         −
@@ -188,12 +200,12 @@ function QtyStepper({ value, onChange, clamp }: {
           const raw = Number(e.target.value)
           onChange(clamp(raw))
         }}
-        className="h-8 w-12 rounded bg-transparent text-center text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-brass"
+        className="h-8 w-11 border-y border-ink/20 bg-transparent text-center font-mono text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-brass focus:ring-inset"
         aria-label={t('product.colQty')}
       />
       <button
         onClick={() => onChange(clamp(value + 1))}
-        className="h-8 w-8 rounded bg-sand text-ink hover:bg-sand/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass flex items-center justify-center"
+        className={stepBtn}
         aria-label={t('product.qtyIncrease')}
       >
         +
@@ -204,10 +216,10 @@ function QtyStepper({ value, onChange, clamp }: {
 
 function CartSkeleton() {
   return (
-    <Container className="py-8">
-      <Skeleton className="mb-6 h-7 w-32" />
+    <Container className="py-8 sm:py-10">
+      <Skeleton className="mb-7 h-9 w-40" />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px]">
-        <div className="space-y-4">
+        <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-20 w-full" />
           ))}
