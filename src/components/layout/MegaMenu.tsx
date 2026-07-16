@@ -32,7 +32,7 @@ export function MegaMenu({ categories }: MegaMenuProps) {
               role="menuitem"
               aria-haspopup="true"
               aria-expanded={activeIndex === i}
-              className="text-sm font-medium text-ink hover:text-brass transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass rounded"
+              className="font-mono text-xs uppercase tracking-[0.13em] text-ink hover:text-brass transition-colors py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               onMouseEnter={() => setActiveIndex(i)}
               onFocus={() => setActiveIndex(i)}
               onClick={() => setActiveIndex(activeIndex === i ? null : i)}
@@ -45,7 +45,7 @@ export function MegaMenu({ categories }: MegaMenuProps) {
 
       {activeIndex !== null && categories[activeIndex] && (
         <div
-          className="absolute left-0 top-full z-50 w-screen max-w-[800px] bg-cream border-t border-sand shadow-lg"
+          className="absolute left-0 top-full z-50 w-screen max-w-[800px] border border-ink/12 bg-cream shadow-[0_30px_80px_rgba(34,30,25,0.14)]"
           role="menu"
           onMouseLeave={() => setActiveIndex(null)}
         >

@@ -24,7 +24,7 @@ export function SearchField({ className, onSubmit }: { className?: string; onSub
       <Input
         name="q"
         placeholder={t('search.placeholder')}
-        className="w-full bg-sand/50 border-transparent focus-visible:border-brass focus-visible:ring-brass"
+        className="w-full border border-ink/15 bg-transparent text-sm placeholder:text-steel focus-visible:border-brass focus-visible:ring-0"
       />
     </form>
   )

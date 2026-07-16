@@ -37,7 +37,7 @@ function CategoryItem({ node, onNavigate }: { node: CategoryNode; onNavigate: ()
   const hasChildren = node.children.length > 0
 
   return (
-    <li className="border-b border-sand last:border-b-0">
+    <li className="border-b border-ink/10 last:border-b-0">
       <div className="flex items-center justify-between">
         <Link
           href={`/category/${node.slug}`}
@@ -139,8 +139,10 @@ export function MobileNav({ categories }: MobileNavProps) {
             aria-modal="true"
             aria-label={t('nav.menu')}
           >
-            <div className="flex items-center justify-between p-4 border-b border-sand">
-              <span className="text-lg font-medium text-ink">{t('nav.categories')}</span>
+            <div className="flex items-center justify-between p-4 border-b border-ink/10">
+              <span className="font-mono text-xs uppercase tracking-[0.16em] text-ink">
+                {t('nav.categories')}
+              </span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -177,7 +179,7 @@ export function MobileNav({ categories }: MobileNavProps) {
               </ul>
             </nav>
 
-            <div className="p-4 border-t border-sand space-y-3">
+            <div className="p-4 border-t border-ink/10 space-y-3">
               <Link
                 href="/contact"
                 className="block text-sm font-medium text-ink hover:text-brass py-2"
