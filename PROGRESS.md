@@ -50,8 +50,10 @@ Node/Docker base. Remaining migration work is execution on the client's infra
 **MIGRATION CODE-COMPLETE (2026-07-16).** All 7 PRs merged (#12-#18). The repo
 targets self-hosted Docker; no Cloudflare anything remains in `src/` or config.
 Remaining is **execution on the client's infra (sysadmin/Ivan), not code:**
-the one-time data cutover (DEPLOY §4), reverse proxy + TLS, and the SMTP
-endpoint + SPF/DKIM/DMARC.
+reverse proxy + TLS, and the SMTP endpoint + SPF/DKIM/DMARC. **No data cutover
+is needed** (Ivan, 2026-07-16 — the Cloudflare instance was a throwaway test):
+go-live starts fresh (empty DB migrated on first boot; owner enters content via
+`/admin`), and needs no Cloudflare access at all. DEPLOY §4 is now reference-only.
 
 The Docker image is now **built and verified end-to-end in-session** (Docker
 29.5, PR #19): builds on Linux (sharp included), boots non-root, migrates a
