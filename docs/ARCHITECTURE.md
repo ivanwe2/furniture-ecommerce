@@ -47,7 +47,7 @@ import host-specific APIs (Cloudflare or otherwise).
 
 | Layer | Choice | Pin | Notes |
 |---|---|---|---|
-| Hosting | **Docker container** — Next.js standalone Node server | base `node:24-bookworm-slim` | one image embeds Payload admin + storefront; sysadmin's reverse proxy terminates TLS → proxies to `:3000`. `output: 'standalone'` in `next.config` |
+| Hosting | **Docker container** — Next.js production server (`next start`) | base `node:24-bookworm-slim` | one image embeds Payload admin + storefront; sysadmin's reverse proxy terminates TLS → proxies to `:3000`. Runtime image keeps prod node_modules + source so `payload migrate` runs on start; `output:'standalone'` deferred (it complicates the in-image migrate step) |
 | Framework | Next.js App Router | 15.4.x | Next 16 = deliberate post-launch decision via Decisions log. |
 | CMS | Payload | 3.82.x (v3 line) | **Payload 4 beta forbidden** (no GA, no migration guide; revisit post-launch after v4 GA). 3.85.2 upgrade attempted then reverted — broke `/admin` (RSC serialization). |
 | Database | **SQLite** on a mounted volume | `@payloadcms/db-sqlite` (libSQL) | `DATABASE_URI=file:/app/data/nasteh.db`. Single writer / single instance — correct for one self-hosted box. Backups = copy the file (or Litestream). Migrated from D1 (same SQLite dialect). Caveats: DATA-MODEL §Search |
@@ -79,7 +79,7 @@ Transformations / Turnstile-as-infra; **Resend** (superseded by SMTP).
 
 ```
 Browser ──▶ sysadmin reverse proxy (nginx/Caddy — TLS termination)
-             └─ app container :3000  (Next 15 standalone + Payload)
+             └─ app container :3000  (Next 15 `next start` + Payload)
                   ├─ static assets (served by Next)
                   ├─ /api/media/*  → sized image variants from the `media` volume
                   ├─ RSC pages     → query layer → Payload local API → SQLite (`data` volume)
@@ -90,8 +90,8 @@ Browser ──▶ sysadmin reverse proxy (nginx/Caddy — TLS termination)
 One container, one repo, one deploy. Persistent state = two Docker volumes:
 `data` (SQLite DB file) and `media` (uploads). Configuration is a single
 `.env` file the sysadmin manages on the host — no bindings, no cloud secret
-store (§11). Schema migrations run on container start (entrypoint →
-`payload migrate` → `node server.js`).
+store (§11). Schema migrations run on container start
+(`payload migrate && next start`).
 
 ## 4. Caching 🔒 — and why there is no Redis
 

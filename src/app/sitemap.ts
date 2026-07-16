@@ -1,5 +1,8 @@
 import { getAllSlugsForSitemap } from '@/lib/payload/queries'
 
+// Queries Payload at request time — the DB isn't available during `next build`.
+export const dynamic = 'force-dynamic'
+
 export default async function sitemap() {
   const slugs = await getAllSlugsForSitemap()
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nasteh.bg'

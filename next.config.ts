@@ -9,9 +9,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Packages with Cloudflare Workers (workerd) specific code
-  // Read more: https://opennext.js.org/cloudflare/howtos/workerd
-  serverExternalPackages: ['jose', 'pg-cloudflare'],
+  // Native / dynamic-require packages kept out of the server bundle:
+  // sharp ships a native binary; nodemailer uses dynamic requires.
+  serverExternalPackages: ['sharp', 'nodemailer'],
 
   // Security response headers (ARCHITECTURE §7). No CSP in v1 — the Payload
   // admin makes a strict CSP a project of its own (post-launch item).
