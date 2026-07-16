@@ -10,13 +10,16 @@
 FROM node:24-bookworm-slim AS base
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NODE_OPTIONS=--no-deprecation
+# pnpm is used in the build stages only; the runtime CMD calls binaries
+# directly (no pnpm/corepack at container start → no runtime registry access).
 RUN corepack enable
 WORKDIR /app
 
-# --- deps: full install (incl. dev deps) for the build. pnpm resolves the
-# linux sharp binary (@img/sharp-linux-x64) from the lockfile's optional deps.
+# --- deps: full install (incl. dev deps) for the build. pnpm-workspace.yaml
+# carries onlyBuiltDependencies so sharp/esbuild may run their build scripts;
+# pnpm resolves the linux sharp binary (@img/sharp-linux-x64) from the lockfile.
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # --- build: compile the Next app. No DB is touched (site pages + sitemap are
@@ -24,27 +27,29 @@ RUN pnpm install --frozen-lockfile
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV PAYLOAD_SECRET=build-time-placeholder
-RUN pnpm build
+# PAYLOAD_SECRET only needs a value so config validation passes at build; the
+# real one is injected at runtime. Inline (not ENV) so it isn't baked into a layer.
+RUN PAYLOAD_SECRET=build-time-placeholder pnpm build
 
 # --- runtime: built app + node_modules + source (source is needed because
 # `payload migrate` loads the TS config/collections via tsconfig path aliases).
 FROM base AS runtime
 ENV NODE_ENV=production \
     PORT=3000
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=build /app/.next ./.next
-COPY --from=build /app/public ./public
-COPY package.json pnpm-lock.yaml tsconfig.json next.config.ts ./
-COPY src ./src
-# Writable dirs for the SQLite db + uploads. chown BEFORE declaring the volume
-# mount points so first-run named volumes inherit the non-root ownership.
-RUN mkdir -p /app/data /app/media \
-    && useradd -m -u 1001 nasteh \
-    && chown -R nasteh:nasteh /app
+RUN useradd -m -u 1001 nasteh
+# --chown on each COPY sets ownership inline (far faster than a recursive
+# chown over node_modules).
+COPY --from=deps --chown=nasteh:nasteh /app/node_modules ./node_modules
+COPY --from=build --chown=nasteh:nasteh /app/.next ./.next
+COPY --from=build --chown=nasteh:nasteh /app/public ./public
+COPY --chown=nasteh:nasteh package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json next.config.ts ./
+COPY --chown=nasteh:nasteh src ./src
+# Writable dirs for the SQLite db + uploads. Own /app + these dirs as the
+# runtime user so first-run named volumes inherit non-root ownership.
+RUN mkdir -p /app/data /app/media && chown nasteh:nasteh /app /app/data /app/media
 USER nasteh
 EXPOSE 3000
 # Apply pending migrations, then serve. `&&` stops startup if a migration
-# fails (never serve against an unmigrated DB). `pnpm exec` runs the local
-# bins directly, avoiding the cross-env dev dependency the npm scripts use.
-CMD ["sh", "-c", "pnpm exec payload migrate && pnpm exec next start -H 0.0.0.0 -p 3000"]
+# fails (never serve against an unmigrated DB). Direct bin calls — no pnpm at
+# runtime (avoids the cross-env dev dep and any corepack download on start).
+CMD ["sh", "-c", "node_modules/.bin/payload migrate && node_modules/.bin/next start -H 0.0.0.0 -p 3000"]

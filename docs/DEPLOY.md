@@ -201,11 +201,12 @@ emails arrive (check spam too), to a `gmail.com` and an `abv.bg` address.
 
 ## 8. Known watch-items
 
-- **sharp on Linux.** The image relies on pnpm installing `@img/sharp-linux-x64`
-  from the lockfile's optional deps. The lockfile was generated on Windows; if
-  a build ever fails on sharp, regenerate it on Linux (`pnpm install` in a
-  `node:24-bookworm-slim` container) and commit, or add
-  `supportedArchitectures` to pnpm config.
+- **Native build scripts (sharp/esbuild).** pnpm 11 runs these only if
+  approved in `pnpm-workspace.yaml` (`allowBuilds:` — NOT the older
+  `onlyBuiltDependencies`), which the Dockerfile copies into the deps stage.
+  Verified: the image builds on Linux with the committed (Windows-generated)
+  lockfile and sharp works. If a future pnpm bump changes the approval format,
+  re-run `pnpm approve-builds` and keep the file copied in the Dockerfile.
 - **`NEXT_PUBLIC_*` are build-time.** Changing the site URL / Turnstile key /
   BGN flag requires a rebuild, not just an env edit + restart.
 - **2026-08-08:** flip `NEXT_PUBLIC_SHOW_BGN` to `false` and rebuild (prices
