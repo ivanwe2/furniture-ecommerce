@@ -200,38 +200,56 @@ export function formatPrice(cents: number): string
   reflects that; no analytics/marketing cookies in v1 → cookie bar is
   informational (UI-SPEC).
 
-## 8. Design system 🔒
+## 8. Design system 🔒 — redesign 1A (Editorial), from 2026-07-16
 
-Client brief: light beige / cream, elegant (permo.it register). Ground it in
-the обков world — aluminium, steel, brass, wood — NOT the generic warm-cream
-+ terracotta AI default.
+Direction (Ivan handoff "Nasteh Redesign"): **editorial / airy** — light warm
+surfaces, an engineering-drawing motif (faint grids, ruler ticks, bronze
+dimension callouts), mono-uppercase technical labels, and a brushed-metal 3D
+cabinet hinge as the hero centerpiece. **Square corners everywhere** (zero
+border-radius; genuine circles like status dots excepted). Ground it in the
+обков world — hinges, steel, brass, engineering drawings — NOT the generic
+warm-cream + terracotta AI default. **"1A everywhere"**: the editorial
+treatment applies to every storefront page (the darker "industrial" 1B
+direction is NOT built). Logo is the stylized **HACTEX** wordmark
+(`public/logos/*`); text content stays Настех / NASTEH.BG.
 
-Tokens (Tailwind v4 `@theme`):
+Tokens (Tailwind v4 `@theme` in `(site)/globals.css`):
 
-```css
---color-cream:  #F6F3EC;  /* page background */
---color-sand:   #EAE4D6;  /* panels, table header, footer bg */
---color-ink:    #23211D;  /* primary text */
---color-steel:  #6E7378;  /* secondary text, borders, metal accents */
---color-brass:  #8A6D3B;  /* interactive accent (AA on cream — verified in Phase 4) */
---color-ok:     #3E6B4F;  /* success, in-stock */
---color-danger: #8C3B2E;  /* errors, destructive */
 ```
+surfaces   --color-cream #F5F1E8 (page) · --color-raised #FBF9F3 (cards)
+           --color-sand #EBE3D3 (warm panels) · --color-dark #221E19
+text/light --color-ink #211D18 · --color-ink2 #5C5548 · --color-steel #6E665A
+text/dark  --color-on-dark #C9BFA9 · -bright #EFE9DC · -muted #A79E8B
+accent     --color-brass #A9803F (brand) · -dark #8C5E2A (accent text on light)
+           -light #B0824A (on dark) · --color-bronze #BE8C4C (callouts/3D)
+semantic   --color-ok #3E6B4F · --color-danger #8C3B2E
+hatch      --color-hatch-1 #EAE2D2 · --color-hatch-2 #E2D8C4 (image placeholders)
+```
+The radius scale is zeroed in `@theme` so every `rounded-*` renders square.
+Hairlines: `rgba(34,30,25,0.12–0.28)` on light; `rgba(239,233,220,0.12–0.34)`
+on dark. Card/frame shadow: `0 30px 80px rgba(34,30,25,0.14)` — no other shadows.
 
-Type: display face for h1/h2 only — a characterful serif/semi-serif WITH
-FULL CYRILLIC (verify glyph coverage before adopting; this is a hard gate);
-body/UI — clean grotesk with Cyrillic; `font-variant-numeric: tabular-nums`
-on every price and every items-table cell. Load via `next/font` with
-`cyrillic` subset explicitly included.
+Type (self-hosted via `next/font/google`, `cyrillic` subset — hard gate, the
+whole UI is Bulgarian):
+- **Golos Text** (400–700) — body AND headings. Headings weight 600 with
+  negative tracking (−0.02 to −0.03em).
+- **IBM Plex Mono** (400–600) — the signature device: ALL eyebrows, nav,
+  badges, stat rows, footer column heads, prices and spec values are mono +
+  UPPERCASE, letter-spacing 0.06–0.2em. `font-variant-numeric: tabular-nums`
+  on every price and items-table cell.
+- Manrope (the 1B display face) is intentionally NOT used.
 
-Signature element: the **items/price table** on product pages. Spend all
-boldness there (generous rows, sticky header, monospace SKU, satisfying
-qty steppers, row-level add feedback); keep everything else quiet. Full
-interaction spec in UI-SPEC §Product.
+Signature elements: (1) the **mono-uppercase technical label** treatment, used
+throughout; (2) the **WebGL hinge hero** (Three.js, brushed-metal PBR,
+assemble/explode + open/close loop) over an engineering overlay — lazy-loaded,
+homepage only, with a reduced-motion / no-WebGL static fallback; (3) the
+**items/price table** on product pages (generous rows, monospace SKU,
+tabular-nums, square). Spend boldness there; keep everything else quiet.
 
 Quality floor (non-negotiable): responsive to 375px; visible focus rings;
-`prefers-reduced-motion` respected; WCAG AA contrast; touch targets ≥44px
-in the table and cart controls.
+`prefers-reduced-motion` respected (incl. the hinge → static fallback); WCAG AA
+contrast (accent *text* on light uses `brass-dark`, not `brass`); touch targets
+≥44px in the table and cart controls.
 
 ## 9. SEO 🔒
 

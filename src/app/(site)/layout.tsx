@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Playfair_Display, Inter } from 'next/font/google'
+import { Golos_Text, IBM_Plex_Mono } from 'next/font/google'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { Header } from '@/components/layout/Header'
@@ -9,17 +9,20 @@ import CookieNotice from '@/components/layout/CookieNotice'
 import { CartHydrator } from '@/components/cart/CartHydrator'
 import { getCategoryTree } from '@/lib/payload/queries'
 
-const display = Playfair_Display({
-  subsets: ['cyrillic'],
+// Self-hosted via next/font (no runtime Google-Fonts call — GDPR + offline).
+// Golos Text covers body + headings (1A); IBM Plex Mono is the label/spec face.
+// Both include the cyrillic subset (hard gate — the whole UI is Bulgarian).
+const golos = Golos_Text({
+  subsets: ['cyrillic', 'latin'],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-display-src',
+  variable: '--font-golos',
   display: 'swap',
 })
 
-const body = Inter({
-  subsets: ['cyrillic'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-body-src',
+const mono = IBM_Plex_Mono({
+  subsets: ['cyrillic', 'latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-plex',
   display: 'swap',
 })
 
@@ -42,7 +45,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const categories = await getCategoryTree()
 
   return (
-    <html lang="bg" className={`${display.variable} ${body.variable}`}>
+    <html lang="bg" className={`${golos.variable} ${mono.variable}`}>
       <body>
         <div className="flex min-h-screen flex-col">
           <a href="#main" className="skip-link">

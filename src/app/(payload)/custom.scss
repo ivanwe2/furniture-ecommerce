@@ -3,17 +3,17 @@
    payload.config.ts (admin.theme: 'light'). Cards keep Payload's
    near-white elevations, sitting on a cream page background. */
 html[data-theme='light'] {
-  --theme-bg: #f6f3ec; /* cream page background — same as the site */
-  --color-success-500: #8a6d3b; /* brass accent for links/highlights */
-  --theme-success-500: #8a6d3b;
+  --theme-bg: #f5f1e8; /* cream page background — same as the site (redesign 1A) */
+  --color-success-500: #a9803f; /* brass accent for links/highlights */
+  --theme-success-500: #a9803f;
 }
 
 /* Brand palette for the admin logo/icon (the Настех badge). Mirrors the
    storefront tokens; kept here because the admin runs outside Tailwind, so
    the SVG components reference these vars instead of raw hex. */
 :root {
-  --nasteh-graphite: #35332d;
-  --nasteh-brass: #8a6d3b;
-  --nasteh-cream: #f4f0e6;
-  --nasteh-steel: #6e7378;
+  --nasteh-graphite: #221e19;
+  --nasteh-brass: #a9803f;
+  --nasteh-cream: #f5f1e8;
+  --nasteh-steel: #6e665a;
 }
