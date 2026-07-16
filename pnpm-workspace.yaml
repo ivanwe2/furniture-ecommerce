@@ -1,5 +1,7 @@
+# Approvals for packages allowed to run install/build scripts (native binary /
+# bundler). pnpm 11 records these here (written by `pnpm approve-builds`); the
+# package.json "pnpm" field is no longer read.
 allowBuilds:
   esbuild: true
   sharp: true
   unrs-resolver: true
-  workerd: true

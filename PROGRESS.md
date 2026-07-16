@@ -50,11 +50,20 @@ Node/Docker base. Remaining migration work is execution on the client's infra
 **MIGRATION CODE-COMPLETE (2026-07-16).** All 7 PRs merged (#12-#18). The repo
 targets self-hosted Docker; no Cloudflare anything remains in `src/` or config.
 Remaining is **execution on the client's infra (sysadmin/Ivan), not code:**
-build the image (`docker compose up -d --build`), the one-time data cutover
-(DEPLOY §4), reverse proxy + TLS, and the SMTP endpoint + SPF/DKIM/DMARC. The
-Docker image was NOT built in-session (no daemon) — but `pnpm build` is green.
-Next dev work: the **REDESIGN** (lands on the clean Node/Docker base), and the
-deferred image `imageSizes`/sharp responsive variants.
+the one-time data cutover (DEPLOY §4), reverse proxy + TLS, and the SMTP
+endpoint + SPF/DKIM/DMARC.
+
+The Docker image is now **built and verified end-to-end in-session** (Docker
+29.5, PR #19): builds on Linux (sharp included), boots non-root, migrates a
+fresh volume (~0.5s), serves `/` `/admin` `/robots.txt` `/sitemap.xml` all 200
+with Bulgarian content, restart = idempotent migrate (no re-run), healthcheck
+cmd + `docker compose config` valid. Fixes that took: (1) `pnpm-workspace.yaml`
+must use `allowBuilds:` (pnpm 11's format — NOT `onlyBuiltDependencies`) so
+sharp/esbuild build scripts run; (2) the Dockerfile must COPY that file into
+the deps stage; (3) runtime CMD calls `node_modules/.bin/*` directly (no pnpm/
+corepack at start → no runtime registry access); (4) `--chown` on COPY instead
+of a slow recursive chown. Next dev work: the **REDESIGN** (on the clean
+Node/Docker base), and the deferred image `imageSizes`/sharp responsive variants.
 
 _Migration notes:_ the existing D1-generated migration
 (`20260709_184644_initial`) applies **unchanged** on libSQL — verified with
