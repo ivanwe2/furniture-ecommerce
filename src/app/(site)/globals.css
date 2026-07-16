@@ -1,19 +1,54 @@
 @import 'tailwindcss';
 
-/* Design tokens — ARCHITECTURE §8. Fonts come from next/font (see layout). */
+/* Design tokens — ARCHITECTURE §8 (redesign 1A). Fonts via next/font (layout). */
 @theme {
-  --color-cream: #f6f3ec;
-  --color-sand: #eae4d6;
-  --color-ink: #23211d;
-  --color-graphite: #35332d;
-  --color-steel: #6e7378;
-  --color-brass: #8a6d3b;
+  /* Surfaces */
+  --color-cream: #f5f1e8; /* page background */
+  --color-raised: #fbf9f3; /* cards, tiles */
+  --color-sand: #ebe3d3; /* warm panels, trust band */
+  --color-warm: #e4daca; /* warm alt */
+  --color-dark: #221e19; /* dark surfaces: top-bar, footer, dark tiles */
+  --color-graphite: #221e19; /* legacy alias → dark */
+
+  /* Text on light */
+  --color-ink: #211d18; /* headings, primary text */
+  --color-ink2: #5c5548; /* body paragraphs */
+  --color-steel: #6e665a; /* muted labels, secondary */
+
+  /* Text on dark */
+  --color-on-dark: #c9bfa9; /* body on dark */
+  --color-on-dark-bright: #efe9dc; /* headings on dark */
+  --color-on-dark-muted: #a79e8b; /* secondary on dark */
+
+  /* Accent (brass) */
+  --color-brass: #a9803f; /* brand accent — rules, arrows, eyebrows, buttons */
+  --color-brass-dark: #8c5e2a; /* on light where more contrast is needed */
+  --color-brass-light: #b0824a; /* on dark */
+  --color-bronze: #be8c4c; /* engineering callouts, 3D hinge */
+
+  /* Semantic */
   --color-ok: #3e6b4f;
   --color-danger: #8c3b2e;
 
-  --font-display: var(--font-display-src), Georgia, 'Times New Roman', serif;
-  --font-body: var(--font-body-src), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  /* Placeholder image hatch */
+  --color-hatch-1: #eae2d2;
+  --color-hatch-2: #e2d8c4;
+
+  /* Square corners everywhere — zero the radius scale so all rounded-*
+     utilities render square (design mandate). rounded-full is left intact
+     for genuine circles (status dots). */
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
+
+  --font-display: var(--font-golos), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-golos), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex), ui-monospace, 'SFMono-Regular', Menlo, monospace;
 }
 
 @layer base {
@@ -35,7 +70,7 @@
   padding: 0.5rem 1rem;
   background-color: var(--color-ink);
   color: var(--color-cream);
-  border-radius: 0 0 0.375rem 0;
+  border-radius: 0;
 }
 .skip-link:focus {
   left: 0;
@@ -99,7 +134,7 @@
   .items-table tr {
     display: block;
     border: 1px solid var(--color-sand);
-    border-radius: 0.5rem;
+    border-radius: 0;
     margin-bottom: 0.75rem;
     padding: 0.5rem 0.75rem;
   }
