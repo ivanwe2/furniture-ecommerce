@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { sqliteD1Adapter } from '@payloadcms/db-d1-sqlite'
+import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor, EXPERIMENTAL_TableFeature } from '@payloadcms/richtext-lexical'
 import { bg } from '@payloadcms/translations/languages/bg'
 import { buildConfig } from 'payload'
@@ -81,7 +81,7 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: sqliteD1Adapter({ binding: cloudflare.env.D1 }),
+  db: sqliteAdapter({ client: { url: process.env.DATABASE_URI ?? 'file:./nasteh.db' } }),
   logger: isProduction ? cloudflareLogger : undefined,
   plugins: [
     r2Storage({

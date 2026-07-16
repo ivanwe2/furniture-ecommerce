@@ -11,8 +11,8 @@ owns the reverse proxy, TLS, DNS, and mail). The locked platform/stack is
 flipped in ARCHITECTURE §1/§2/§3/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12/§7
 (this PR). The visual **REDESIGN** then lands on the clean Node/Docker base.
 **Migration plan (small green PRs, in order):**
-  1. Docs flip (this PR) — ARCHITECTURE / CLAUDE / PROGRESS + Decisions log.
-  2. DB seam: D1 → `@payloadcms/db-sqlite` (`DATABASE_URI`), migrate on start.
+  1. ✅ (PR #12) Docs flip — ARCHITECTURE / CLAUDE / PROGRESS + Decisions log.
+  2. ✅ DB seam: D1 → `@payloadcms/db-sqlite` (`DATABASE_URI`), migrate on start.
   3. Storage+images: drop `r2Storage` → disk volume; `images.ts` → Payload/
      sharp sized variants (remove `/cdn-cgi/image/`).
   4. Rate-limit: KV → in-memory fixed-window counter.
@@ -20,6 +20,14 @@ flipped in ARCHITECTURE §1/§2/§3/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12/
   6. Container: `next.config` `output:'standalone'`, Dockerfile,
      docker-compose.yml, .env.example, .dockerignore; remove wrangler/opennext.
   7. Cutover doc: D1→SQLite export/import + R2→disk media lift.
+
+_Migration notes:_ the existing D1-generated migration
+(`20260709_184644_initial`) applies **unchanged** on libSQL — verified with
+`DATABASE_URI=file:./x pnpm migrate:local` (Migrated + Done). Only its import
+(`@payloadcms/db-d1-sqlite` → `@payloadcms/db-sqlite`) changed. So a D1 SQL
+dump loads into the new file and `payload migrate` is a no-op there (cutover,
+PR #7). `.env.example` + `env-keys.txt` (adds `DATABASE_URI`, drops Cloudflare
+keys) are updated in PR #6 with the rest of the env overhaul.
 **Chosen (Ivan, 2026-07-16):** SQLite on a volume · media on a disk volume ·
 in-memory rate limit · Turnstile kept · SMTP from the domain (no Resend). SMTP
 endpoint + SPF/DKIM/DMARC are the sysadmin's to provide (not code-blocking).
