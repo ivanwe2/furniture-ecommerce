@@ -19,7 +19,11 @@ flipped in ARCHITECTURE §1/§2/§3/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12/
      (removed `/cdn-cgi/image/` + `NEXT_PUBLIC_MEDIA_HOST`). **imageSizes/sharp
      responsive variants deferred to the redesign** (serving originals for now
      — perf follow-up).
-  4. Rate-limit: KV → in-memory fixed-window counter.
+  4. ✅ Rate-limit: KV → in-memory fixed-window counter (`rate-limit.ts` +
+     test rewritten; REFERENCE §7 updated). Also de-Cloudflared the IP source
+     in `order.ts`/`contact.ts` (`cf-connecting-ip` → `x-forwarded-for` /
+     `x-real-ip` from the reverse proxy — the rate-limit key). No more
+     `@opennextjs/cloudflare` import in `src/` except `open-next.config.ts`.
   5. Email: `emails/send.ts` fetch/Resend → nodemailer SMTP (env-driven).
   6. Container: `next.config` `output:'standalone'`, Dockerfile,
      docker-compose.yml, .env.example, .dockerignore; remove wrangler/opennext.

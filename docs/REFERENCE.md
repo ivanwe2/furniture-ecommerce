@@ -321,30 +321,29 @@ SSR safety: any component reading `lines` renders the skeleton until
 ## 7. Rate limit — `src/lib/rate-limit.ts`
 
 ```ts
-import 'server-only';
+type Bucket = { count: number; resetAt: number };
 
-type KVLike = { get(k: string): Promise<string | null>;
-                put(k: string, v: string, o?: { expirationTtl?: number }): Promise<void> };
-
-export async function rateLimitWith(kv: KVLike, key: string,
+export function rateLimitWith(store: Map<string, Bucket>, key: string,
   { windowSec, max }: { windowSec: number; max: number },
-): Promise<{ allowed: boolean; retryAfterSec: number }> {
+): { allowed: boolean; retryAfterSec: number } {
   const bucket = Math.floor(Date.now() / 1000 / windowSec);
   const k = `${key}:${bucket}`;
-  const current = Number((await kv.get(k)) ?? '0');
+  const current = store.get(k)?.count ?? 0;
   if (current >= max) return { allowed: false, retryAfterSec: windowSec };
-  await kv.put(k, String(current + 1), { expirationTtl: windowSec * 2 });
+  store.set(k, { count: current + 1, resetAt: (bucket + 1) * windowSec * 1000 });
   return { allowed: true, retryAfterSec: 0 };
 }
 
+const store = new Map<string, Bucket>();
+
 export async function rateLimit(key: string, opts: { windowSec: number; max: number }) {
-  const { env } = await getCloudflareContext(); // template's accessor — adopt its exact import
-  return rateLimitWith(env.RATE_LIMIT_KV, key, opts);
+  return rateLimitWith(store, key, opts); // in-process; one container = whole surface
 }
 ```
 
-Fixed-window over KV; eventual consistency means it's a soft limit — fine,
-Turnstile is the hard gate. `rateLimitWith` is the unit-testable core.
+Single-instance in-memory fixed-window counter (self-hosted; no KV/Redis).
+Soft limit — Turnstile is the hard gate. `rateLimitWith` is the unit-testable
+core (the module also sweeps expired buckets so the Map can't grow unbounded).
 
 ---
 
@@ -356,7 +355,7 @@ import 'server-only';
 
 export async function submitOrder(input: unknown): Promise<ActionResult<{ orderNumber: string }>> {
   const hdrs = await headers();
-  const ip = hdrs.get('cf-connecting-ip') ?? 'unknown';
+  const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ?? hdrs.get('x-real-ip') ?? 'unknown';
 
   // 1 honeypot
   const raw = input as Record<string, unknown>;

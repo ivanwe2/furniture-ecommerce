@@ -30,10 +30,11 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
   const record = input as Record<string, unknown>
 
   // Server-derived request metadata — never trust client-supplied IP/UA.
+  // IP comes from the reverse proxy's X-Forwarded-For (self-hosted; §7).
   const hdrs = await headers()
   const ip =
-    hdrs.get('cf-connecting-ip') ??
     hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    hdrs.get('x-real-ip') ??
     'unknown'
   const userAgent = hdrs.get('user-agent') ?? ''
 

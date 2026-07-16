@@ -15,10 +15,11 @@ export async function submitContact(input: unknown): Promise<ActionResult<unknow
   const record = input as Record<string, unknown>
 
   // Server-derived IP — never trust client-supplied values.
+  // IP comes from the reverse proxy's X-Forwarded-For (self-hosted; §7).
   const hdrs = await headers()
   const ip =
-    hdrs.get('cf-connecting-ip') ??
     hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    hdrs.get('x-real-ip') ??
     'unknown'
 
   // Step 1: Honeypot — fake success if filled
