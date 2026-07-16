@@ -6,7 +6,8 @@
 > current platform. It is kept only as history for the interim `*.workers.dev`
 > deploy and for the one-time data lift (D1 export / R2 download) during
 > cutover. **Do not follow these commands for new work.** The current
-> platform ops live in the Docker deploy doc (lands with the container PR).
+> platform ops live in **`docs/DEPLOY.md`** (incl. the one-time D1→SQLite and
+> R2→disk cutover in §4).
 
 Everything Cloudflare-specific lived here. Agents: follow COMMANDS as
 written; if a command errors, Escalate (CLAUDE.md §6) — do not improvise
