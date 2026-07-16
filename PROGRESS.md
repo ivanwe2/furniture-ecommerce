@@ -13,8 +13,12 @@ flipped in ARCHITECTURE §1/§2/§3/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12/
 **Migration plan (small green PRs, in order):**
   1. ✅ (PR #12) Docs flip — ARCHITECTURE / CLAUDE / PROGRESS + Decisions log.
   2. ✅ DB seam: D1 → `@payloadcms/db-sqlite` (`DATABASE_URI`), migrate on start.
-  3. Storage+images: drop `r2Storage` → disk volume; `images.ts` → Payload/
-     sharp sized variants (remove `/cdn-cgi/image/`).
+  3. ✅ Storage+images: dropped `r2Storage` + all Cloudflare context from
+     `payload.config.ts`; media on the `media` disk volume (`upload.staticDir`,
+     env `MEDIA_DIR`); `images.ts` serves originals via `/api/media/file/`
+     (removed `/cdn-cgi/image/` + `NEXT_PUBLIC_MEDIA_HOST`). **imageSizes/sharp
+     responsive variants deferred to the redesign** (serving originals for now
+     — perf follow-up).
   4. Rate-limit: KV → in-memory fixed-window counter.
   5. Email: `emails/send.ts` fetch/Resend → nodemailer SMTP (env-driven).
   6. Container: `next.config` `output:'standalone'`, Dockerfile,

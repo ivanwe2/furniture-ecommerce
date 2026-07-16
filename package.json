@@ -36,7 +36,6 @@
     "@payloadcms/db-sqlite": "3.82.1",
     "@payloadcms/next": "3.82.1",
     "@payloadcms/richtext-lexical": "3.82.1",
-    "@payloadcms/storage-r2": "3.82.1",
     "@payloadcms/translations": "3.82.1",
     "@payloadcms/ui": "3.82.1",
     "clsx": "^2.1.1",

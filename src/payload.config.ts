@@ -1,13 +1,9 @@
-import fs from 'fs'
 import path from 'path'
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor, EXPERIMENTAL_TableFeature } from '@payloadcms/richtext-lexical'
 import { bg } from '@payloadcms/translations/languages/bg'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
-import { CloudflareContext, getCloudflareContext } from '@opennextjs/cloudflare'
-import { GetPlatformProxyOptions } from 'wrangler'
-import { r2Storage } from '@payloadcms/storage-r2'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
@@ -20,9 +16,6 @@ import { SiteSettings } from './globals/SiteSettings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-const realpath = (value: string) => (fs.existsSync(value) ? fs.realpathSync(value) : undefined)
-
-const isCLI = process.argv.some((value) => realpath(value)?.endsWith(path.join('payload', 'bin.js')))
 const isProduction = process.env.NODE_ENV === 'production'
 
 const createLog =
@@ -34,7 +27,7 @@ const createLog =
     }
   }
 
-const cloudflareLogger = {
+const jsonLogger = {
   level: process.env.PAYLOAD_LOG_LEVEL || 'info',
   trace: createLog('trace', console.debug),
   debug: createLog('debug', console.debug),
@@ -45,11 +38,6 @@ const cloudflareLogger = {
   silent: () => {},
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- payload's PayloadLogger type is not exported in 3.82.1
 } as any
-
-const cloudflare =
-  isCLI || !isProduction
-    ? await getCloudflareContextFromWrangler()
-    : await getCloudflareContext({ async: true })
 
 export default buildConfig({
   admin: {
@@ -82,22 +70,5 @@ export default buildConfig({
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   db: sqliteAdapter({ client: { url: process.env.DATABASE_URI ?? 'file:./nasteh.db' } }),
-  logger: isProduction ? cloudflareLogger : undefined,
-  plugins: [
-    r2Storage({
-      bucket: cloudflare.env.R2,
-      collections: { media: true },
-    }),
-  ],
+  logger: isProduction ? jsonLogger : undefined,
 })
-
-// Adapted from https://github.com/opennextjs/opennextjs-cloudflare/blob/d00b3a13e42e65aad76fba41774815726422cc39/packages/cloudflare/src/api/cloudflare-context.ts#L328C36-L328C46
-function getCloudflareContextFromWrangler(): Promise<CloudflareContext> {
-  return import(/* webpackIgnore: true */ `${'__wrangler'.replaceAll('_', '')}`).then(
-    ({ getPlatformProxy }) =>
-      getPlatformProxy({
-        environment: process.env.CLOUDFLARE_ENV,
-        remoteBindings: isProduction,
-      } satisfies GetPlatformProxyOptions),
-  )
-}

@@ -2,14 +2,8 @@ import type { Media } from '@/payload-types'
 
 export type Preset = 'thumb' | 'card' | 'detail' | 'zoom' | 'og'
 
-const PRESETS: Record<Preset, string> = {
-  thumb: 'width=160,format=auto,quality=80,fit=scale-down',
-  card: 'width=480,format=auto,quality=82,fit=scale-down',
-  detail: 'width=1024,format=auto,quality=85,fit=scale-down',
-  zoom: 'width=1920,format=auto,quality=85,fit=scale-down',
-  og: 'width=1200,height=630,format=jpeg,quality=85,fit=cover',
-}
-
+// Nominal widths per preset — kept for the `srcSet` width descriptors and for
+// explicit width/height on <img> (CLS discipline, ARCHITECTURE §5).
 const WIDTHS: Record<Preset, number> = {
   thumb: 160,
   card: 480,
@@ -18,19 +12,26 @@ const WIDTHS: Record<Preset, number> = {
   og: 1200,
 }
 
-const HOST = process.env.NEXT_PUBLIC_MEDIA_HOST
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
-function devMediaBase(): string {
-  const url = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000')
+/** `https://host/api/media/file` — Payload's upload route, served from the media volume. */
+function mediaBase(): string {
+  const url = new URL(SITE_URL)
   return `${url.protocol}//${url.host}/api/media/file`
 }
 
-export function imageUrl(media: Pick<Media, 'filename'>, preset: Preset): string {
+/**
+ * Absolute URL to an uploaded media file, served by the app's own media route
+ * (disk-backed via Payload). Absolute (not relative) so the same helper works
+ * for OG tags and JSON-LD, which need full URLs.
+ *
+ * NOTE: this returns the uploaded original for every preset. Responsive sized
+ * variants (Payload `upload.imageSizes` + sharp — which runs on Node now) are a
+ * redesign-time optimization; see ARCHITECTURE §5.
+ */
+export function imageUrl(media: Pick<Media, 'filename'>, _preset: Preset): string {
   const key = encodeURIComponent(media.filename ?? '')
-  if (process.env.NODE_ENV === 'development' || !HOST) {
-    return `${devMediaBase()}/${key}`
-  }
-  return `https://${HOST}/cdn-cgi/image/${PRESETS[preset]}/${key}`
+  return `${mediaBase()}/${key}`
 }
 
 export function imageSrcSet(media: Pick<Media, 'filename'>, presets: Preset[]): string {

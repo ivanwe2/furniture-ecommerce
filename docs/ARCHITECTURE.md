@@ -121,29 +121,31 @@ Therefore:
 ## 5. Images 🔒
 
 - Admin uploads land on the `media` **disk volume** via Payload's upload
-  collection (`media`). Enforce upload sanity in the collection config:
-  images only (jpeg/png/webp), max ~10 MB (owner-friendly guardrail).
-- **sharp runs on Node**, so Payload generates sized variants at upload time
-  (`upload.imageSizes` in the `media` collection — thumb/card/detail/zoom/og
-  widths). This is the win of leaving Workers: no external transformer, the
-  sizes are real files on the volume.
-- All rendering goes through `src/lib/images.ts`, which returns the app's
-  media-route URL for the requested size:
+  collection (`media`, `upload.staticDir`). Enforce upload sanity in the
+  collection config: images only (jpeg/png/webp), max ~10 MB.
+- All rendering goes through `src/lib/images.ts`, which returns an absolute
+  URL to the app's own media route:
 
 ```ts
 type Preset = 'thumb' | 'card' | 'detail' | 'zoom' | 'og';
-// widths:   160      480     1024       1920    1200 (og: fixed 1200×630 crop)
+// nominal widths: 160  480  1024  1920  1200
 export function imageUrl(media: MediaDoc, preset: Preset): string
-// → /api/media/file/<size-filename>   (served by the app; cached by the sysadmin's proxy)
+// → https://<site>/api/media/file/<filename>  (served by the app from the media volume)
 export function imageSrcSet(media: MediaDoc, presets: Preset[]): string
 ```
 
-- Payload emits webp variants at upload (configured per size); `<img srcSet>`
-  lets the browser pick the width. `fit` per size prevents upscaling.
+- Absolute (not relative) URLs so the one helper serves `<img>`, OG tags, and
+  JSON-LD (crawlers need full URLs). The sysadmin's reverse proxy fronts and
+  caches the media route.
+- **Current state (2026-07-16):** `imageUrl` returns the uploaded **original**
+  for every preset — no external transformer, no `/cdn-cgi/image/`. Responsive
+  sized variants (`upload.imageSizes` + **sharp**, which runs on Node now, so
+  it's easy) are a **redesign-time optimization**, deferred so the storage
+  cutover stays small and the redesign owns image rendering.
 - `next/image` stays avoided in favor of plain `<img srcSet>` (Decisions log
-  2026-07-09); the sized URLs now come from Payload's own variants.
-- LCP discipline: category/product covers use `card`/`detail` presets with
-  explicit width/height (from stored media dimensions) to prevent CLS.
+  2026-07-09).
+- LCP discipline: covers carry explicit width/height (from stored media
+  dimensions) to prevent CLS.
 
 ## 6. Money 🔒
 
