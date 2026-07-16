@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { t } from '@/lib/i18n/bg'
-import { Container, Badge } from '@/components/ui'
+import { Container } from '@/components/ui'
 import { Gallery } from '@/components/catalog/Gallery'
 import { ItemsTable } from '@/components/catalog/ItemsTable'
+import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import BreadcrumbList from '@/components/seo/BreadcrumbList'
 import ProductJsonLd from '@/components/seo/ProductJsonLd'
 import { RichText } from '@/components/richtext/RichText'
@@ -122,85 +123,74 @@ export default async function ProductPage({ params }: ProductPageProps) {
         inStock={hasInStockItem}
         url={`${siteUrl}/product/${product.slug}`}
       />
-      <Container className="py-8">
-      {/* Breadcrumbs */}
-      <nav aria-label="Breadcrumb" className="mb-6">
-        <ol className="flex items-center gap-2 text-sm text-steel">
-          <li>
-            <Link href="/" className="hover:text-brass transition-colors">
-              {t('common.home')}
-            </Link>
-          </li>
-          {categorySlug && (
-            <li className="flex items-center gap-2">
-              <span aria-hidden="true">/</span>
-              <Link href={`/category/${categorySlug}`} className="hover:text-brass transition-colors">
-                {categoryName}
-              </Link>
-            </li>
-          )}
-          <li className="flex items-center gap-2">
-            <span aria-hidden="true">/</span>
-            <span className="text-ink">{product.name}</span>
-          </li>
-        </ol>
-      </nav>
+      <Container className="py-8 sm:py-10">
+        <Breadcrumbs
+          items={[
+            { name: t('common.home'), href: '/' },
+            ...(categorySlug ? [{ name: categoryName ?? '', href: `/category/${categorySlug}` }] : []),
+            { name: product.name },
+          ]}
+        />
 
-      {/* Product layout: gallery + info */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[55%_45%]">
-        {/* Gallery */}
-        <Gallery images={galleryImages} productName={product.name} />
+        {/* Product layout: gallery + info */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[55%_45%] lg:gap-12">
+          {/* Gallery */}
+          <Gallery images={galleryImages} productName={product.name} />
 
-        {/* Info block */}
-        <div className="space-y-6">
-          <h1 className="text-2xl font-bold text-ink">{product.name}</h1>
-
-          {/* Brand chip */}
-          {brandName && brandSlug ? (
-            <Link href={`/brand/${brandSlug}`}>
-              <Badge variant="steel" className="hover:opacity-80 transition-opacity">
+          {/* Info block */}
+          <div className="space-y-6">
+            {brandName && brandSlug ? (
+              <Link
+                href={`/brand/${brandSlug}`}
+                className="inline-flex items-center border border-ink/18 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-steel transition-colors hover:border-brass hover:text-brass"
+              >
                 {brandName}
-              </Badge>
-            </Link>
-          ) : null}
+              </Link>
+            ) : null}
 
-          {/* Short spec bullets */}
-          {product.shortSpec && product.shortSpec.length > 0 && (
-            <ul className="space-y-2 text-sm text-ink">
-              {product.shortSpec.map((spec) => (
-                <li key={spec.id} className="flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brass" />
-                  <span>{spec.text}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+            <h1 className="font-display text-3xl font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-4xl">
+              {product.name}
+            </h1>
 
-          {/* In-stock summary */}
-          {hasInStockItem && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="inline-block h-2 w-2 rounded-full bg-ok" />
-              <span className="text-ok">{t('product.inStockSummary')}</span>
-            </div>
-          )}
+            {/* Short spec bullets */}
+            {product.shortSpec && product.shortSpec.length > 0 && (
+              <ul className="space-y-2.5 text-sm text-ink2">
+                {product.shortSpec.map((spec) => (
+                  <li key={spec.id} className="flex items-start gap-3">
+                    <span className="mt-2 h-1 w-1 shrink-0 bg-brass" />
+                    <span>{spec.text}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* In-stock summary */}
+            {hasInStockItem && (
+              <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.1em]">
+                <span className="inline-block h-2 w-2 rounded-full bg-ok" />
+                <span className="text-ok">{t('product.inStockSummary')}</span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Items table */}
-      {items.length > 0 && (
-        <section className="mt-12">
-          <h2 className="mb-4 text-lg font-semibold text-ink">{t('product.itemsTitle')}</h2>
-          <ItemsTable items={items} productSlug={product.slug ?? ''} />
-        </section>
-      )}
+        {/* Items table */}
+        {items.length > 0 && (
+          <section className="mt-12">
+            <h2 className="mb-5 border-b border-ink/12 pb-3 font-mono text-xs uppercase tracking-[0.16em] text-brass-dark">
+              {t('product.itemsTitle')}
+            </h2>
+            <ItemsTable items={items} productSlug={product.slug ?? ''} />
+          </section>
+        )}
 
-      {/* Description */}
-      {product.description && (
-        <section className="mt-12 max-w-3xl">
-          <RichText content={product.description} />
-        </section>
-      )}
-    </Container>
+        {/* Description */}
+        {product.description && (
+          <section className="mt-12 max-w-3xl">
+            <RichText content={product.description} />
+          </section>
+        )}
+      </Container>
     </>
   )
 }

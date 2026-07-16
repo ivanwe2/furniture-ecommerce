@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { ProductCard } from '@/components/catalog/ProductCard'
+import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
+import { Pagination } from '@/components/catalog/Pagination'
 import { getBrandBySlug, getProductsByBrand } from '@/lib/payload/queries'
 
 interface BrandPageProps {
@@ -44,43 +46,35 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
   )
 
   return (
-    <Container className="py-8">
-      {/* Breadcrumbs */}
-      <nav aria-label="Breadcrumb" className="mb-6">
-        <ol className="flex items-center gap-2 text-sm text-steel">
-          <li>
-            <Link href="/" className="hover:text-brass transition-colors">
-              {t('common.home')}
-            </Link>
-          </li>
-          <li className="flex items-center gap-2">
-            <span aria-hidden="true">/</span>
-            <span className="text-ink">{brand.name}</span>
-          </li>
-        </ol>
-      </nav>
+    <Container className="py-8 sm:py-10">
+      <Breadcrumbs
+        items={[
+          { name: t('common.home'), href: '/' },
+          { name: t('nav.catalog'), href: '/search' },
+          { name: brand.name },
+        ]}
+      />
 
       {/* Brand info */}
-      <div className="mb-8 flex items-center gap-4">
+      <header className="mb-8 flex items-center gap-5 border-b border-ink/12 pb-6">
         {brand.logo && typeof brand.logo === 'object' && 'filename' in brand.logo && (brand.logo as { filename?: string | null }).filename ? (
           <img
             src={(brand.logo as { url?: string | null }).url ?? ''}
             alt={(brand.logo as { alt?: string | null }).alt ?? brand.name}
-            className="h-12 w-auto object-contain"
+            className="h-14 w-auto border border-ink/12 bg-raised object-contain p-2"
           />
         ) : null}
         <div>
-          <h1 className="text-2xl font-bold text-ink">{brand.name}</h1>
-          {brand.description && (
-            <p className="mt-1 text-steel">{brand.description}</p>
-          )}
+          <div className="mb-1.5 font-mono text-xs uppercase tracking-[0.16em] text-brass-dark">{t('nav.catalog')}</div>
+          <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">{brand.name}</h1>
+          {brand.description && <p className="mt-2 max-w-2xl text-ink2">{brand.description}</p>}
         </div>
-      </div>
+      </header>
 
       {/* Products */}
       {products.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product) => (
               <ProductCard key={product.id} product={{
                 name: product.name,
@@ -91,37 +85,16 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
               }} />
             ))}
           </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <nav aria-label="Pagination" className="mt-8 flex items-center justify-center gap-2">
-              {(page ?? 1) > 1 && (
-                <Link
-                  href={`/brand/${resolvedParams.slug}?page=${(page ?? 1) - 1}`}
-                  className="rounded bg-sand px-3 py-2 text-sm font-medium text-ink hover:bg-sand/80 transition-colors"
-                >
-                  {t('common.back')}
-                </Link>
-              )}
-              <span className="text-sm text-steel">
-                {t('common.pageOf').replace('{page}', String(page ?? 1)).replace('{total}', String(totalPages))}
-              </span>
-              {(page ?? 1) < totalPages && (
-                <Link
-                  href={`/brand/${resolvedParams.slug}?page=${(page ?? 1) + 1}`}
-                  className="rounded bg-sand px-3 py-2 text-sm font-medium text-ink hover:bg-sand/80 transition-colors"
-                >
-                  {t('common.next')}
-                </Link>
-              )}
-            </nav>
-          )}
+          <Pagination basePath={`/brand/${resolvedParams.slug}`} page={page ?? 1} totalPages={totalPages} />
         </>
       ) : (
-        <div className="mt-8 rounded-lg bg-sand p-8 text-center">
-          <p className="text-steel">{t('category.empty')}</p>
-          <Link href="/" className="mt-2 inline-block text-brass hover:underline">
-            {t('common.home')}
+        <div className="border border-ink/14 bg-sand p-10 text-center">
+          <p className="text-ink2">{t('category.empty')}</p>
+          <Link
+            href="/"
+            className="mt-3 inline-block font-mono text-xs uppercase tracking-[0.1em] text-brass-dark hover:text-brass"
+          >
+            {t('common.home')} →
           </Link>
         </div>
       )}

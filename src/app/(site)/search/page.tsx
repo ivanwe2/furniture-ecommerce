@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { ProductCard } from '@/components/catalog/ProductCard'
+import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import { searchProducts, getCategoryTree } from '@/lib/payload/queries'
 
 interface SearchPageProps {
@@ -41,34 +42,31 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const categories = await getCategoryTree()
 
   return (
-    <Container className="py-8">
-      {/* Breadcrumbs */}
-      <nav aria-label="Breadcrumb" className="mb-6">
-        <ol className="flex items-center gap-2 text-sm text-steel">
-          <li>
-            <Link href="/" className="hover:text-brass transition-colors">
-              {t('common.home')}
-            </Link>
-          </li>
-          <li className="flex items-center gap-2">
-            <span aria-hidden="true">/</span>
-            <span className="text-ink">{t('search.title')}</span>
-          </li>
-        </ol>
-      </nav>
+    <Container className="py-8 sm:py-10">
+      <Breadcrumbs
+        items={[
+          { name: t('common.home'), href: '/' },
+          { name: t('search.title') },
+        ]}
+      />
 
       {/* Heading */}
-      {q.trim() ? (
-        <h1 className="mb-6 text-xl font-semibold text-ink">
-          {t('search.resultsFor')}: &ldquo;{q}&rdquo;
+      <header className="mb-8 border-b border-ink/12 pb-6">
+        <div className="mb-2.5 font-mono text-xs uppercase tracking-[0.16em] text-brass-dark">{t('search.title')}</div>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
+          {q.trim() ? (
+            <>
+              {t('search.resultsFor')}: <span className="text-brass">{`„${q}"`}</span>
+            </>
+          ) : (
+            t('search.title')
+          )}
         </h1>
-      ) : (
-        <h1 className="mb-6 text-xl font-semibold text-ink">{t('search.title')}</h1>
-      )}
+      </header>
 
       {/* Results */}
       {products.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product) => (
             <ProductCard key={product.id} product={{
               name: product.name,
@@ -80,17 +78,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           ))}
         </div>
       ) : (
-        <div className="mt-8 rounded-lg bg-sand p-8 text-center">
-          {q.trim() ? (
-            <p className="text-steel">{t('search.empty')}</p>
-          ) : null}
-          <p className="mt-2 text-sm text-steel">{t('search.browsePrompt')}</p>
-          <div className="mt-4 flex flex-wrap justify-center gap-3">
+        <div className="border border-ink/14 bg-sand p-10 text-center">
+          {q.trim() ? <p className="text-ink2">{t('search.empty')}</p> : null}
+          <p className="mt-2 font-mono text-xs uppercase tracking-[0.12em] text-steel">{t('search.browsePrompt')}</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2.5">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/category/${cat.slug}`}
-                className="rounded bg-sand/60 px-3 py-1.5 text-sm font-medium text-ink hover:bg-sand transition-colors"
+                className="border border-ink/18 bg-raised px-3.5 py-1.5 text-sm font-medium text-ink transition-colors hover:border-brass hover:text-brass"
               >
                 {cat.name}
               </Link>

@@ -19,13 +19,18 @@ export function ProductCard({ product }: ProductCardProps) {
   const minPrice = hasItems ? Math.min(...items.map((i) => i.priceEurCents)) : null
   const singleItem = hasItems && items.length === 1
 
-  const categoryName = typeof product.category === 'object' && product.category?.name ? product.category.name : undefined
+  const categoryName =
+    typeof product.category === 'object' && product.category?.name ? product.category.name : undefined
+  const hasImage = coverImage && typeof coverImage === 'object' && 'filename' in coverImage && coverImage.filename
 
   return (
-    <Link href={`/product/${product.slug}`} className="group block">
-      {/* Image */}
-      <div className="aspect-[4/3] w-full overflow-hidden rounded bg-cream">
-        {coverImage && typeof coverImage === 'object' && 'filename' in coverImage && coverImage.filename ? (
+    <Link
+      href={`/product/${product.slug}`}
+      className="group flex flex-col border border-ink/14 bg-raised transition-colors hover:border-brass"
+    >
+      {/* Image / placeholder */}
+      <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-ink/10">
+        {hasImage ? (
           <img
             src={imageUrl(coverImage, 'card')}
             srcSet={imageSrcSet(coverImage, ['thumb', 'card'])}
@@ -33,39 +38,29 @@ export function ProductCard({ product }: ProductCardProps) {
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-sand">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              className="h-8 w-8 text-steel/60"
-              aria-hidden="true"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="M21 15l-5-5L5 21" />
-            </svg>
+          <div className="hatch absolute inset-0">
+            <span className="absolute bottom-3 left-4 font-mono text-[10px] tracking-[0.12em] text-steel">
+              {t('home.productShot')}
+            </span>
           </div>
         )}
       </div>
 
       {/* Info */}
-      <div className="mt-3 space-y-1">
-        <h3 className="line-clamp-2 text-sm font-medium text-ink transition-colors group-hover:text-brass">
+      <div className="flex flex-1 flex-col p-4">
+        {categoryName && (
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-steel">{categoryName}</span>
+        )}
+        <h3 className="mt-1 line-clamp-2 font-display text-[15px] font-semibold leading-snug text-ink transition-colors group-hover:text-brass">
           {product.name}
         </h3>
-        {categoryName && (
-          <p className="text-xs text-steel">{categoryName}</p>
-        )}
-        <div className="flex items-baseline gap-2">
+        <div className="mt-auto pt-3 font-mono text-sm">
           {singleItem ? (
-            <Price eurCents={items[0]!.priceEurCents} />
+            <Price eurCents={items[0]!.priceEurCents} className="text-ink" />
           ) : minPrice !== null ? (
-            <span className="text-sm text-ink">
-              {t('catalog.from')}{' '}
-              <Price eurCents={minPrice} />
+            <span className="text-ink">
+              <span className="text-steel">{t('catalog.from')} </span>
+              <Price eurCents={minPrice} className="text-ink" />
             </span>
           ) : null}
         </div>
