@@ -1,33 +1,47 @@
 'use server'
 import 'server-only'
 
+import nodemailer, { type Transporter } from 'nodemailer'
 import { company } from '@/lib/company'
 import { formatEur } from '@/lib/money'
 import type { Order } from '@/payload-types'
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY ?? ''
+const SMTP_HOST = process.env.SMTP_HOST ?? ''
+const SMTP_PORT = Number(process.env.SMTP_PORT ?? '587')
+const SMTP_USER = process.env.SMTP_USER ?? ''
+const SMTP_PASS = process.env.SMTP_PASS ?? ''
+const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Настех <no-reply@nasteh.bg>'
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nasteh.bg'
 const ORDER_INBOX_EMAIL = process.env.ORDER_INBOX_EMAIL ?? ''
 
+let transporter: Transporter | null = null
+
+/**
+ * Lazily build the SMTP transport from env. Returns null when SMTP is
+ * unconfigured (local dev) so email is skipped rather than throwing. Works
+ * against any authenticated SMTP endpoint the sysadmin points us at (the
+ * domain's mail host, Workspace relay, or a local relay with no auth).
+ */
+function getTransporter(): Transporter | null {
+  if (!SMTP_HOST) return null
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465, // 465 = implicit TLS; 587 = STARTTLS (upgraded automatically)
+      auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+    })
+  }
+  return transporter
+}
+
 async function sendEmail(to: string, subject: string, html: string, text: string, replyTo?: string) {
-  if (!RESEND_API_KEY) {
-    console.log('[email] dev mode - skipped', { to, subject })
+  const tx = getTransporter()
+  if (!tx) {
+    console.log('[email] dev mode - skipped (no SMTP_HOST)', { to, subject })
     return
   }
-
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ from: `Настех <onboarding@resend.dev>`, to, subject, html, text, replyTo }),
-  })
-
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`Resend ${res.status}: ${body}`)
-  }
+  await tx.sendMail({ from: EMAIL_FROM, to, subject, html, text, replyTo })
 }
 
 interface OrderLine {

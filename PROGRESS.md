@@ -24,7 +24,11 @@ flipped in ARCHITECTURE §1/§2/§3/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12/
      in `order.ts`/`contact.ts` (`cf-connecting-ip` → `x-forwarded-for` /
      `x-real-ip` from the reverse proxy — the rate-limit key). No more
      `@opennextjs/cloudflare` import in `src/` except `open-next.config.ts`.
-  5. Email: `emails/send.ts` fetch/Resend → nodemailer SMTP (env-driven).
+  5. ✅ Email: `emails/send.ts` Resend-`fetch` → **nodemailer SMTP**
+     (`SMTP_HOST/PORT/USER/PASS`, `EMAIL_FROM`); lazy transport, dev-skips when
+     `SMTP_HOST` unset; auth omitted when `SMTP_USER` empty (supports a no-auth
+     local relay). nodemailer@9 verified on Node 24 (offline jsonTransport).
+     **PR #6 TODO:** add `nodemailer` to `serverExternalPackages` in next.config.
   6. Container: `next.config` `output:'standalone'`, Dockerfile,
      docker-compose.yml, .env.example, .dockerignore; remove wrangler/opennext.
   7. Cutover doc: D1→SQLite export/import + R2→disk media lift.
