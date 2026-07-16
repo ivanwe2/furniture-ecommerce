@@ -17,10 +17,19 @@ services:
       dockerfile: Dockerfile
     image: nasteh-bg:latest
     restart: unless-stopped
+    # Cap container log growth (structured JSON logs + Next/Payload output).
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
     env_file: .env
     ports:
-      # host:container — the reverse proxy forwards to 127.0.0.1:3000
-      - "3000:3000"
+      # Publish on loopback only — the app is reachable ONLY through the
+      # sysadmin's reverse proxy (which terminates TLS), never directly from
+      # the network. If the proxy runs on a DIFFERENT host, change to
+      # "3000:3000" and firewall the port (or put both on a Docker network).
+      - '127.0.0.1:3000:3000'
     volumes:
       - data:/app/data # SQLite database (replaces Cloudflare D1)
       - media:/app/media # uploaded images (replaces Cloudflare R2)
