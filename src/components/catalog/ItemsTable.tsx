@@ -38,19 +38,21 @@ export function ItemsTable({ items, productSlug }: ItemsTableProps) {
     [add, productSlug],
   )
 
+  const th = 'px-4 py-3 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-steel'
+
   return (
-    <div className="overflow-x-auto rounded-lg border border-sand md:overflow-x-auto">
+    <div className="overflow-x-auto border border-ink/14">
       <table className="items-table w-full text-sm">
-        <thead className="sticky top-0 bg-sand">
+        <thead className="border-b border-ink/14 bg-sand">
           <tr>
-            <th scope="col" className="px-4 py-3 text-left font-semibold text-ink">{t('product.colName')}</th>
-            <th scope="col" className="px-4 py-3 text-left font-semibold text-ink">{t('product.colUnit')}</th>
-            {hasLength && <th scope="col" className="px-4 py-3 text-left font-semibold text-ink">{t('product.colLength')}</th>}
-            {hasColor && <th scope="col" className="px-4 py-3 text-left font-semibold text-ink">{t('product.colColor')}</th>}
-            <th scope="col" className="px-4 py-3 text-left font-semibold text-ink">{t('product.colSku')}</th>
-            <th scope="col" className="px-4 py-3 text-right font-semibold text-ink">{t('product.colPrice')}</th>
-            <th scope="col" className="px-4 py-3 text-center font-semibold text-ink">{t('product.colQty')}</th>
-            <th scope="col" className="px-4 py-3 w-28 font-semibold text-ink"></th>
+            <th scope="col" className={`${th} text-left`}>{t('product.colName')}</th>
+            <th scope="col" className={`${th} text-left`}>{t('product.colUnit')}</th>
+            {hasLength && <th scope="col" className={`${th} text-left`}>{t('product.colLength')}</th>}
+            {hasColor && <th scope="col" className={`${th} text-left`}>{t('product.colColor')}</th>}
+            <th scope="col" className={`${th} text-left`}>{t('product.colSku')}</th>
+            <th scope="col" className={`${th} text-right`}>{t('product.colPrice')}</th>
+            <th scope="col" className={`${th} text-center`}>{t('product.colQty')}</th>
+            <th scope="col" className={`${th} w-28`}></th>
           </tr>
         </thead>
         <tbody>
@@ -62,22 +64,20 @@ export function ItemsTable({ items, productSlug }: ItemsTableProps) {
               <tr
                 key={item.sku}
                 className={clsx(
-                  'border-t border-sand transition-colors',
-                  !isInStock && 'opacity-50',
+                  'border-t border-ink/10 transition-colors hover:bg-sand/40',
+                  !isInStock && 'opacity-55',
                 )}
               >
-                <td className="px-4 py-3 text-ink" data-label={t('product.colName')}>{item.name}</td>
+                <td className="px-4 py-3 font-medium text-ink" data-label={t('product.colName')}>{item.name}</td>
                 <td className="px-4 py-3 text-steel" data-label={t('product.colUnit')}>{item.unit ?? t('common.unitDefault')}</td>
-                {hasLength && <td className="px-4 py-3 text-steel tabular-nums" data-label={t('product.colLength')}>{item.lengthMm ?? ''}</td>}
+                {hasLength && <td className="px-4 py-3 font-mono tabular-nums text-steel" data-label={t('product.colLength')}>{item.lengthMm ?? ''}</td>}
                 {hasColor && <td className="px-4 py-3 text-steel" data-label={t('product.colColor')}>{item.color ?? ''}</td>}
                 <td className="px-4 py-3 font-mono text-steel" data-label={t('product.colSku')}>{item.sku}</td>
-                <td className="px-4 py-3 text-right tabular-nums" data-label={t('product.colPrice')}>
+                <td className="px-4 py-3 text-right font-mono tabular-nums" data-label={t('product.colPrice')}>
                   {isInStock ? (
-                    <span className="inline-flex items-center gap-1">
-                      <Price eurCents={item.priceEurCents} />
-                    </span>
+                    <Price eurCents={item.priceEurCents} className="text-ink" />
                   ) : (
-                    <span className="text-steel">{t('product.onRequest')}</span>
+                    <span className="font-sans text-steel">{t('product.onRequest')}</span>
                   )}
                 </td>
                 <td className="px-4 py-3" data-label={t('product.colQty')}>
@@ -97,10 +97,10 @@ export function ItemsTable({ items, productSlug }: ItemsTableProps) {
                       onClick={() => handleAdd(item)}
                       disabled={isAdded}
                       className={clsx(
-                        'inline-flex min-w-[7rem] items-center justify-center rounded px-3 py-1.5 text-xs font-medium transition-colors',
+                        'inline-flex min-w-[7rem] items-center justify-center px-3 py-2 font-mono text-[11px] uppercase tracking-[0.08em] transition',
                         isAdded
-                          ? 'bg-ok/20 text-ok'
-                          : 'bg-brass text-cream hover:bg-brass/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 ring-offset-sand',
+                          ? 'bg-ok/15 text-ok'
+                          : 'bg-brass text-raised hover:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 ring-offset-raised',
                       )}
                     >
                       {isAdded ? (
@@ -115,7 +115,7 @@ export function ItemsTable({ items, productSlug }: ItemsTableProps) {
                   ) : (
                     <a
                       href={`/contact?about=${item.sku}`}
-                      className="text-xs text-brass hover:underline"
+                      className="font-mono text-[11px] uppercase tracking-[0.08em] text-brass-dark hover:text-brass"
                     >
                       {t('product.onRequest')}
                     </a>
@@ -145,15 +145,18 @@ function QtyStepper({ sku, min = 1, max = 999 }: { sku: string; min?: number; ma
     setQtyAction(sku, clamped)
   }
 
+  const stepBtn =
+    'flex h-8 w-8 items-center justify-center border border-ink/20 text-ink transition-colors hover:border-brass hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass'
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center">
       <button
         onClick={() => {
           const clamped = clamp(qty - 1)
           setLocalQty(clamped)
           setQtyAction(sku, clamped)
         }}
-        className="h-8 w-8 rounded bg-sand text-ink hover:bg-sand/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass flex items-center justify-center"
+        className={stepBtn}
         aria-label={t('product.qtyDecrease')}
       >
         −
@@ -163,7 +166,7 @@ function QtyStepper({ sku, min = 1, max = 999 }: { sku: string; min?: number; ma
         inputMode="numeric"
         value={qty}
         onChange={handleChange}
-        className="h-8 w-12 rounded bg-transparent text-center text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-brass"
+        className="h-8 w-11 border-y border-ink/20 bg-transparent text-center font-mono text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-brass focus:ring-inset"
         aria-label={t('product.colQty')}
       />
       <button
@@ -172,7 +175,7 @@ function QtyStepper({ sku, min = 1, max = 999 }: { sku: string; min?: number; ma
           setLocalQty(clamped)
           setQtyAction(sku, clamped)
         }}
-        className="h-8 w-8 rounded bg-sand text-ink hover:bg-sand/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass flex items-center justify-center"
+        className={stepBtn}
         aria-label={t('product.qtyIncrease')}
       >
         +

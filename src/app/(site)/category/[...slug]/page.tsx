@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { ProductCard } from '@/components/catalog/ProductCard'
+import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
+import { Pagination } from '@/components/catalog/Pagination'
 import BreadcrumbList from '@/components/seo/BreadcrumbList'
 import { getProductsByCategory, getCategoryTree } from '@/lib/payload/queries'
 import type { CategoryNode } from '@/lib/payload/queries'
@@ -64,118 +66,90 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     { name: category.name, url: `/category/${categorySlug}` },
   ]
 
+  const parentEyebrow = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1]!.name : t('nav.catalog')
+
   return (
     <>
       <BreadcrumbList items={jsonLdBreadcrumbs} />
-      <Container className="py-8">
-      {/* Breadcrumbs */}
-      <nav aria-label="Breadcrumb" className="mb-6">
-        <ol className="flex items-center gap-2 text-sm text-steel">
-          <li>
-            <Link href="/" className="hover:text-brass transition-colors">
-              {t('common.home')}
-            </Link>
-          </li>
-          {breadcrumbs.map((crumb) => (
-            <li key={crumb.id} className="flex items-center gap-2">
-              <span aria-hidden="true">/</span>
-              <Link href={`/category/${crumb.slug}`} className="hover:text-brass transition-colors">
-                {crumb.name}
-              </Link>
-            </li>
-          ))}
-        </ol>
-      </nav>
+      <Container className="py-8 sm:py-10">
+        <Breadcrumbs
+          items={[
+            { name: t('common.home'), href: '/' },
+            ...breadcrumbs.map((crumb) => ({ name: crumb.name, href: `/category/${crumb.slug}` })),
+            { name: category.name },
+          ]}
+        />
 
-      {/* Category heading */}
-      <h1 className="text-2xl font-bold text-ink">{category.name}</h1>
-      {category.description && (
-        <p className="mt-2 text-steel">{category.description}</p>
-      )}
+        {/* Category heading */}
+        <header className="border-b border-ink/12 pb-6">
+          <div className="mb-2.5 font-mono text-xs uppercase tracking-[0.16em] text-brass-dark">{parentEyebrow}</div>
+          <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
+            {category.name}
+          </h1>
+          {category.description && <p className="mt-3 max-w-2xl text-ink2">{category.description}</p>}
+        </header>
 
-      {/* Subcategories (non-leaf) */}
-      {subcategories.length > 0 && (
-        <section className="mt-8">
-          <h2 className="mb-4 text-lg font-semibold text-ink">{t('nav.categories')}</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {subcategories.map((sub) => (
-              <Link
-                key={sub.id}
-                href={`/category/${sub.slug}`}
-                className="group flex items-center gap-3 rounded-lg bg-sand p-4 transition-colors hover:bg-sand/80"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  className="h-5 w-5 shrink-0 text-brass"
-                  aria-hidden="true"
+        {/* Subcategories (non-leaf) */}
+        {subcategories.length > 0 && (
+          <section className="mt-8">
+            <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.16em] text-steel">
+              {t('nav.subcategories')}
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {subcategories.map((sub) => (
+                <Link
+                  key={sub.id}
+                  href={`/category/${sub.slug}`}
+                  className="group flex items-center justify-between gap-3 border border-ink/14 bg-raised px-4 py-3.5 transition-colors hover:border-brass"
                 >
-                  <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                <span className="text-sm font-medium text-ink group-hover:text-brass transition-colors">
-                  {sub.name}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Products */}
-      <section className="mt-8">
-        {products.length > 0 ? (
-          <>
-            <h2 className="mb-4 text-lg font-semibold text-ink">{t('category.allIn')}</h2>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={{
-                  name: product.name,
-                  slug: product.slug ?? '',
-                  items: product.items ?? [],
-                  gallery: product.gallery ?? undefined,
-                  category: typeof product.category === 'object' ? product.category : undefined,
-                }} />
+                  <span className="text-sm font-medium text-ink transition-colors group-hover:text-brass">
+                    {sub.name}
+                  </span>
+                  <span aria-hidden="true" className="font-mono text-steel transition-colors group-hover:text-brass">
+                    →
+                  </span>
+                </Link>
               ))}
             </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <nav aria-label="Pagination" className="mt-8 flex items-center justify-center gap-2">
-                {(page ?? 1) > 1 && (
-                  <Link
-                    href={`/category/${categorySlug}?page=${(page ?? 1) - 1}`}
-                    className="rounded bg-sand px-3 py-2 text-sm font-medium text-ink hover:bg-sand/80 transition-colors"
-                  >
-                    {t('common.back')}
-                  </Link>
-                )}
-                <span className="text-sm text-steel">
-                  {t('common.pageOf').replace('{page}', String(page ?? 1)).replace('{total}', String(totalPages))}
-                </span>
-                {(page ?? 1) < totalPages && (
-                  <Link
-                    href={`/category/${categorySlug}?page=${(page ?? 1) + 1}`}
-                    className="rounded bg-sand px-3 py-2 text-sm font-medium text-ink hover:bg-sand/80 transition-colors"
-                  >
-                    {t('common.next')}
-                  </Link>
-                )}
-              </nav>
-            )}
-          </>
-        ) : (
-          <div className="mt-8 rounded-lg bg-sand p-8 text-center">
-            <p className="text-steel">{t('category.empty')}</p>
-            <Link href="/" className="mt-2 inline-block text-brass hover:underline">
-              {t('common.home')}
-            </Link>
-          </div>
+          </section>
         )}
-      </section>
-    </Container>
+
+        {/* Products */}
+        <section className="mt-10">
+          {products.length > 0 ? (
+            <>
+              <h2 className="mb-5 border-b border-ink/12 pb-3 font-mono text-xs uppercase tracking-[0.16em] text-steel">
+                {t('category.allIn')}
+              </h2>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={{
+                      name: product.name,
+                      slug: product.slug ?? '',
+                      items: product.items ?? [],
+                      gallery: product.gallery ?? undefined,
+                      category: typeof product.category === 'object' ? product.category : undefined,
+                    }}
+                  />
+                ))}
+              </div>
+              <Pagination basePath={`/category/${categorySlug}`} page={page ?? 1} totalPages={totalPages} />
+            </>
+          ) : (
+            <div className="border border-ink/14 bg-sand p-10 text-center">
+              <p className="text-ink2">{t('category.empty')}</p>
+              <Link
+                href="/"
+                className="mt-3 inline-block font-mono text-xs uppercase tracking-[0.1em] text-brass-dark hover:text-brass"
+              >
+                {t('common.home')} →
+              </Link>
+            </div>
+          )}
+        </section>
+      </Container>
     </>
   )
 }

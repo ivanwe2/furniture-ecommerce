@@ -18,20 +18,10 @@ export function Gallery({ images, productName }: GalleryProps) {
 
   if (validImages.length === 0) {
     return (
-      <div className="aspect-[4/3] w-full rounded-lg bg-sand flex items-center justify-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          className="h-16 w-16 text-steel/60"
-          aria-hidden="true"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <path d="M21 15l-5-5L5 21" />
-        </svg>
+      <div className="hatch relative aspect-[4/3] w-full border border-ink/12">
+        <span className="absolute bottom-4 left-5 font-mono text-[11px] uppercase tracking-[0.12em] text-steel">
+          {t('home.productShot')}
+        </span>
       </div>
     )
   }
@@ -44,7 +34,7 @@ export function Gallery({ images, productName }: GalleryProps) {
       {mainImage && (
         <button
           onClick={() => setLightboxOpen(true)}
-          className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+          className="aspect-[4/3] w-full overflow-hidden border border-ink/12 bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           aria-label={t('product.galleryOpen').replace('{name}', productName).replace('{n}', String(currentIndex + 1))}
         >
           <img
@@ -63,8 +53,8 @@ export function Gallery({ images, productName }: GalleryProps) {
               key={i}
               onClick={() => setCurrentIndex(i)}
               className={clsx(
-                'h-16 w-16 shrink-0 rounded border-2 overflow-hidden focus-visible:outline-none',
-                i === currentIndex ? 'border-brass' : 'border-transparent hover:border-sand',
+                'h-16 w-16 shrink-0 overflow-hidden border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass',
+                i === currentIndex ? 'border-brass' : 'border-ink/15 hover:border-ink/40',
               )}
             >
               <img
