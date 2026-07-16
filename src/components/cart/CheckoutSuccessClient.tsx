@@ -14,10 +14,10 @@ export function CheckoutSuccessClient({ orderNumber }: { orderNumber: string }) 
   }, [clear])
 
   return (
-    <Container className="py-16">
-      <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
+    <Container className="py-16 sm:py-24">
+      <div className="mx-auto flex max-w-md flex-col items-center gap-5 text-center">
         <div
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-ok/15 text-ok"
+          className="flex h-14 w-14 items-center justify-center border border-ok/30 bg-ok/10 text-ok"
           aria-hidden="true"
         >
           <svg
@@ -34,20 +34,22 @@ export function CheckoutSuccessClient({ orderNumber }: { orderNumber: string }) 
           </svg>
         </div>
 
-        <h1 className="text-2xl font-bold text-ink">{t('checkout.successTitle')}</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink">
+          {t('checkout.successTitle')}
+        </h1>
 
-        <p className="text-sm text-steel">
-          {t('checkout.orderNumber')}:{' '}
-          <span className="font-mono font-semibold text-ink">{orderNumber}</span>
-        </p>
+        <div className="flex items-center gap-2 border border-ink/14 bg-raised px-4 py-2 font-mono text-xs uppercase tracking-[0.1em]">
+          <span className="text-steel">{t('checkout.orderNumber')}</span>
+          <span className="font-semibold text-ink">{orderNumber}</span>
+        </div>
 
-        <p className="text-steel">{t('checkout.successBody')}</p>
+        <p className="max-w-sm leading-relaxed text-ink2">{t('checkout.successBody')}</p>
 
         <Link
           href="/"
-          className="mt-2 inline-flex items-center justify-center rounded bg-brass px-5 py-2.5 text-sm font-medium text-cream hover:bg-brass/90"
+          className="mt-1 inline-flex items-center justify-center gap-2 bg-brass px-6 py-3 text-sm font-semibold text-raised transition hover:brightness-90"
         >
-          {t('common.home')}
+          {t('common.home')} <span aria-hidden="true">→</span>
         </Link>
       </div>
     </Container>
