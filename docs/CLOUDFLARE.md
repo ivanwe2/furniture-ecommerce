@@ -1,6 +1,14 @@
 # CLOUDFLARE.md — platform operations
 
-Everything Cloudflare-specific lives here. Agents: follow COMMANDS as
+> ⚠️ **LEGACY / RETIRED (2026-07-16).** The project moved off Cloudflare to a
+> self-hosted Docker deploy (Ivan's call — client hosts on their own infra;
+> ARCHITECTURE §1/§3, Decisions log 2026-07-16). Nothing here describes the
+> current platform. It is kept only as history for the interim `*.workers.dev`
+> deploy and for the one-time data lift (D1 export / R2 download) during
+> cutover. **Do not follow these commands for new work.** The current
+> platform ops live in the Docker deploy doc (lands with the container PR).
+
+Everything Cloudflare-specific lived here. Agents: follow COMMANDS as
 written; if a command errors, Escalate (CLAUDE.md §6) — do not improvise
 alternative wrangler invocations, and never run destructive ops against
 remote resources without explicit instruction.
