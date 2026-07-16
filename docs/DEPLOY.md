@@ -222,3 +222,34 @@ emails arrive (check spam too), to a `gmail.com` and an `abv.bg` address.
   become EUR-only). Set a reminder.
 - **Single instance.** The in-memory rate limiter and the SQLite single-writer
   model assume one container. Don't scale to replicas without revisiting both.
+
+---
+
+## 9. Host & container notes (incl. Proxmox / LXC)
+
+The app is one modest Node process; the risks below are about the host it runs
+on — mostly disk-fill and memory.
+
+- **Docker in a Proxmox LXC.** Running Docker inside an (unprivileged) LXC
+  needs the LXC set up for it: `features: nesting=1` (often `keyctl=1` too), and
+  a backing where Docker can use `overlay2`. On a **ZFS-backed** LXC, Docker may
+  fall back to the `vfs` driver — slow and it copies whole layers (disk-hungry);
+  check `docker info | grep "Storage Driver"`. If you have the choice, running
+  Docker in a small **VM** instead of an LXC sidesteps all of this — a common
+  choice for Docker workloads on Proxmox.
+- **Give it enough RAM.** Next SSR + Payload + sharp want ~1 GB baseline, more
+  under load / image processing. If you cap the LXC/VM tightly, also cap Node's
+  heap so it stays under the limit — Node doesn't always read a cgroup memory
+  cap correctly and can over-allocate, then get OOM-killed:
+  `NODE_OPTIONS=--max-old-space-size=<~75% of the cap in MB> --no-deprecation`
+  in `.env` (repeat `--no-deprecation` — `.env` replaces the image's value, it
+  doesn't merge).
+- **Host disk creep from image churn.** Every `docker compose up -d --build`
+  leaves the previous image's layers behind; on a small host disk they add up.
+  Run `docker image prune -f` after redeploys (or `docker system prune -f`
+  occasionally). Container logs are already capped (§3 compose).
+- **`.env` permissions.** It holds `PAYLOAD_SECRET` + SMTP creds — `chmod 600 .env`.
+- **SQLite under load.** Writes are serialised; `busyTimeout` (5s) is set so
+  overlapping writes wait rather than error. Back up with `sqlite3 .backup`
+  (§5), not a raw copy of a live file. At higher write volume, WAL mode
+  (`wal: true` on the adapter) is the next lever — not needed at catalog volume.

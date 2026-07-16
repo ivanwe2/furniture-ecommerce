@@ -45,7 +45,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 40s
+      # Headroom for a slower/CPU-limited host's first boot (migrate + Next).
+      start_period: 60s
 
 volumes:
   data:

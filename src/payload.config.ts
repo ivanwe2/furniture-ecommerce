@@ -69,6 +69,12 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: sqliteAdapter({ client: { url: process.env.DATABASE_URI ?? 'file:./nasteh.db' } }),
+  db: sqliteAdapter({
+    client: { url: process.env.DATABASE_URI ?? 'file:./nasteh.db' },
+    // SQLite serialises writes; wait up to 5s for a locked DB rather than
+    // erroring immediately (SQLITE_BUSY) when requests overlap, e.g. two
+    // checkouts at the same instant.
+    busyTimeout: 5000,
+  }),
   logger: isProduction ? jsonLogger : undefined,
 })
