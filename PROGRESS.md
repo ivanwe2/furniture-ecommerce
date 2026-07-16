@@ -6,11 +6,17 @@
 ## Status
 
 **Current phase:** **REDESIGN "1A Editorial"** in progress (Ivan handoff,
-2026-07-16 — ARCHITECTURE §8, Decisions log). Phased PRs R1–R7: R1 foundation
-(tokens + Golos/IBM Plex Mono fonts + square corners) → R2 shell → R3 homepage
-(+ WebGL hinge) → R4 catalog → R5 cart/checkout → R6 contact/legal/primitives →
-R7 admin touch-ups. **Ivan to add** the HACTEX logo files to `public/logos/`
-(needed at R2). Self-hosted Docker migration before this is **CODE-COMPLETE**
+2026-07-16 — ARCHITECTURE §8, Decisions log). Phased PRs R1–R7:
+**✅ R1** foundation (PR #23 — tokens + Golos/IBM Plex Mono fonts + square
+corners) → **✅ R2** shell (PR #24 — promo bar, header + logo + nav + cart chip,
+dark 4-col footer) → **✅ R3** homepage (engineering-overlay hero + lazy WebGL
+hinge + fallback, category cards + dark catalog CTA, numbered trust band; adds
+`three`) → R4 catalog → R5 cart/checkout → R6 contact/legal/primitives →
+R7 admin touch-ups. Logo files added by Ivan (`public/logos/nasteh-*.png`).
+**R3 note:** the old homepage featured-products grid + SEVROLL brand strip are
+removed — the 1A design's homepage is hero → categories → trust only. Category
+cards render the children of the `mebelen-obkov` root (the shoppable
+categories); the dark CTA tile + „Виж всички" link point at that root. Self-hosted Docker migration before this is **CODE-COMPLETE**
 (built + verified, PRs #12–#22); its remaining work is execution on the
 client's infra (build image, proxy, SMTP) — see the migration note below.
 **Migration plan (small green PRs, in order):**
@@ -281,6 +287,7 @@ https://nasteh.bg/rukovodstvo-za-administratora
 | 2026-07-10 | **SCOPE CHANGE (Ivan authorized in-session):** build Econt + Speedy office/map selectors at checkout — overrides the "no courier API integrations" out-of-scope line in CLAUDE.md. Server-side API calls only (external calls to ee.econt.com + api.speedy.bg), credentials as CF secrets. Needs Ivan's courier accounts/keys (see task list). Ivan to amend CLAUDE.md scope + ARCHITECTURE when confirmed | Ivan directive | here; ARCHITECTURE (pending) |
 | 2026-07-16 | **PLATFORM FLIP — off Cloudflare to self-hosted Docker (Ivan authorized in-session).** Client hosts on own infra; sysadmin owns reverse proxy / TLS / DNS / mail. New stack: Next.js standalone in a `node:24-bookworm-slim` container (`output:'standalone'`); **SQLite on a `data` volume** (`@payloadcms/db-sqlite`, `DATABASE_URI`); **media on a `media` disk volume** (Payload default adapter + **sharp** sized variants — sharp runs on Node); **in-memory** rate limit; **SMTP via nodemailer** (env-driven, sends from the domain); **Turnstile KEPT** (free, server-agnostic). Deps removed: `@opennextjs/cloudflare`, `wrangler`, `@payloadcms/db-d1-sqlite`, `@payloadcms/storage-r2`, Resend usage. Deps added: `@payloadcms/db-sqlite`, `nodemailer` (+ `@types/nodemailer` dev), `sharp` (already build-approved in `pnpm.onlyBuiltDependencies`). Rewrote ARCHITECTURE §1/§2/§3/§4/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12 + §7; CLOUDFLARE.md marked LEGACY. Delivered as 7 small green PRs (see Status). SMTP endpoint + SPF/DKIM/DMARC (+PTR if self-hosted MTA) are the sysadmin's to provide — not code-blocking. | client requires self-managed hosting | ARCHITECTURE §1–3,5,7,11,12 · CLAUDE.md · here |
 
+| 2026-07-17 | **R3 adds `three@0.160.1`** (+ `@types/three@0.160.0` dev) — the homepage WebGL hinge, pre-approved in the 2026-07-16 redesign row. Exact-pinned to the handoff's Three.js version; `three` is dynamically imported inside a client island so it stays out of the initial bundle (verified: `/` First Load JS = 110 kB). No native build step (no `allowBuilds` entry needed). | redesign hero (pre-approved) | package.json · here |
 | 2026-07-16 | **REDESIGN — "1A Editorial" (Ivan handoff "Nasteh Redesign").** Full storefront visual overhaul: light editorial + engineering-drawing motif, mono-uppercase labels, square corners (radius scale zeroed), brushed-metal WebGL hinge hero. **1A everywhere** (the 1B industrial direction is NOT built). Fonts → **Golos Text** (body + headings) + **IBM Plex Mono** (labels), self-hosted via next/font, cyrillic subset — drops Playfair+Inter; Manrope not used. New palette (ARCHITECTURE §8): cream #F5F1E8, raised #FBF9F3, dark #221E19, ink #211D18, brass #A9803F (+ -dark #8C5E2A for accent text on light, -light #B0824A on dark), bronze #BE8C4C. Logo = stylized **HACTEX** wordmark (`public/logos/*` — Ivan to add the files); text stays Настех. Adds **`three`** (WebGL hinge, lazy, homepage-only) in the homepage PR. Contact stays settings-driven (mock's contact@nasteh.bg not hardcoded). Delivered as phased PRs R1–R7. | client-approved redesign | ARCHITECTURE §8 · here |
 
 ### 2026-07-09 repair session — what the audit found & fixed
