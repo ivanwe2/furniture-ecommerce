@@ -79,10 +79,16 @@ docker compose up -d --build      # rebuild + restart; migrations run on boot
 
 ## 4. One-time data cutover (from the retired Cloudflare deploy)
 
-Only needed once, to bring the content entered on the interim Cloudflare
-deploy (products, categories, legal pages, media, settings, orders) onto the
-self-hosted box. Run from a machine with `wrangler` logged into the client's
-Cloudflare account (Ivan). Skip entirely for a fresh start.
+> **Not needed for this project.** The Cloudflare instance was a throwaway
+> test — there is no production data to migrate. Go-live starts fresh: the
+> container creates + migrates an empty DB on first boot, and the owner enters
+> content via `/admin`. No Cloudflare/`wrangler` access is required anywhere in
+> this deploy. The procedure below is kept only as reference, in case a future
+> deploy ever needs to import an existing D1/R2.
+
+To bring content from an existing Cloudflare deploy (products, categories,
+media, settings, orders), run from a machine with `wrangler` logged into the
+account:
 
 ### 4a. Database: D1 → the SQLite `data` volume
 
