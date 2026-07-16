@@ -21,7 +21,8 @@ This file is the contract. Read it at the start of EVERY session.
 | `CLAUDE.md` | This protocol | Every session start |
 | `PROGRESS.md` | Live state: current phase/task, decisions, blockers | Session start AND before every commit |
 | `docs/ARCHITECTURE.md` | Locked stack + system design + rationale | Session start; before any structural choice |
-| `docs/CLOUDFLARE.md` | LEGACY — the retired Cloudflare deploy, kept for history | not for new work — see ARCHITECTURE §1/§3; Docker ops doc lands in the container PR |
+| `docs/DEPLOY.md` | Self-hosted Docker ops: configure, build/run, data cutover, backups, proxy, email | Before touching deploy / Docker / env / migrations |
+| `docs/CLOUDFLARE.md` | LEGACY — the retired Cloudflare deploy, kept for history | not for new work — see `docs/DEPLOY.md` |
 | `docs/DATA-MODEL.md` | Payload collections, hooks, query layer, import contract | Before touching any schema, hook, or query |
 | `docs/CONVENTIONS.md` | Code style, patterns, testing, error handling | Before writing code in an unfamiliar area |
 | `docs/UI-SPEC.md` | Page-by-page specs, components, BG copy, a11y | Before building/altering any UI |
@@ -176,5 +177,6 @@ host `.env`. Build and run via `docker compose`; the sysadmin owns the
 reverse proxy, TLS, DNS, and mail. Schema changes apply on container start
 (`payload migrate`). Never run destructive commands against the host's
 volumes without an explicit instruction (rule 12). If a documented step
-fails, that's an Escalation (§6), not an invitation to improvise. (`docs/
-CLOUDFLARE.md` is retired — historical reference only.)
+fails, that's an Escalation (§6), not an invitation to improvise. Full ops
+(configure, build/run, data cutover, backups, proxy, email): `docs/DEPLOY.md`.
+(`docs/CLOUDFLARE.md` is retired — historical reference only.)

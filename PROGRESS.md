@@ -5,11 +5,12 @@
 
 ## Status
 
-**Current phase:** MIGRATION off Cloudflare to a **self-hosted Docker** deploy
-(Ivan, 2026-07-16 — the client hosts on their own infrastructure; their sysadmin
-owns the reverse proxy, TLS, DNS, and mail). The locked platform/stack is
-flipped in ARCHITECTURE §1/§2/§3/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12/§7
-(this PR). The visual **REDESIGN** then lands on the clean Node/Docker base.
+**Current phase:** Self-hosted Docker migration is **CODE-COMPLETE** (Ivan,
+2026-07-16 — client hosts on own infra; sysadmin owns reverse proxy, TLS, DNS,
+mail). Locked platform/stack flipped in ARCHITECTURE §1/§2/§3/§5/§7/§11/§12 +
+CLAUDE.md rules 3/10/12/§7. Next dev task: the visual **REDESIGN** on the clean
+Node/Docker base. Remaining migration work is execution on the client's infra
+(build image, data cutover, proxy, SMTP) — see the code-complete note below.
 **Migration plan (small green PRs, in order):**
   1. ✅ (PR #12) Docs flip — ARCHITECTURE / CLAUDE / PROGRESS + Decisions log.
   2. ✅ DB seam: D1 → `@payloadcms/db-sqlite` (`DATABASE_URI`), migrate on start.
@@ -42,7 +43,18 @@ flipped in ARCHITECTURE §1/§2/§3/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12/
      ref — caught by `next build`). **`pnpm build` verified green locally**
      (all site routes + sitemap dynamic; no build-time DB). Docker image itself
      is UNBUILT here (no daemon) — sysadmin builds on their infra.
-  7. Cutover doc: D1→SQLite export/import + R2→disk media lift.
+  7. ✅ Cutover doc: `docs/DEPLOY.md` (configure/build/run, one-time D1→SQLite
+     + R2→disk lift, backups, reverse-proxy + email notes). Doc index + the
+     CLOUDFLARE.md banner now point to it.
+
+**MIGRATION CODE-COMPLETE (2026-07-16).** All 7 PRs merged (#12-#18). The repo
+targets self-hosted Docker; no Cloudflare anything remains in `src/` or config.
+Remaining is **execution on the client's infra (sysadmin/Ivan), not code:**
+build the image (`docker compose up -d --build`), the one-time data cutover
+(DEPLOY §4), reverse proxy + TLS, and the SMTP endpoint + SPF/DKIM/DMARC. The
+Docker image was NOT built in-session (no daemon) — but `pnpm build` is green.
+Next dev work: the **REDESIGN** (lands on the clean Node/Docker base), and the
+deferred image `imageSizes`/sharp responsive variants.
 
 _Migration notes:_ the existing D1-generated migration
 (`20260709_184644_initial`) applies **unchanged** on libSQL — verified with
