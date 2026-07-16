@@ -19,17 +19,17 @@ export function Textarea({
   return (
     <div className="flex flex-col gap-1.5">
       {label && textareaId && (
-        <label htmlFor={textareaId} className="text-sm font-medium text-ink">
+        <label htmlFor={textareaId} className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-steel">
           {label}
         </label>
       )}
       <textarea
         id={textareaId}
         className={clsx(
-          'w-full rounded border border-steel bg-cream px-3 py-2 text-sm text-ink',
+          'w-full border border-ink/20 bg-raised px-3.5 py-2.5 text-sm text-ink transition-colors',
           'placeholder:text-steel/60 resize-y min-h-[120px]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-1 ring-offset-cream',
-          error && 'border-danger focus-visible:ring-danger',
+          'focus-visible:outline-none focus-visible:border-brass focus-visible:ring-1 focus-visible:ring-brass',
+          error && 'border-danger focus-visible:border-danger focus-visible:ring-danger',
           className,
         )}
         aria-invalid={error ? 'true' : undefined}
@@ -37,7 +37,7 @@ export function Textarea({
         {...props}
       />
       {error && textareaId && (
-        <p id={`${textareaId}-error`} className="text-sm text-danger" role="alert">
+        <p id={`${textareaId}-error`} className="text-xs text-danger" role="alert">
           {error}
         </p>
       )}

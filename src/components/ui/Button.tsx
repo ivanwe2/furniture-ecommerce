@@ -13,15 +13,15 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  brass: 'bg-brass text-cream hover:bg-brass/90 focus-visible:ring-brass',
+  brass: 'bg-brass text-raised hover:brightness-90 focus-visible:ring-brass',
   ghost: 'bg-transparent text-ink hover:bg-sand focus-visible:ring-steel',
-  danger: 'bg-danger text-cream hover:bg-danger/90 focus-visible:ring-danger',
+  danger: 'bg-danger text-raised hover:brightness-90 focus-visible:ring-danger',
 }
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-5 py-2.5 text-sm',
-  lg: 'px-8 py-3 text-base',
+  sm: 'px-3.5 py-2 text-sm',
+  md: 'px-6 py-3 text-sm',
+  lg: 'px-8 py-3.5 text-base',
 }
 
 export function Button({

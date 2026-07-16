@@ -15,8 +15,11 @@ hinge + fallback, category cards + dark catalog CTA, numbered trust band; adds
 subcategory chips, product detail + technical items table, brand, search; shared
 `Breadcrumbs` + `Pagination`) → **✅ R5** cart/checkout (PR #27 — editorial cart
 line items + sticky summary, checkout summary + bordered delivery-method
-selector, square success confirmation) → R6 contact/legal/primitives →
-R7 admin touch-ups. Logo files added by Ivan (`public/logos/nasteh-*.png`).
+selector, square success confirmation) → **✅ R6** contact/legal/primitives
+(PR #28 — editorial contact spec-sheet + form, legal-page headings, RichText
+palette; primitives: mono-uppercase form labels, hairline inputs w/ brass focus,
+square mono Badge, brass buttons) → R7 admin touch-ups.
+Logo files added by Ivan (`public/logos/nasteh-*.png`).
 **R3 note:** the old homepage featured-products grid + SEVROLL brand strip are
 removed — the 1A design's homepage is hero → categories → trust only. Category
 cards render the children of the `mebelen-obkov` root (the shoppable

@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import type { CompanyInfo } from '@/lib/company'
 import { t, tSafe } from '@/lib/i18n/bg'
 import { Container, Input, Textarea, Button, Alert, Turnstile } from '@/components/ui'
+import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import { submitContact } from '@/actions/contact'
 
 export default function ContactPageClient({ company }: { company: CompanyInfo }) {
@@ -44,55 +44,56 @@ export default function ContactPageClient({ company }: { company: CompanyInfo })
   }
 
   return (
-    <Container className="py-8">
-      <nav aria-label="Breadcrumb" className="mb-6">
-        <ol className="flex items-center gap-2 text-sm text-steel">
-          <li>
-            <Link href="/" className="hover:text-brass transition-colors">
-              {t('common.home')}
-            </Link>
-          </li>
-          <li className="flex items-center gap-2">
-            <span aria-hidden="true">/</span>
-            <span className="text-ink">{t('nav.contact')}</span>
-          </li>
-        </ol>
-      </nav>
+    <Container className="py-8 sm:py-10">
+      <Breadcrumbs
+        items={[
+          { name: t('common.home'), href: '/' },
+          { name: t('nav.contact') },
+        ]}
+      />
 
-      <h1 className="mb-8 text-2xl font-bold text-ink">{t('contact.title')}</h1>
+      <header className="mb-8 border-b border-ink/12 pb-6">
+        <div className="mb-2.5 font-mono text-xs uppercase tracking-[0.16em] text-brass-dark">{t('contact.title')}</div>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">{company.name}</h1>
+      </header>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {/* Contact info */}
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-ink">{company.name}</h2>
-            <p className="mt-1 text-sm text-steel">
-              {t('store.centralOffice')}: гр. {company.city}, {company.addressLine}
-            </p>
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+        {/* Contact info — a technical spec sheet */}
+        <dl className="h-fit divide-y divide-ink/10 border border-ink/14 bg-raised">
+          <div className="p-5">
+            <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-steel">{t('store.centralOffice')}</dt>
+            <dd className="mt-1.5 text-sm text-ink">гр. {company.city}, {company.addressLine}</dd>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-ink">{t('store.phone')}</h3>
-            <a href={company.phoneHref} className="mt-1 block text-sm text-brass hover:underline">
-              {company.phoneDisplay}
-            </a>
+          <div className="p-5">
+            <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-steel">{t('store.phone')}</dt>
+            <dd className="mt-1.5">
+              <a href={company.phoneHref} className="font-mono text-sm text-ink transition-colors hover:text-brass">
+                {company.phoneDisplay}
+              </a>
+            </dd>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-ink">{t('store.email')}</h3>
-            <a href={company.emailHref} className="mt-1 block text-sm text-brass hover:underline">
-              {company.email}
-            </a>
+          <div className="p-5">
+            <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-steel">{t('store.email')}</dt>
+            <dd className="mt-1.5">
+              <a href={company.emailHref} className="text-sm text-brass-dark transition-colors hover:text-brass">
+                {company.email}
+              </a>
+            </dd>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-ink">{t('store.workingHours')}</h3>
-            <p className="mt-1 text-sm text-steel">{company.workingHours.weekdays}</p>
-            <p className="text-sm text-steel">{company.workingHours.saturday}</p>
+          <div className="p-5">
+            <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-steel">{t('store.workingHours')}</dt>
+            <dd className="mt-1.5 text-sm text-ink2">
+              {company.workingHours.weekdays}
+              <br />
+              {company.workingHours.saturday}
+            </dd>
           </div>
-        </div>
+        </dl>
 
         {/* Contact form */}
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           {success && (
-            <div className="rounded-lg bg-ok/10 p-4 text-sm text-ok" role="alert">
+            <div className="border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok" role="alert">
               {t('contact.success')}
             </div>
           )}

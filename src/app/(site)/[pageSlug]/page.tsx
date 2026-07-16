@@ -34,8 +34,11 @@ export default async function PageSlug({ params }: Props) {
   }
 
   return (
-    <Container className="py-8">
-      <h1 className="mb-6 text-2xl font-bold text-ink">{page.title}</h1>
+    <Container className="py-8 sm:py-10">
+      <div className="mb-8 border-b border-ink/12 pb-6">
+        <div className="mb-2.5 font-mono text-xs uppercase tracking-[0.16em] text-brass-dark">{t('footer.info')}</div>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">{page.title}</h1>
+      </div>
       <div className="max-w-3xl">
         <RichText content={page.content} />
       </div>

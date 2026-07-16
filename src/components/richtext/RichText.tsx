@@ -20,13 +20,13 @@ function renderChildren(nodes: LexicalNode[] | undefined): React.ReactNode {
 function renderHeading(level: number, children: React.ReactNode): React.ReactNode {
   switch (level) {
     case 1:
-      return <h1 className="mb-4 mt-6 text-2xl font-bold text-ink">{children}</h1>
+      return <h1 className="mb-4 mt-8 font-display text-2xl font-semibold tracking-[-0.02em] text-ink">{children}</h1>
     case 2:
-      return <h2 className="mb-3 mt-6 text-xl font-bold text-ink">{children}</h2>
+      return <h2 className="mb-3 mt-8 font-display text-xl font-semibold tracking-[-0.01em] text-ink">{children}</h2>
     case 3:
-      return <h3 className="mb-2 mt-4 text-lg font-semibold text-ink">{children}</h3>
+      return <h3 className="mb-2 mt-6 font-display text-lg font-semibold text-ink">{children}</h3>
     default:
-      return <h4 className="mb-2 mt-4 text-base font-semibold text-ink">{children}</h4>
+      return <h4 className="mb-2 mt-4 font-display text-base font-semibold text-ink">{children}</h4>
   }
 }
 
@@ -38,7 +38,7 @@ function renderNode(node: LexicalNode): React.ReactNode {
 
   switch (type) {
     case 'paragraph':
-      return <p className="mb-4 leading-relaxed text-ink">{renderChildren(children)}</p>
+      return <p className="mb-4 leading-relaxed text-ink2">{renderChildren(children)}</p>
 
     case 'heading': {
       const tag = String(node.tag ?? 'h2')
@@ -49,9 +49,9 @@ function renderNode(node: LexicalNode): React.ReactNode {
     case 'list': {
       const isBullet = node.listType === 'bullet' || node.format === 'bullet'
       return isBullet ? (
-        <ul className="mb-4 list-disc pl-6 text-ink">{renderChildren(children)}</ul>
+        <ul className="mb-4 list-disc pl-6 text-ink2 marker:text-brass">{renderChildren(children)}</ul>
       ) : (
-        <ol className="mb-4 list-decimal pl-6 text-ink">{renderChildren(children)}</ol>
+        <ol className="mb-4 list-decimal pl-6 text-ink2 marker:text-steel">{renderChildren(children)}</ol>
       )
     }
 
@@ -66,7 +66,7 @@ function renderNode(node: LexicalNode): React.ReactNode {
       )
 
     case 'horizontalrule':
-      return <hr className="my-6 border-sand" />
+      return <hr className="my-8 border-ink/12" />
 
     case 'table':
       return (
@@ -83,8 +83,8 @@ function renderNode(node: LexicalNode): React.ReactNode {
     case 'tablecell': {
       const isHeader = Boolean(node.headerState)
       const className = clsx(
-        'border border-sand px-3 py-2 text-left align-top',
-        isHeader && 'bg-sand font-semibold',
+        'border border-ink/12 px-3 py-2 text-left align-top',
+        isHeader && 'bg-sand font-mono text-xs uppercase tracking-[0.06em] text-steel',
       )
       return isHeader ? (
         <th className={className}>{renderChildren(children)}</th>
@@ -109,7 +109,7 @@ function renderNode(node: LexicalNode): React.ReactNode {
       return (
         <a
           href={href}
-          className="text-brass underline hover:opacity-80"
+          className="text-brass-dark underline decoration-brass/40 underline-offset-2 transition-colors hover:text-brass"
           target={isExternal ? '_blank' : undefined}
           rel={isExternal ? 'noopener noreferrer' : undefined}
         >
