@@ -16,67 +16,82 @@ slugs.
 
 ## 1. Platform strategy 🔒
 
-**All-in Cloudflare.** One account (client-owned email), one dashboard, one
-bill. Workers **Paid plan ($5/mo)** from day one — buys headroom on CPU
-time, bundle size, D1/KV/R2 quotas, and removes the free-tier commercial
-ambiguity entirely.
+**Self-hosted, containerized.** The client hosts the site on their own
+infrastructure; their sysadmin owns the reverse proxy, TLS, DNS, and mail.
+We ship a single Docker image — a **Next.js standalone Node server** that
+embeds the Payload admin and the storefront — plus a `docker-compose.yml`
+describing the full stack. One image, one repo, `docker compose up`.
+Persistent state is two Docker volumes: `data` (the SQLite DB file) and
+`media` (uploads). The sysadmin's reverse proxy terminates TLS and proxies
+to the container on `:3000`.
 
-Approved external exceptions: **Resend** (transactional email — Cloudflare
-has no outbound transactional email product) and **GitHub** (repo + CI).
-Everything else lives in Cloudflare. If a need arises that seems to require
-another vendor → Escalation, not adoption.
+Rationale for the move off Cloudflare (Ivan, 2026-07-16): the client
+requires on-premise/self-managed hosting and their sysadmin operates it.
+See Decisions log 2026-07-16.
 
-**Exit seams** (kept clean so a future platform switch is a re-deploy, not a
-rewrite): SQL through Payload's adapter only; storage through Payload's
-upload plumbing only; image URLs through `src/lib/images.ts` only; rate
-limiting through `src/lib/rate-limit.ts` only. Nothing else in `src/` may
-import Cloudflare-specific APIs.
+Approved external dependency: **GitHub** (repo + CI). Order/contact email
+leaves the box through whatever authenticated SMTP endpoint the sysadmin
+provides for `nasteh.bg` (their own mail server, the domain's mail host, or
+a relay) — configured entirely by env, no vendor baked into the code. No
+other managed services. If a need arises that seems to require one →
+Escalation, not adoption.
+
+**Exit seams** (the same seams that made this migration a re-wire, not a
+rewrite — keep them clean): SQL through Payload's adapter only; storage
+through Payload's upload plumbing only; image URLs through
+`src/lib/images.ts` only; rate limiting through `src/lib/rate-limit.ts`
+only; email through `src/emails/send.ts` only. Nothing else in `src/` may
+import host-specific APIs (Cloudflare or otherwise).
 
 ## 2. Stack 🔒
 
 | Layer | Choice | Pin | Notes |
 |---|---|---|---|
-| Hosting | Cloudflare Workers (Paid) | — | via OpenNext adapter, from the **official Payload-on-Workers template** |
-| Framework | Next.js App Router | 15.4.x (as shipped by template) | The template is the tested Next+Payload+OpenNext combination — do not hand-upgrade. Next 16 = deliberate post-launch decision via Decisions log. |
-| Adapter | `@opennextjs/cloudflare` | latest at scaffold | freeze exact version in Decisions log |
-| CMS | Payload | 3.82.x (template pin, v3 line) | **Payload 4 beta forbidden** (no GA, no migration guide; revisit post-launch after v4 GA). 3.85.2 upgrade attempted then reverted — broke `/admin` (RSC serialization). |
-| Database | **Cloudflare D1** (SQLite) | template's adapter (`@payloadcms/db-d1-sqlite` family) | native binding, zero egress, one vendor. SQLite caveats: DATA-MODEL §Search, §Migrations in CLOUDFLARE.md |
-| Media storage | Cloudflare R2 | template's storage wiring | originals only — see §5 Images |
-| Image sizing | **Cloudflare Image Transformations** | — | `/cdn-cgi/image/…` URLs; sharp does NOT run on Workers (native binary) |
-| Rate limiting | Workers KV counter | — | behind `src/lib/rate-limit.ts` seam |
-| Anti-bot | Cloudflare Turnstile | — | checkout + contact forms |
+| Hosting | **Docker container** — Next.js standalone Node server | base `node:24-bookworm-slim` | one image embeds Payload admin + storefront; sysadmin's reverse proxy terminates TLS → proxies to `:3000`. `output: 'standalone'` in `next.config` |
+| Framework | Next.js App Router | 15.4.x | Next 16 = deliberate post-launch decision via Decisions log. |
+| CMS | Payload | 3.82.x (v3 line) | **Payload 4 beta forbidden** (no GA, no migration guide; revisit post-launch after v4 GA). 3.85.2 upgrade attempted then reverted — broke `/admin` (RSC serialization). |
+| Database | **SQLite** on a mounted volume | `@payloadcms/db-sqlite` (libSQL) | `DATABASE_URI=file:/app/data/nasteh.db`. Single writer / single instance — correct for one self-hosted box. Backups = copy the file (or Litestream). Migrated from D1 (same SQLite dialect). Caveats: DATA-MODEL §Search |
+| Media storage | **Local disk** on a mounted volume | Payload default disk adapter | originals on the `media` volume; no object store. See §5 |
+| Image sizing | **Payload + sharp** (native, at upload) | `sharp` | sharp runs on Node (unlike Workers) → Payload generates sized variants at upload; served via the app's media route. No `/cdn-cgi/image/` |
+| Rate limiting | **in-memory fixed-window counter** | — | single instance; behind `src/lib/rate-limit.ts` seam. No KV, no Redis |
+| Anti-bot | Cloudflare Turnstile | — | KEPT — a free, server-agnostic API (siteverify over HTTPS); checkout + contact forms |
 | Styling | Tailwind CSS | 4.x | tokens in §8 |
 | Cart state | zustand + persist(localStorage) | 5.x | client-only; SSR-safe hydration per CONVENTIONS |
 | Validation | zod | 3.x | every boundary |
-| Email | Resend | — | React Email or plain HTML templates in `src/emails/` |
-| Tests | vitest | 2.x | `src/lib/**` pure logic |
-| CI | GitHub Actions | — | typecheck+lint+test+build on push/PR |
-| Language | TypeScript strict | 5.x | |
-| Package manager | pnpm | 9.x | |
+| Email | **SMTP** (nodemailer) | `nodemailer` | env-configured transport → the domain's authenticated SMTP endpoint; sends as `orders@nasteh.bg`. No transactional SaaS. Plain HTML templates in `src/emails/` |
+| Tests | vitest | 4.x | `src/lib/**` pure logic |
+| CI | GitHub Actions | — | typecheck+lint+test on push/PR |
+| Language | TypeScript strict | 6.x | |
+| Package manager | pnpm | 11.x | |
 
 Explicitly rejected (do not reintroduce): Express/separate API server; Neon
-or any external Postgres (superseded by D1); Redis/Upstash (see §6);
-Cloudinary and all third-party image CDNs (superseded by CF Images); Stripe
-and every payment SDK (out of scope); Econt/Speedy APIs (out of scope);
-next-intl/i18n routing (single locale); Prisma (Payload owns the DB);
-localStorage libraries beyond zustand/persist.
+or any external Postgres SaaS; Redis/Upstash (see §6); Cloudinary and all
+third-party image CDNs; Stripe and every payment SDK (out of scope);
+Econt/Speedy APIs (out of scope); next-intl/i18n routing (single locale);
+Prisma (Payload owns the DB); localStorage libraries beyond zustand/persist.
+
+Removed in the 2026-07-16 self-host move (do not reintroduce without an
+Escalation): `@opennextjs/cloudflare`, `wrangler`, `@payloadcms/db-d1-sqlite`,
+`@payloadcms/storage-r2`; Cloudflare Workers / D1 / R2 / KV / Image
+Transformations / Turnstile-as-infra; **Resend** (superseded by SMTP).
 
 ## 3. Runtime & topology
 
 ```
-Browser ──▶ Cloudflare edge
-             ├─ static assets (Workers Assets — no invocation cost)
-             ├─ /cdn-cgi/image/*  → Image Transformations → R2 original
-             └─ Worker (Next 15 server via OpenNext)
-                  ├─ RSC pages  → query layer → Payload local API → D1
-                  ├─ /admin/*   → Payload admin (auth: Payload users)
-                  ├─ server actions (checkout, contact) → D1 + KV + Resend
-                  └─ ISR/tag cache → R2 incremental cache (OpenNext binding)
+Browser ──▶ sysadmin reverse proxy (nginx/Caddy — TLS termination)
+             └─ app container :3000  (Next 15 standalone + Payload)
+                  ├─ static assets (served by Next)
+                  ├─ /api/media/*  → sized image variants from the `media` volume
+                  ├─ RSC pages     → query layer → Payload local API → SQLite (`data` volume)
+                  ├─ /admin/*      → Payload admin (auth: Payload users)
+                  └─ server actions (checkout, contact) → SQLite + in-memory rate limit + SMTP
 ```
 
-One Worker, one repo, one deploy. Bindings (exact names in CLOUDFLARE.md):
-D1 database, R2 media bucket, R2 incremental-cache bucket (template-managed),
-KV namespace for rate limiting, Turnstile secret, Resend key.
+One container, one repo, one deploy. Persistent state = two Docker volumes:
+`data` (SQLite DB file) and `media` (uploads). Configuration is a single
+`.env` file the sysadmin manages on the host — no bindings, no cloud secret
+store (§11). Schema migrations run on container start (entrypoint →
+`payload migrate` → `node server.js`).
 
 ## 4. Caching 🔒 — and why there is no Redis
 
@@ -92,40 +107,41 @@ Therefore:
   `page-<slug>`, `settings`, `brands`.
 - Payload hooks (`afterChange`, `afterDelete`) revalidate the relevant tags
   (DATA-MODEL §Hooks). Slug changes revalidate BOTH old and new slug tags.
-- Result: catalog pages are cached at the edge between edits; a product
-  edit propagates in seconds; D1 sees near-zero read traffic from browsing.
+- Result: catalog pages are cached in-process between edits; a product edit
+  propagates in seconds; SQLite sees near-zero read traffic from browsing.
 - Cart is client state. Orders are uncached writes. Admin is uncached.
-- Adding any additional cache layer (KV for pages, Redis, in-memory maps
-  used across requests) is prohibited — it solves nothing here and creates
-  invalidation bugs. KV's one approved job is rate-limit counters.
+- Adding an external cache layer (Redis, a separate KV service) is
+  prohibited — it solves nothing on a single-instance deploy and creates
+  invalidation bugs.
+- NOTE (2026-07-16): the storefront currently runs `export const dynamic =
+  'force-dynamic'` (added when the Workers deploy had no incremental-cache
+  infra) so CMS edits show live. On a single Node container the tag-cache
+  above is straightforward to re-enable; revisit alongside the redesign.
 
 ## 5. Images 🔒
 
-- Admin uploads land as **originals** in R2 via Payload's upload collection
-  (`media`). No sharp, no size generation at upload (impossible on Workers).
-  Enforce upload sanity in the collection config: images only
-  (jpeg/png/webp), max ~10 MB (owner-friendly guardrail).
-- R2 media bucket is exposed on `media.nasteh.bg` (custom domain on the
-  same CF zone — required for transformations; setup in CLOUDFLARE.md).
-- All rendering goes through `src/lib/images.ts`:
+- Admin uploads land on the `media` **disk volume** via Payload's upload
+  collection (`media`). Enforce upload sanity in the collection config:
+  images only (jpeg/png/webp), max ~10 MB (owner-friendly guardrail).
+- **sharp runs on Node**, so Payload generates sized variants at upload time
+  (`upload.imageSizes` in the `media` collection — thumb/card/detail/zoom/og
+  widths). This is the win of leaving Workers: no external transformer, the
+  sizes are real files on the volume.
+- All rendering goes through `src/lib/images.ts`, which returns the app's
+  media-route URL for the requested size:
 
 ```ts
 type Preset = 'thumb' | 'card' | 'detail' | 'zoom' | 'og';
 // widths:   160      480     1024       1920    1200 (og: fixed 1200×630 crop)
 export function imageUrl(media: MediaDoc, preset: Preset): string
-// → https://media.nasteh.bg/cdn-cgi/image/width=480,format=auto,quality=82,fit=scale-down/<r2-key>
+// → /api/media/file/<size-filename>   (served by the app; cached by the sysadmin's proxy)
 export function imageSrcSet(media: MediaDoc, presets: Preset[]): string
 ```
 
-- `format=auto` negotiates webp/avif per browser. `fit=scale-down` never
-  upscales.
-- `next/image` is used with a custom loader that delegates to `images.ts`
-  (single source of truth), or plain `<img srcSet>` where next/image fights
-  the platform — pick ONE approach in Phase 4, log it, apply uniformly.
-- Quota realism: transformations bill per unique transformation URL per
-  month, cached thereafter. ~500 images × 5 presets = 2,500 uniques —
-  monitor in dashboard during Phase 10; if a paid overage ever appears it
-  is cents, but log it.
+- Payload emits webp variants at upload (configured per size); `<img srcSet>`
+  lets the browser pick the width. `fit` per size prevents upscaling.
+- `next/image` stays avoided in favor of plain `<img srcSet>` (Decisions log
+  2026-07-09); the sized URLs now come from Payload's own variants.
 - LCP discipline: category/product covers use `card`/`detail` presets with
   explicit width/height (from stored media dimensions) to prevent CLS.
 
@@ -159,10 +175,12 @@ export function formatPrice(cents: number): string
 ## 7. Security 🔒
 
 - **Checkout & contact server actions**, in order: honeypot check (silent
-  fake-success on trip) → zod parse → Turnstile server-side verify → KV
-  rate limit (key `rl:order:<ip>`, window 10 min, max 5; contact: max 3) →
-  business logic. Rejections return typed errors with BG messages
-  (UI-SPEC §Copy).
+  fake-success on trip) → zod parse → Turnstile server-side verify →
+  in-memory rate limit (key `rl:order:<ip>`, window 10 min, max 5; contact:
+  max 3) → business logic. Rejections return typed errors with BG messages
+  (UI-SPEC §Copy). The counter is per-instance; on a single container that
+  is the whole surface. Fails open only if the limiter errors — Turnstile is
+  the hard gate.
 - Payload access control: `users` = owner + Ivan only, no public
   registration. Public read: products (published only), categories, brands,
   pages, media, settings. `orders`: NO public access of any kind via
@@ -249,21 +267,36 @@ in the table and cart controls.
 
 ## 11. Environments & secrets
 
-- `wrangler.jsonc` (bindings, vars) is committed; secrets are NOT.
-- Local: `.env` (gitignored) mirrors `.env.example`:
+- No `wrangler.jsonc`, no cloud secret store. Configuration is a single
+  `.env` file (gitignored) mirrored by `.env.example`. In production the
+  sysadmin owns the host `.env`, readable only by the container.
+- `.env` (and `.env.example`) keys:
 
 ```
+NODE_ENV=production
 PAYLOAD_SECRET=
-RESEND_API_KEY=
-TURNSTILE_SECRET_KEY=
+DATABASE_URI=file:/app/data/nasteh.db
+NEXT_PUBLIC_SITE_URL=https://nasteh.bg
+NEXT_PUBLIC_SHOW_BGN=true          # flip to false on 2026-08-08 (§6)
+# Email — authenticated SMTP endpoint for the domain (sysadmin-provided):
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+EMAIL_FROM=Настех <orders@nasteh.bg>
 ORDER_INBOX_EMAIL=
+# Anti-bot (Turnstile — kept):
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
 ```
 
-- Public (committed as wrangler `vars` / NEXT_PUBLIC): `NEXT_PUBLIC_SITE_URL`,
-  `NEXT_PUBLIC_SHOW_BGN`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`,
-  `NEXT_PUBLIC_MEDIA_HOST=media.nasteh.bg`.
-- Production secrets: `wrangler secret put <NAME>` on the client-owned
-  Cloudflare account. Full inventory + who-holds-what: CLOUDFLARE.md §Secrets.
+- `NEXT_PUBLIC_*` are build-time (compiled into the client bundle); the rest
+  are read at runtime by the Node server. The image is built once; the
+  sysadmin supplies the `.env` at `docker compose up`.
+- Deliverability (SMTP) is the sysadmin's to arrange for `nasteh.bg`: SPF,
+  DKIM, DMARC (+ PTR / unblocked port 25 if they run their own MTA). The app
+  is a plain SMTP client — it works against whatever endpoint they point it
+  at. No `NEXT_PUBLIC_MEDIA_HOST` (media is served by the app).
 
 ## 12. Repository layout 🔒
 
@@ -304,7 +337,8 @@ ORDER_INBOX_EMAIL=
 │   ├── actions/order.ts  actions/contact.ts
 │   ├── emails/order-owner.tsx  order-customer.tsx  contact-owner.tsx
 │   └── middleware.ts          # redirect map
-├── wrangler.jsonc  open-next.config.ts  next.config.ts
+├── Dockerfile  docker-compose.yml  .dockerignore
+├── next.config.ts
 └── .env.example
 ```
 

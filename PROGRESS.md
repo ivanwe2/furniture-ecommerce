@@ -5,16 +5,30 @@
 
 ## Status
 
-**Current phase:** LIVE on Cloudflare at the interim `*.workers.dev` URL
-(deployed 2026-07-12/13 via Cloudflare Workers Builds). Pre-domain, pre-redesign.
-**Current task (next session):** a full visual **REDESIGN**. Ivan is preparing a
-design template (via Claude design) from customer feedback and will hand it over.
-Until then the site runs on the current design.
+**Current phase:** MIGRATION off Cloudflare to a **self-hosted Docker** deploy
+(Ivan, 2026-07-16 — the client hosts on their own infrastructure; their sysadmin
+owns the reverse proxy, TLS, DNS, and mail). The locked platform/stack is
+flipped in ARCHITECTURE §1/§2/§3/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12/§7
+(this PR). The visual **REDESIGN** then lands on the clean Node/Docker base.
+**Migration plan (small green PRs, in order):**
+  1. Docs flip (this PR) — ARCHITECTURE / CLAUDE / PROGRESS + Decisions log.
+  2. DB seam: D1 → `@payloadcms/db-sqlite` (`DATABASE_URI`), migrate on start.
+  3. Storage+images: drop `r2Storage` → disk volume; `images.ts` → Payload/
+     sharp sized variants (remove `/cdn-cgi/image/`).
+  4. Rate-limit: KV → in-memory fixed-window counter.
+  5. Email: `emails/send.ts` fetch/Resend → nodemailer SMTP (env-driven).
+  6. Container: `next.config` `output:'standalone'`, Dockerfile,
+     docker-compose.yml, .env.example, .dockerignore; remove wrangler/opennext.
+  7. Cutover doc: D1→SQLite export/import + R2→disk media lift.
+**Chosen (Ivan, 2026-07-16):** SQLite on a volume · media on a disk volume ·
+in-memory rate limit · Turnstile kept · SMTP from the domain (no Resend). SMTP
+endpoint + SPF/DKIM/DMARC are the sysadmin's to provide (not code-blocking).
 **Repo state:** green gate (`typecheck` + `lint` 0 errors + `test` 65) passes.
 main is **branch-protected** (PR + `verify` CI required); all work goes via
 feature branches + squash-merged PRs (Decisions log 2026-07-11/12).
 
-**Live deployment state (2026-07-13):**
+**Interim Cloudflare deploy (2026-07-13) — BEING RETIRED (migration above); kept
+for the data lift (D1 export + R2 download) and secret inventory during cutover:**
 - URL: https://nasteh-bg.nastehsales.workers.dev · Workers **Paid** plan · account
   `061903067be16a178866adb12584641c`. Custom domain nasteh.bg **not yet wired**.
 - CD: **Cloudflare Workers Builds** on push to `main` (build `npx opennextjs-
@@ -209,6 +223,7 @@ https://nasteh.bg/rukovodstvo-za-administratora
 | 2026-07-11 | **Deploy model: manual first, CD later (Ivan).** First production deploy is a hand-run `pnpm deploy` from Ivan's machine under his CF auth; GitHub Actions CD gets wired only after one healthy manual deploy proves the path | Ivan directive | here |
 | 2026-07-12 | **CD via Cloudflare Workers Builds** (native Git integration), NOT GitHub Actions — the local manual deploy is dead on Windows: OpenNext's esbuild bundling can't read pnpm symlinks ("Access is denied" on react/react-dom/styled-jsx), and `node-linker=hoisted` via `.npmrc` is ignored by pnpm 11. So builds run on Cloudflare's Linux builders. Workers Builds auto-generates the deploy token (no manual API token). Settings: build cmd `npx opennextjs-cloudflare build`; deploy cmd `npx opennextjs-cloudflare deploy`; root `/`; **non-production branch builds disabled** (only `main` deploys). Build-time vars in the dashboard "Build variables" box (`PAYLOAD_SECRET` + `NEXT_PUBLIC_SHOW_BGN`/`TURNSTILE_SITE_KEY`/`SITE_URL`); runtime secrets via `wrangler secret put` (`PAYLOAD_SECRET`, `TURNSTILE_SECRET_KEY`, `ORDER_INBOX_EMAIL`). Supersedes the 2026-07-11 "manual first" row. Build history: Worker → Deployments → "View build history" | Windows can't build OpenNext; Ivan chose the native option | CLOUDFLARE §9 (pending update) · CF dashboard |
 | 2026-07-10 | **SCOPE CHANGE (Ivan authorized in-session):** build Econt + Speedy office/map selectors at checkout — overrides the "no courier API integrations" out-of-scope line in CLAUDE.md. Server-side API calls only (external calls to ee.econt.com + api.speedy.bg), credentials as CF secrets. Needs Ivan's courier accounts/keys (see task list). Ivan to amend CLAUDE.md scope + ARCHITECTURE when confirmed | Ivan directive | here; ARCHITECTURE (pending) |
+| 2026-07-16 | **PLATFORM FLIP — off Cloudflare to self-hosted Docker (Ivan authorized in-session).** Client hosts on own infra; sysadmin owns reverse proxy / TLS / DNS / mail. New stack: Next.js standalone in a `node:24-bookworm-slim` container (`output:'standalone'`); **SQLite on a `data` volume** (`@payloadcms/db-sqlite`, `DATABASE_URI`); **media on a `media` disk volume** (Payload default adapter + **sharp** sized variants — sharp runs on Node); **in-memory** rate limit; **SMTP via nodemailer** (env-driven, sends from the domain); **Turnstile KEPT** (free, server-agnostic). Deps removed: `@opennextjs/cloudflare`, `wrangler`, `@payloadcms/db-d1-sqlite`, `@payloadcms/storage-r2`, Resend usage. Deps added: `@payloadcms/db-sqlite`, `nodemailer` (+ `@types/nodemailer` dev), `sharp` (already build-approved in `pnpm.onlyBuiltDependencies`). Rewrote ARCHITECTURE §1/§2/§3/§4/§5/§7/§11/§12 + CLAUDE.md rules 3/10/12 + §7; CLOUDFLARE.md marked LEGACY. Delivered as 7 small green PRs (see Status). SMTP endpoint + SPF/DKIM/DMARC (+PTR if self-hosted MTA) are the sysadmin's to provide — not code-blocking. | client requires self-managed hosting | ARCHITECTURE §1–3,5,7,11,12 · CLAUDE.md · here |
 
 ### 2026-07-09 repair session — what the audit found & fixed
 

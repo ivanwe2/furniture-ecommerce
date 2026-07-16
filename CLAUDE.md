@@ -21,7 +21,7 @@ This file is the contract. Read it at the start of EVERY session.
 | `CLAUDE.md` | This protocol | Every session start |
 | `PROGRESS.md` | Live state: current phase/task, decisions, blockers | Session start AND before every commit |
 | `docs/ARCHITECTURE.md` | Locked stack + system design + rationale | Session start; before any structural choice |
-| `docs/CLOUDFLARE.md` | Platform ops: bindings, wrangler, migrations, deploy | Before touching wrangler/bindings/deploy/D1 |
+| `docs/CLOUDFLARE.md` | LEGACY — the retired Cloudflare deploy, kept for history | not for new work — see ARCHITECTURE §1/§3; Docker ops doc lands in the container PR |
 | `docs/DATA-MODEL.md` | Payload collections, hooks, query layer, import contract | Before touching any schema, hook, or query |
 | `docs/CONVENTIONS.md` | Code style, patterns, testing, error handling | Before writing code in an unfamiliar area |
 | `docs/UI-SPEC.md` | Page-by-page specs, components, BG copy, a11y | Before building/altering any UI |
@@ -45,9 +45,13 @@ PROGRESS.md → Blocked either way.
    ARCHITECTURE.md §Dependencies. New package or ANY version bump beyond
    patch level ⇒ entry in `PROGRESS.md → ## Decisions log` first (one-line
    why). Never move to a new major. **Payload 4.x (beta) is forbidden.**
-3. **Stay inside Cloudflare.** No external infra services beyond the
-   approved exceptions (Resend for email, GitHub for code/CI). No Neon, no
-   Upstash, no Vercel services, no S3, no third-party image CDNs.
+3. **Self-hosted, no cloud lock-in.** The app runs as a Docker container on
+   the client's own infrastructure (ARCHITECTURE §1). Approved external
+   dependency: GitHub (code + CI). Order/contact email leaves via a
+   sysadmin-provided SMTP endpoint (env-configured). No managed infra
+   services — no Cloudflare, no Neon/Upstash, no Vercel, no S3, no
+   third-party image CDNs, no Redis. A new external dependency ⇒ Escalation
+   (§6), not adoption.
 4. **Money is integer euro cents** (`priceEurCents`). Never floats, never
    strings, never BGN stored anywhere. All display through
    `src/lib/money.ts`. A raw `.toFixed(` or hardcoded `€` in a component is
@@ -69,15 +73,17 @@ PROGRESS.md → Blocked either way.
    totals recomputed server-side from the DB. The order row is written
    BEFORE emails are attempted; email failure never rolls back or blocks
    the order.
-10. **Never commit secrets.** `.dev.vars` and `.env*` are gitignored;
-    `.dev.vars.example` stays current. Secrets in prod live in Cloudflare
-    (`wrangler secret put`). If you ever see a secret value in a file you
-    are about to commit — stop, remove, report.
+10. **Never commit secrets.** `.env` and `.env*` are gitignored;
+    `.env.example` stays current (keys only, no values). Production secrets
+    live only in the host `.env` the sysadmin manages, readable by the
+    container. If you ever see a secret value in a file you are about to
+    commit — stop, remove, report.
 11. **Repo stays green.** Never commit with failing
     `pnpm typecheck && pnpm lint && pnpm test && pnpm build`.
-12. **No destructive data ops** against remote D1/R2 (drop, delete-all,
-    overwrite-bucket) without an explicit instruction from Ivan recorded in
-    the session. Local/preview resources are fair game.
+12. **No destructive data ops** against production data — the host's SQLite
+    `data` volume or the `media` volume (drop, delete-all, overwrite) —
+    without an explicit instruction from Ivan recorded in the session. Local
+    dev resources are fair game.
 13. **UI work is verified visually** at 375px and 1280px before its commit
     (dev server or preview). "It compiles" is not verification.
 14. **Bulgarian admin, Bulgarian site.** Collection/field labels, admin UI
@@ -162,10 +168,13 @@ your memory of them.
 
 ---
 
-## 7. Working with the Cloudflare platform
+## 7. Working with the platform (Docker / self-hosted)
 
-Local dev, bindings, D1 migrations, R2, deploys: follow docs/CLOUDFLARE.md
-COMMANDS exactly — do not improvise wrangler invocations from training data;
-the file exists because CLI flags and workflows change. If a documented
-command fails, that's an Escalation (§6), not an invitation to experiment
-with destructive alternatives.
+The app is a single container: a Next.js standalone server embedding Payload,
+SQLite on the `data` volume, uploads on the `media` volume, config from a
+host `.env`. Build and run via `docker compose`; the sysadmin owns the
+reverse proxy, TLS, DNS, and mail. Schema changes apply on container start
+(`payload migrate`). Never run destructive commands against the host's
+volumes without an explicit instruction (rule 12). If a documented step
+fails, that's an Escalation (§6), not an invitation to improvise. (`docs/
+CLOUDFLARE.md` is retired — historical reference only.)
