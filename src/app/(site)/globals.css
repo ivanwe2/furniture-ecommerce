@@ -76,43 +76,191 @@
   left: 0;
 }
 
-/* Landing hero — a warm interior photo (public/hero.jpg) under a cream veil
-   that keeps the dark heading readable. The gradient on `.hero` is the
-   fallback if the image ever fails to load. Swap public/hero.jpg to change
-   the picture; no code change needed. */
-.hero {
+/* Homepage hero (redesign R3) — an engineering-drawing overlay (grid, ruler,
+   bronze dimension line, crosshair) with a muted, right-anchored WebGL hinge
+   fading in behind the copy. All decoration is aria-hidden; the mask fades it
+   out toward the copy column so text stays readable. Colors are literal rgba
+   here (out of the token set on purpose — faint hairlines/callouts). */
+.hero-stage {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(175deg, var(--color-sand) 0%, var(--color-cream) 62%);
 }
-.hero-photo {
+
+/* --- WebGL hinge backdrop --- */
+.hinge-stage {
+  position: absolute;
+  top: 0;
+  right: -4%;
+  width: 56%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.42;
+  -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 30%, transparent 92%);
+  mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 30%, transparent 92%);
+}
+.hinge-canvas {
   position: absolute;
   inset: 0;
-  background-image: url('/hero.jpg');
-  background-size: cover;
-  background-position: center;
-  pointer-events: none;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
-.hero-overlay {
+.hinge-fallback {
   position: absolute;
   inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(246, 243, 236, 0.95) 0%,
-      rgba(246, 243, 236, 0.82) 45%,
-      rgba(246, 243, 236, 0.3) 100%
-    ),
-    linear-gradient(0deg, rgba(246, 243, 236, 0.55) 0%, rgba(246, 243, 236, 0) 42%);
+  z-index: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-hatch-1) 0 11px,
+    var(--color-hatch-2) 11px 22px
+  );
 }
+.hinge-active .hinge-fallback {
+  display: none;
+}
+
+/* Diagonal hatch — product-image placeholder in the engineering-drawing style. */
+.hatch {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-hatch-1) 0 11px,
+    var(--color-hatch-2) 11px 22px
+  );
+}
+
+/* --- engineering guide overlay --- */
+.eng-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 52%, transparent 96%);
+  mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 52%, transparent 96%);
+}
+.eng-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(34, 30, 25, 0.05) 0 1px, transparent 1px 116px),
+    repeating-linear-gradient(0deg, rgba(34, 30, 25, 0.038) 0 1px, transparent 1px 116px);
+}
+.eng-ruler {
+  position: absolute;
+  top: 46px;
+  right: 44px;
+  width: 46%;
+  height: 9px;
+  border-top: 1px solid rgba(34, 30, 25, 0.28);
+  background-image: repeating-linear-gradient(90deg, rgba(34, 30, 25, 0.28) 0 1px, transparent 1px 26px);
+}
+.eng-dim {
+  position: absolute;
+  top: 96px;
+  bottom: 120px;
+  right: 40px;
+  width: 1px;
+  background: rgba(169, 128, 63, 0.55);
+}
+.eng-cap {
+  position: absolute;
+  right: 34px;
+  width: 13px;
+  height: 1px;
+  background: rgba(169, 128, 63, 0.55);
+}
+.eng-cap-top {
+  top: 96px;
+}
+.eng-cap-bottom {
+  bottom: 120px;
+}
+.eng-label {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: right center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: rgba(140, 94, 42, 0.9);
+  white-space: nowrap;
+}
+.eng-cross {
+  position: absolute;
+  top: 148px;
+  right: 33%;
+}
+.eng-cross-h {
+  position: absolute;
+  left: -14px;
+  top: 0;
+  width: 28px;
+  height: 1px;
+  background: rgba(34, 30, 25, 0.42);
+}
+.eng-cross-v {
+  position: absolute;
+  left: 0;
+  top: -14px;
+  width: 1px;
+  height: 28px;
+  background: rgba(34, 30, 25, 0.42);
+}
+.eng-cross-box {
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid rgba(140, 94, 42, 0.85);
+}
+
+/* Mobile hero: hinge centered near the top, grid + ruler masked to the bottom,
+   the precise dimension lines dropped (too busy at 390px). */
 @media (max-width: 767px) {
-  .hero-overlay {
-    background: linear-gradient(
-      180deg,
-      rgba(246, 243, 236, 0.82) 0%,
-      rgba(246, 243, 236, 0.9) 100%
-    );
+  .hinge-stage {
+    top: 2%;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 124%;
+    height: 58%;
+    opacity: 0.5;
+    -webkit-mask-image: radial-gradient(66% 66% at 50% 44%, rgba(0, 0, 0, 1) 40%, transparent 100%);
+    mask-image: radial-gradient(66% 66% at 50% 44%, rgba(0, 0, 0, 1) 40%, transparent 100%);
+  }
+  .eng-overlay {
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 52%, transparent 96%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 52%, transparent 96%);
+  }
+  .eng-grid {
+    background-image:
+      repeating-linear-gradient(90deg, rgba(34, 30, 25, 0.05) 0 1px, transparent 1px 60px),
+      repeating-linear-gradient(0deg, rgba(34, 30, 25, 0.04) 0 1px, transparent 1px 60px);
+  }
+  .eng-ruler {
+    top: 44px;
+    left: 18px;
+    right: 18px;
+    width: auto;
+    height: 8px;
+    border-top-color: rgba(34, 30, 25, 0.24);
+    background-image: repeating-linear-gradient(90deg, rgba(34, 30, 25, 0.24) 0 1px, transparent 1px 22px);
+  }
+  .eng-dim,
+  .eng-cap,
+  .eng-cross {
+    display: none;
+  }
+  .eng-label {
+    top: 56px;
+    right: 18px;
+    transform: none;
+    font-size: 9px;
+    letter-spacing: 0.16em;
   }
 }
 
