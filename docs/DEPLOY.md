@@ -159,7 +159,10 @@ Automate both on the host (cron) and copy off-box.
 
 ## 6. Reverse proxy (sysadmin)
 
-Terminate TLS and proxy to `127.0.0.1:3000`. Two things the app relies on:
+Terminate TLS and proxy to `127.0.0.1:3000`. The compose publishes the app on
+**loopback only** (not exposed to the network) — a same-host proxy reaches it
+directly; a proxy on another host needs the port mapping adjusted (see the
+`docker-compose.yml` comment). Two things the app relies on:
 
 - **`X-Forwarded-For`** — the checkout/contact rate limiter and logs derive
   the client IP from it (ARCHITECTURE §7). Without it every visitor shares one
