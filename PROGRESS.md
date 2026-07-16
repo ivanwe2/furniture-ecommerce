@@ -18,8 +18,16 @@ line items + sticky summary, checkout summary + bordered delivery-method
 selector, square success confirmation) → **✅ R6** contact/legal/primitives
 (PR #28 — editorial contact spec-sheet + form, legal-page headings, RichText
 palette; primitives: mono-uppercase form labels, hairline inputs w/ brass focus,
-square mono Badge, brass buttons) → R7 admin touch-ups.
+square mono Badge, brass buttons) → **✅ R7** admin touch-ups (PR #29 —
+`custom.scss`: cream bg, brass primary buttons, square corners, Golos/IBM Plex
+Mono type stacks; CSS-only, no layout changes). **REDESIGN COMPLETE (R1–R7).**
 Logo files added by Ivan (`public/logos/nasteh-*.png`).
+**Admin observation (pre-existing, not a redesign change):** the lexical
+richtext field (product „Описание") shows „Something went wrong: Cannot read
+properties of undefined (reading 'type')" for products seeded without a
+description — a Payload admin editor/data quirk (CSS-only R7 can't cause a JS
+error; the storefront `RichText` renderer is a separate code path). Worth a
+look before launch, but out of redesign scope.
 **R3 note:** the old homepage featured-products grid + SEVROLL brand strip are
 removed — the 1A design's homepage is hero → categories → trust only. Category
 cards render the children of the `mebelen-obkov` root (the shoppable

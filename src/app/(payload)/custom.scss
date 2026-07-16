@@ -1,19 +1,47 @@
-/* Tint the Payload admin to the storefront's warm light palette
-   (ARCHITECTURE §8). The admin is also forced to light mode in
-   payload.config.ts (admin.theme: 'light'). Cards keep Payload's
-   near-white elevations, sitting on a cream page background. */
-html[data-theme='light'] {
-  --theme-bg: #f5f1e8; /* cream page background — same as the site (redesign 1A) */
-  --color-success-500: #a9803f; /* brass accent for links/highlights */
-  --theme-success-500: #a9803f;
-}
+/* Tint the Payload admin to the storefront's warm light palette (ARCHITECTURE
+   §8) and echo its editorial signatures — square corners, brass primary
+   actions, matching type stacks. Colours / radii / fonts only; NO layout
+   changes. The admin is also forced to light mode in payload.config.ts
+   (admin.theme: 'light'). Cards keep Payload's near-white elevations, sitting
+   on the cream page background. */
 
-/* Brand palette for the admin logo/icon (the Настех badge). Mirrors the
-   storefront tokens; kept here because the admin runs outside Tailwind, so
-   the SVG components reference these vars instead of raw hex. */
+/* Brand palette for the admin logo/icon (the Настех badge) + the overrides
+   below. The admin runs outside Tailwind, so these mirror the storefront
+   tokens as plain CSS vars instead of raw hex. */
 :root {
   --nasteh-graphite: #221e19;
   --nasteh-brass: #a9803f;
+  --nasteh-brass-dark: #8c5e2a;
   --nasteh-cream: #f5f1e8;
+  --nasteh-raised: #fbf9f3;
   --nasteh-steel: #6e665a;
+}
+
+/* Set at the theme scope (higher specificity than Payload's :root defaults, so
+   these win) — same selector proven for --theme-bg. */
+html[data-theme='light'] {
+  --theme-bg: #f5f1e8; /* cream page background — same as the site (redesign 1A) */
+  --color-success-500: #a9803f; /* brass accent for links / highlights */
+  --theme-success-500: #a9803f;
+
+  /* Match the storefront's type stacks. Golos Text / IBM Plex Mono are used
+     when present on the machine; otherwise the same system fallbacks the site
+     itself uses. (The admin layout is Payload-generated, so fonts are set here
+     via CSS vars rather than next/font.) */
+  --font-body: 'Golos Text', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* Square corners everywhere — the storefront's signature. */
+  --style-radius-s: 0;
+  --style-radius-m: 0;
+  --style-radius-l: 0;
+}
+
+/* Primary actions (Save, Create, Publish …) in brass to match the storefront
+   CTAs, with cream text — instead of Payload's default dark elevation button. */
+.btn--style-primary {
+  --bg-color: var(--nasteh-brass);
+  --hover-bg: var(--nasteh-brass-dark);
+  --color: var(--nasteh-raised);
+  --hover-color: var(--nasteh-raised);
 }
