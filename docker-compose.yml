@@ -1,14 +1,15 @@
-# Настех — self-hosted deployment.
+# Настех — self-hosted multi-service stack.
 #
 # The client's sysadmin runs a reverse proxy (nginx/Caddy/Traefik) that
-# terminates TLS for nasteh.bg and proxies to this app on port 3000. TLS,
-# DNS, and mail are the sysadmin's responsibility — this stack is just the app.
+# terminates TLS for nasteh.bg and proxies to the app on port 3000. TLS, DNS,
+# and mail-DNS (SPF/DKIM/DMARC) are the sysadmin's responsibility.
 #
 #   1. cp .env.example .env   # then fill it in (see DEPLOY.md)
 #   2. docker compose up -d --build
 #
-# Persistent state lives in two named volumes: `data` (SQLite DB) and `media`
-# (uploaded images). Back both up (see DEPLOY.md).
+# Services: app (Next + Payload) · db (PostgreSQL). Redis + mail land in later
+# phases. Persistent state = named volumes: `pgdata` (Postgres) and `media`
+# (uploads). Back both up (see DEPLOY.md).
 
 services:
   app:
@@ -17,6 +18,9 @@ services:
       dockerfile: Dockerfile
     image: nasteh-bg:latest
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     # Cap container log growth (structured JSON logs + Next/Payload output).
     logging:
       driver: json-file
@@ -31,8 +35,7 @@ services:
       # "3000:3000" and firewall the port (or put both on a Docker network).
       - '127.0.0.1:3000:3000'
     volumes:
-      - data:/app/data # SQLite database (replaces Cloudflare D1)
-      - media:/app/media # uploaded images (replaces Cloudflare R2)
+      - media:/app/media # uploaded images + sized variants
     healthcheck:
       # robots.txt is static (no DB) — a cheap liveness probe
       test:
@@ -46,8 +49,29 @@ services:
       timeout: 5s
       retries: 3
       # Headroom for a slower/CPU-limited host's first boot (migrate + Next).
-      start_period: 60s
+      start_period: 90s
+
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
-  data:
+  pgdata:
   media:

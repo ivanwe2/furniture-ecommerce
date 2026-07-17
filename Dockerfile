@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 #
 # Настех — self-hosted image. Next.js production server embedding the Payload
-# admin. SQLite lives on the `data` volume, uploads on the `media` volume.
-# Migrations run on container start, then `next start` serves the app.
+# admin. Data lives in the `db` (PostgreSQL) container; uploads on the `media`
+# volume. Migrations run on container start, then `next start` serves the app.
 
 # --- base: Node 24 (matches package.json engines) on Debian slim.
 # Debian (glibc), not Alpine (musl), so sharp's prebuilt native binary works
@@ -44,9 +44,9 @@ COPY --from=build --chown=nasteh:nasteh /app/.next ./.next
 COPY --from=build --chown=nasteh:nasteh /app/public ./public
 COPY --chown=nasteh:nasteh package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json next.config.ts ./
 COPY --chown=nasteh:nasteh src ./src
-# Writable dirs for the SQLite db + uploads. Own /app + these dirs as the
-# runtime user so first-run named volumes inherit non-root ownership.
-RUN mkdir -p /app/data /app/media && chown nasteh:nasteh /app /app/data /app/media
+# Writable dir for uploads. Own /app + the media dir as the runtime user so the
+# first-run `media` named volume inherits non-root ownership.
+RUN mkdir -p /app/media && chown nasteh:nasteh /app /app/media
 USER nasteh
 EXPOSE 3000
 # Apply pending migrations, then serve. `&&` stops startup if a migration
