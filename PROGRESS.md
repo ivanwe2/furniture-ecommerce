@@ -9,7 +9,10 @@
 stack (Ivan, 2026-07-17; Decisions log). Order (small green PRs):
 **✅ S1** contract flip (PR #30) → **✅ S2** Turnstile→Altcha (PR #31 — self-hosted
 proof-of-work; `altcha-lib` v2 + `altcha` v3 widget; `/altcha` challenge route;
-replay store; verified end-to-end) → **S3** sharp `imageSizes`+WebP → **S4** SQLite→Postgres (regen migrations, `db`
+replay store; verified end-to-end) → **✅ S3** sharp `imageSizes`+WebP (PR #32 —
+thumb/card/detail/zoom as WebP, og kept jpeg 1200×630; sharp wired into config;
+`images.ts` serves variants w/ original fallback; verified variants on disk) →
+**S4** SQLite→Postgres (regen migrations, `db`
 container) → **S5** Redis rate-limit (`redis` container) → **S6** Postfix mail
 relay (DKIM) → **S7** compose hardening (resource limits, `pg_dump`+media
 backups, networks) + DEPLOY.md rewrite. App-only changes (S2/S3) first, then
