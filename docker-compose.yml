@@ -2,16 +2,18 @@
 #
 # The client's sysadmin runs a reverse proxy (nginx/Caddy/Traefik) that
 # terminates TLS for nasteh.bg and proxies to the app on port 3000. TLS, DNS,
-# and mail-DNS (SPF/DKIM/DMARC) are the sysadmin's responsibility.
+# and mail-DNS (SPF/DKIM/DMARC + PTR) are the sysadmin's responsibility.
 #
 #   1. cp .env.example .env   # then fill it in (see DEPLOY.md)
 #   2. docker compose up -d --build
 #
-# Services: app (Next + Payload) · db (PostgreSQL) · redis (rate-limit store) ·
-# mail (send-only Postfix relay, DKIM). Persistent state = named volumes:
-# `pgdata` (Postgres), `media` (uploads), `maildata` (DKIM keys). Back up
-# pgdata + media (see DEPLOY.md). Mail deliverability needs DNS the sysadmin
-# publishes (SPF/DKIM/DMARC + PTR) — see DEPLOY.md §mail.
+# Services: app (Next + Payload) · db (PostgreSQL 18) · redis (rate-limit
+# store) · mail (send-only Postfix relay, DKIM) · backup (pg_dump + media).
+# All on the internal `backend` network; only the app publishes a host port.
+# Persistent state = named volumes: pgdata (Postgres), media (uploads),
+# maildata (DKIM keys), backups (dumps). Copy `backups` OFF the host regularly
+# (see DEPLOY.md §backups). Every service has a memory cap so a runaway can't
+# OOM-kill the host (e.g. a Proxmox LXC).
 
 services:
   app:
@@ -20,6 +22,7 @@ services:
       dockerfile: Dockerfile
     image: nasteh-bg:latest
     restart: unless-stopped
+    networks: [backend]
     depends_on:
       db:
         condition: service_healthy
@@ -29,7 +32,6 @@ services:
       # start (and take orders) even if the relay is down.
       mail:
         condition: service_started
-    # Cap container log growth (structured JSON logs + Next/Payload output).
     logging:
       driver: json-file
       options:
@@ -40,10 +42,15 @@ services:
       # Publish on loopback only — the app is reachable ONLY through the
       # sysadmin's reverse proxy (which terminates TLS), never directly from
       # the network. If the proxy runs on a DIFFERENT host, change to
-      # "3000:3000" and firewall the port (or put both on a Docker network).
+      # "3000:3000" and firewall the port (or share a Docker network).
       - '127.0.0.1:3000:3000'
     volumes:
       - media:/app/media # uploaded images + sized variants
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '2.0'
     healthcheck:
       # robots.txt is static (no DB) — a cheap liveness probe
       test:
@@ -62,6 +69,7 @@ services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
+    networks: [backend]
     logging:
       driver: json-file
       options:
@@ -72,7 +80,14 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # PG 18+ wants the mount at /var/lib/postgresql (data goes in a
+      # version-subdir), not /var/lib/postgresql/data.
+      - pgdata:/var/lib/postgresql
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.5'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 10s
@@ -83,6 +98,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    networks: [backend]
     # Rate-limit counters only — ephemeral, so no persistence (AOF/RDB off).
     # Cap memory and evict the oldest keys rather than growing unbounded.
     command: ['redis-server', '--save', '', '--appendonly', 'no', '--maxmemory', '64mb', '--maxmemory-policy', 'allkeys-lru']
@@ -91,6 +107,11 @@ services:
       options:
         max-size: '10m'
         max-file: '5'
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+          cpus: '0.5'
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
@@ -105,6 +126,7 @@ services:
     # via RELAYHOST). NEVER expose its ports to the public network.
     image: boky/postfix@sha256:aafc772384232497bed875e1eb66b4d3e54ba1ebc86e2e185a6dc1dbc48182ef
     restart: unless-stopped
+    networks: [backend]
     hostname: ${MAIL_HOSTNAME:-mail.nasteh.bg}
     environment:
       HOSTNAME: ${MAIL_HOSTNAME:-mail.nasteh.bg}
@@ -123,6 +145,11 @@ services:
       options:
         max-size: '10m'
         max-file: '5'
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
     healthcheck:
       test: ['CMD', 'postfix', 'status']
       interval: 30s
@@ -130,7 +157,53 @@ services:
       retries: 3
       start_period: 20s
 
+  backup:
+    # Daily pg_dump + media tarball to the `backups` volume, keeping the last
+    # 14 of each. Self-contained snapshots on the host — copy them OFF the host
+    # (or mount `backups` to an off-host path) for real disaster recovery.
+    image: postgres:18-alpine
+    restart: unless-stopped
+    networks: [backend]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    volumes:
+      - backups:/backups
+      - media:/media:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        echo "backup sidecar started (daily, keep 14)";
+        while true; do
+          ts=$$(date +%Y%m%d_%H%M%S);
+          pg_dump | gzip > /backups/db_$$ts.sql.gz && echo "db backup: db_$$ts.sql.gz";
+          tar czf /backups/media_$$ts.tar.gz -C /media . 2>/dev/null && echo "media backup: media_$$ts.tar.gz";
+          ls -1t /backups/db_*.sql.gz 2>/dev/null | tail -n +15 | xargs -r rm -f;
+          ls -1t /backups/media_*.tar.gz 2>/dev/null | tail -n +15 | xargs -r rm -f;
+          sleep 86400;
+        done
+
+networks:
+  backend:
+    driver: bridge
+
 volumes:
   pgdata:
   media:
   maildata:
+  backups:

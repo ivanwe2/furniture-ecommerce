@@ -132,7 +132,7 @@ Therefore:
 - Payload hooks (`afterChange`, `afterDelete`) revalidate the relevant tags
   (DATA-MODEL §Hooks). Slug changes revalidate BOTH old and new slug tags.
 - Result: catalog pages are cached in-process between edits; a product edit
-  propagates in seconds; SQLite sees near-zero read traffic from browsing.
+  propagates in seconds; Postgres sees near-zero read traffic from browsing.
 - Cart is client state. Orders are uncached writes. Admin is uncached.
 - Redis is present (own container) but is **not** the content cache — it is
   the rate-limit store only (`src/lib/rate-limit.ts`). Routing the Next tag
@@ -202,11 +202,11 @@ export function formatPrice(cents: number): string
 ## 7. Security 🔒
 
 - **Checkout & contact server actions**, in order: honeypot check (silent
-  fake-success on trip) → zod parse → Turnstile server-side verify →
-  in-memory rate limit (key `rl:order:<ip>`, window 10 min, max 5; contact:
+  fake-success on trip) → zod parse → Altcha proof-of-work verify →
+  Redis rate limit (key `rl:order:<ip>`, window 10 min, max 5; contact:
   max 3) → business logic. Rejections return typed errors with BG messages
-  (UI-SPEC §Copy). The counter is per-instance; on a single container that
-  is the whole surface. Fails open only if the limiter errors — Turnstile is
+  (UI-SPEC §Copy). The limiter is Redis-backed (shared) with an in-memory
+  fallback, so a Redis blip fails open rather than blocking orders — Altcha is
   the hard gate.
 - Payload access control: `users` = owner + Ivan only, no public
   registration. Public read: products (published only), categories, brands,
@@ -318,22 +318,30 @@ contrast (accent *text* on light uses `brass-dark`, not `brass`); touch targets
 - `.env` (and `.env.example`) keys:
 
 ```
-NODE_ENV=production
 PAYLOAD_SECRET=
-DATABASE_URI=file:/app/data/nasteh.db
+DATABASE_URI=postgres://nasteh:<pw>@db:5432/nasteh
+POSTGRES_USER=nasteh                # db container init (must match DATABASE_URI)
+POSTGRES_PASSWORD=
+POSTGRES_DB=nasteh
+REDIS_URL=redis://redis:6379        # rate-limit store
+MEDIA_DIR=/app/media
 NEXT_PUBLIC_SITE_URL=https://nasteh.bg
-NEXT_PUBLIC_SHOW_BGN=true          # flip to false on 2026-08-08 (§6)
-# Email — authenticated SMTP endpoint for the domain (sysadmin-provided):
-SMTP_HOST=
+NEXT_PUBLIC_SHOW_BGN=true           # flip to false on 2026-08-08 (§6)
+ALTCHA_HMAC_KEY=                    # self-hosted anti-bot (no external service)
+# Email — the app relays through the in-stack `mail` service:
+SMTP_HOST=mail
 SMTP_PORT=587
-SMTP_USER=
+SMTP_USER=                          # empty = no-auth internal relay
 SMTP_PASS=
 EMAIL_FROM=Настех <orders@nasteh.bg>
 ORDER_INBOX_EMAIL=
-# Anti-bot (Turnstile — kept):
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=
-TURNSTILE_SECRET_KEY=
+MAIL_HOSTNAME=mail.nasteh.bg        # mail relay HELO + DKIM
+MAIL_SENDER_DOMAINS=nasteh.bg
+RELAYHOST=                          # optional smarthost; empty = direct delivery
+RELAYHOST_USERNAME=
+RELAYHOST_PASSWORD=
 ```
+(`.env.example` is authoritative; keep this in sync.)
 
 - `NEXT_PUBLIC_*` are build-time (compiled into the client bundle); the rest
   are read at runtime by the Node server. The image is built once; the
