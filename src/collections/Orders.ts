@@ -74,6 +74,7 @@ export const Orders: CollectionConfig = {
       name: 'lines',
       type: 'array',
       label: 'Позиции',
+      labels: { singular: 'позиция', plural: 'позиции' },
       fields: [
         { name: 'productId', type: 'text', label: 'Продукт ID' },
         { name: 'productName', type: 'text', label: 'Име на продукт' },

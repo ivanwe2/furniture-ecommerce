@@ -49,6 +49,7 @@ export const Products: CollectionConfig = {
       name: 'shortSpec',
       type: 'array',
       label: 'Кратки характеристики',
+      labels: { singular: 'характеристика', plural: 'характеристики' },
       fields: [
         { name: 'text', type: 'text', required: true, label: 'Текст' },
       ],
@@ -58,6 +59,7 @@ export const Products: CollectionConfig = {
       name: 'gallery',
       type: 'array',
       label: 'Галерия',
+      labels: { singular: 'снимка', plural: 'снимки' },
       fields: [
         {
           name: 'image',
@@ -72,6 +74,7 @@ export const Products: CollectionConfig = {
       name: 'items',
       type: 'array',
       label: 'Артикули (SKU)',
+      labels: { singular: 'артикул', plural: 'артикули' },
       minRows: 1,
       fields: [
         { name: 'name', type: 'text', required: true, label: 'Наименование' },
