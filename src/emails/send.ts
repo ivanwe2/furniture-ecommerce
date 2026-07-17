@@ -30,6 +30,10 @@ function getTransporter(): Transporter | null {
       port: SMTP_PORT,
       secure: SMTP_PORT === 465, // 465 = implicit TLS; 587 = STARTTLS (upgraded automatically)
       auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+      // No-auth = the in-stack `mail` relay on the trusted internal network
+      // (self-signed / opportunistic TLS) → don't fail on its cert. An authed
+      // endpoint is a real external smarthost → keep strict cert validation.
+      tls: SMTP_USER ? undefined : { rejectUnauthorized: false },
     })
   }
   return transporter

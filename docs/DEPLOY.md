@@ -190,21 +190,41 @@ Caching the media route (`/api/media/file/`) at the proxy is a nice-to-have.
 
 ---
 
-## 7. Email deliverability (sysadmin)
+## 7. Email — the in-stack `mail` relay (§mail)
 
-The app is a plain SMTP client (`SMTP_*` in `.env`); deliverability is the
-endpoint's + DNS's job:
+Mail is generated and sent **inside the stack**: the app relays (no auth, over
+the internal Docker network) to the **`mail`** service — a send-only Postfix +
+OpenDKIM relay — which **DKIM-signs** each message and delivers it (directly, or
+via a `RELAYHOST` smarthost). No transactional SaaS. `EMAIL_FROM` must be an
+address under `MAIL_SENDER_DOMAINS` (default `orders@nasteh.bg`).
 
-- **SPF, DKIM, DMARC** published for `nasteh.bg` so receivers trust the mail.
-- If the endpoint is a **self-run MTA** sending direct-to-recipient, it also
-  needs a matching **PTR** record and **outbound port 25 open** (many
-  ISPs/hosts block it). A reputable relay (the domain's mail host or a
-  Workspace SMTP relay) sidesteps IP-reputation problems.
-- Sending as `orders@nasteh.bg` requires the endpoint to authorise that
-  address (`EMAIL_FROM`).
+The container is app-self-contained; **deliverability still depends on DNS the
+sysadmin publishes** (receivers won't trust unauthenticated mail):
+
+**1. DKIM** — the relay auto-generates a key on first boot (persisted on the
+`maildata` volume, selector `mail`). Read the DNS record and publish it:
+
+```bash
+docker compose exec mail cat /etc/opendkim/keys/nasteh.bg.txt
+# → publish a TXT record at  mail._domainkey.nasteh.bg  with the v=DKIM1;… value
+```
+
+**2. SPF** — TXT at `nasteh.bg` authorising this host to send. Direct delivery:
+`v=spf1 a mx ip4:<host-public-ip> -all`. Via a smarthost: include it, e.g.
+`v=spf1 include:<provider-spf> -all`.
+
+**3. DMARC** — TXT at `_dmarc.nasteh.bg`, e.g.
+`v=DMARC1; p=quarantine; rua=mailto:postmaster@nasteh.bg`.
+
+**4. Direct delivery needs more:** a matching **PTR** (reverse DNS) on the
+host's public IP, and **outbound port 25 open** (many ISPs/clouds block it).
+If either isn't available, set **`RELAYHOST`** (+ `RELAYHOST_USERNAME/PASSWORD`)
+in `.env` to a smarthost (the domain's mail host or a Workspace SMTP relay) and
+the reputation problem goes away.
 
 Test after wiring: place a real order and confirm both the owner and customer
-emails arrive (check spam too), to a `gmail.com` and an `abv.bg` address.
+emails arrive (check spam too) at a `gmail.com` and an `abv.bg` address. Watch
+the relay: `docker compose logs -f mail` (look for `status=sent`).
 
 ---
 
@@ -216,8 +236,9 @@ emails arrive (check spam too), to a `gmail.com` and an `abv.bg` address.
   Verified: the image builds on Linux with the committed (Windows-generated)
   lockfile and sharp works. If a future pnpm bump changes the approval format,
   re-run `pnpm approve-builds` and keep the file copied in the Dockerfile.
-- **`NEXT_PUBLIC_*` are build-time.** Changing the site URL / Turnstile key /
-  BGN flag requires a rebuild, not just an env edit + restart.
+- **`NEXT_PUBLIC_*` are build-time.** Changing the site URL / BGN flag requires
+  a rebuild, not just an env edit + restart. (`ALTCHA_HMAC_KEY` is a *runtime*
+  server secret — no rebuild needed.)
 - **2026-08-08:** flip `NEXT_PUBLIC_SHOW_BGN` to `false` and rebuild (prices
   become EUR-only). Set a reminder.
 - **Single instance.** The in-memory rate limiter and the SQLite single-writer
