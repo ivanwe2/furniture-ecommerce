@@ -80,6 +80,18 @@ The compose healthcheck polls `/robots.txt`; `docker compose ps` shows
 **First admin user:** open `https://nasteh.bg/admin` — Payload prompts to
 create the first user on the empty DB.
 
+**Optional — seed sample content** (a demo catalogue: categories, brands, ~23
+products) into the running stack. Opt-in (`SEED_ALLOW_PROD=1`) so nothing seeds
+by accident; edit or replace it via the admin afterwards:
+
+```bash
+docker compose exec -e SEED_ALLOW_PROD=1 app node_modules/.bin/tsx scripts/seed-dev.ts
+```
+
+It's idempotent (re-running updates by slug) and also seeds an admin user
+(`admin@nasteh.bg` / `password123` — change it, or set `SEED_ADMIN_EMAIL` /
+`SEED_ADMIN_PASSWORD`).
+
 Update to a new version:
 
 ```bash

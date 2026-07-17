@@ -44,6 +44,9 @@ COPY --from=build --chown=nasteh:nasteh /app/.next ./.next
 COPY --from=build --chown=nasteh:nasteh /app/public ./public
 COPY --chown=nasteh:nasteh package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json next.config.ts ./
 COPY --chown=nasteh:nasteh src ./src
+# scripts/ ships too so the owner can seed sample content in the running stack:
+#   docker compose exec -e SEED_ALLOW_PROD=1 app node_modules/.bin/tsx scripts/seed-dev.ts
+COPY --chown=nasteh:nasteh scripts ./scripts
 # Writable dir for uploads. Own /app + the media dir as the runtime user so the
 # first-run `media` named volume inherits non-root ownership.
 RUN mkdir -p /app/media && chown nasteh:nasteh /app /app/media
