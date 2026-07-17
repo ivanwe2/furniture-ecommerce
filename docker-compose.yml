@@ -7,9 +7,9 @@
 #   1. cp .env.example .env   # then fill it in (see DEPLOY.md)
 #   2. docker compose up -d --build
 #
-# Services: app (Next + Payload) · db (PostgreSQL). Redis + mail land in later
-# phases. Persistent state = named volumes: `pgdata` (Postgres) and `media`
-# (uploads). Back both up (see DEPLOY.md).
+# Services: app (Next + Payload) · db (PostgreSQL) · redis (rate-limit store).
+# Mail lands in the next phase. Persistent state = named volumes: `pgdata`
+# (Postgres) and `media` (uploads). Back both up (see DEPLOY.md).
 
 services:
   app:
@@ -20,6 +20,8 @@ services:
     restart: unless-stopped
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     # Cap container log growth (structured JSON logs + Next/Payload output).
     logging:
@@ -71,6 +73,24 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Rate-limit counters only — ephemeral, so no persistence (AOF/RDB off).
+    # Cap memory and evict the oldest keys rather than growing unbounded.
+    command: ['redis-server', '--save', '', '--appendonly', 'no', '--maxmemory', '64mb', '--maxmemory-policy', 'allkeys-lru']
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
 volumes:
   pgdata:

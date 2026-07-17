@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   },
   // Native / dynamic-require packages kept out of the server bundle:
   // sharp ships a native binary; nodemailer uses dynamic requires.
-  serverExternalPackages: ['sharp', 'nodemailer'],
+  serverExternalPackages: ['sharp', 'nodemailer', 'ioredis'],
 
   // Security response headers (ARCHITECTURE §7). No CSP in v1 — the Payload
   // admin makes a strict CSP a project of its own (post-launch item).
