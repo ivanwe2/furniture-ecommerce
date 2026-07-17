@@ -20,6 +20,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # NEXT_PUBLIC_* must be baked at build time (client bundle). Sourced from
+      # .env; change either one and rebuild (`docker compose up -d --build`).
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://nasteh.bg}
+        NEXT_PUBLIC_SHOW_BGN: ${NEXT_PUBLIC_SHOW_BGN:-true}
     image: nasteh-bg:latest
     restart: unless-stopped
     networks: [backend]

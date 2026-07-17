@@ -85,12 +85,16 @@ products) into the running stack. Opt-in (`SEED_ALLOW_PROD=1`) so nothing seeds
 by accident; edit or replace it via the admin afterwards:
 
 ```bash
-docker compose exec -e SEED_ALLOW_PROD=1 app node_modules/.bin/tsx scripts/seed-dev.ts
+docker compose exec -e SEED_ALLOW_PROD=1 -e SKIP_REVALIDATE=1 \
+  app node_modules/.bin/tsx scripts/seed-dev.ts
+docker compose up -d --force-recreate app   # clear the cache so seeded data shows
 ```
 
-It's idempotent (re-running updates by slug) and also seeds an admin user
-(`admin@nasteh.bg` / `password123` — change it, or set `SEED_ADMIN_EMAIL` /
-`SEED_ADMIN_PASSWORD`).
+`SKIP_REVALIDATE=1` is required (a standalone script has no request context for
+`revalidateTag`); the recreate then clears Next's tag cache so the new content
+appears. It's idempotent (re-running updates by slug) and also seeds an admin
+user (`admin@nasteh.bg` / `password123` — **change it**, or set
+`SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`).
 
 Update to a new version:
 
