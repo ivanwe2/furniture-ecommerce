@@ -27,6 +27,13 @@ RUN pnpm install --frozen-lockfile
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# NEXT_PUBLIC_* are inlined into the client bundle at build time, so they MUST be
+# present now (not just at runtime). Passed as build args by docker-compose from
+# .env; defaults are the production values. Change one → rebuild the image.
+ARG NEXT_PUBLIC_SITE_URL=https://nasteh.bg
+ARG NEXT_PUBLIC_SHOW_BGN=true
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    NEXT_PUBLIC_SHOW_BGN=$NEXT_PUBLIC_SHOW_BGN
 # PAYLOAD_SECRET only needs a value so config validation passes at build; the
 # real one is injected at runtime. Inline (not ENV) so it isn't baked into a layer.
 RUN PAYLOAD_SECRET=build-time-placeholder pnpm build
@@ -44,8 +51,9 @@ COPY --from=build --chown=nasteh:nasteh /app/.next ./.next
 COPY --from=build --chown=nasteh:nasteh /app/public ./public
 COPY --chown=nasteh:nasteh package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json next.config.ts ./
 COPY --chown=nasteh:nasteh src ./src
-# scripts/ ships too so the owner can seed sample content in the running stack:
-#   docker compose exec -e SEED_ALLOW_PROD=1 app node_modules/.bin/tsx scripts/seed-dev.ts
+# scripts/ ships too so the owner can seed sample content in the running stack
+# (SKIP_REVALIDATE=1 required, then recreate app to clear the cache — DEPLOY §3):
+#   docker compose exec -e SEED_ALLOW_PROD=1 -e SKIP_REVALIDATE=1 app node_modules/.bin/tsx scripts/seed-dev.ts
 COPY --chown=nasteh:nasteh scripts ./scripts
 # Writable dir for uploads. Own /app + the media dir as the runtime user so the
 # first-run `media` named volume inherits non-root ownership.
