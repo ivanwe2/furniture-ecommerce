@@ -7,7 +7,7 @@ describe('contactSchema', () => {
     phone: '+359 88 1234567',
     email: 'ivan@example.com',
     message: 'Здравейте, искам да попитам за наличност на артикул.',
-    turnstileToken: 'test-token-123',
+    altcha: 'test-altcha-payload',
   }
 
   it('accepts valid input with phone', () => {
@@ -46,8 +46,8 @@ describe('contactSchema', () => {
     }
   })
 
-  it('rejects empty turnstile token', () => {
-    const result = contactSchema.safeParse({ ...valid, turnstileToken: '' })
+  it('rejects empty altcha payload', () => {
+    const result = contactSchema.safeParse({ ...valid, altcha: '' })
     expect(result.success).toBe(false)
   })
 })

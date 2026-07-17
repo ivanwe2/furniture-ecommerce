@@ -7,7 +7,7 @@ export const contactSchema = z.object({
   phone: z.string().trim().regex(phoneRegex, 'errors.invalidPhone').optional(),
   email: z.string().trim().email('errors.invalidEmail'),
   message: z.string().trim().min(10, 'errors.required'),
-  turnstileToken: z.string().trim().min(1, 'errors.required'),
+  altcha: z.string().trim().min(1, 'errors.captcha'),
 })
 
 export type ContactInput = z.infer<typeof contactSchema>

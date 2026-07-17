@@ -3,13 +3,13 @@
 import { useState, useTransition } from 'react'
 import type { CompanyInfo } from '@/lib/company'
 import { t, tSafe } from '@/lib/i18n/bg'
-import { Container, Input, Textarea, Button, Alert, Turnstile } from '@/components/ui'
+import { Container, Input, Textarea, Button, Alert, Altcha } from '@/components/ui'
 import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import { submitContact } from '@/actions/contact'
 
 export default function ContactPageClient({ company }: { company: CompanyInfo }) {
   const [isPending, startTransition] = useTransition()
-  const [turnstileToken, setTurnstileToken] = useState('')
+  const [altcha, setAltcha] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [globalError, setGlobalError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -25,7 +25,7 @@ export default function ContactPageClient({ company }: { company: CompanyInfo })
       phone: (fd.get('phone') as string) || undefined,
       message: (fd.get('message') as string) ?? '',
       website: (fd.get('website') as string) ?? '',
-      turnstileToken,
+      altcha,
     }
 
     setFieldErrors({})
@@ -136,9 +136,9 @@ export default function ContactPageClient({ company }: { company: CompanyInfo })
             <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
           </div>
 
-          <Turnstile onToken={setTurnstileToken} />
+          <Altcha onVerified={setAltcha} />
 
-          <Button type="submit" pending={isPending} disabled={!turnstileToken} className="w-full">
+          <Button type="submit" pending={isPending} disabled={!altcha} className="w-full">
             {isPending ? t('checkout.submitting') : t('contact.send')}
           </Button>
         </form>

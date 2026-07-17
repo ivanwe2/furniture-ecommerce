@@ -3,7 +3,7 @@ import 'server-only'
 
 import { headers } from 'next/headers'
 import { contactSchema } from '@/lib/validation/contact'
-import { verifyTurnstile } from '@/lib/turnstile'
+import { verifyAltcha } from '@/lib/altcha'
 import { rateLimit } from '@/lib/rate-limit'
 import { sendContactEmail } from '@/emails/send'
 
@@ -42,9 +42,9 @@ export async function submitContact(input: unknown): Promise<ActionResult<unknow
 
   const data = parsed.data
 
-  // Step 3: Turnstile verify → errors.captcha
-  const turnstileOk = await verifyTurnstile(data.turnstileToken, ip)
-  if (!turnstileOk) {
+  // Step 3: Altcha proof-of-work verify → errors.captcha
+  const altchaOk = await verifyAltcha(data.altcha)
+  if (!altchaOk) {
     return { ok: false, error: 'errors.captcha' }
   }
 

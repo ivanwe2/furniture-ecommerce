@@ -3,7 +3,7 @@ import 'server-only'
 
 import { headers } from 'next/headers'
 import { checkoutSchema } from '@/lib/validation/checkout'
-import { verifyTurnstile } from '@/lib/turnstile'
+import { verifyAltcha } from '@/lib/altcha'
 import { rateLimit } from '@/lib/rate-limit'
 import { resolveCartLines } from '@/lib/payload/queries'
 import { computeTotals } from '@/lib/cart/totals'
@@ -58,9 +58,9 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
 
   const data = parsed.data
 
-  // Step 3: Turnstile verify → errors.captcha
-  const turnstileOk = await verifyTurnstile(data.turnstileToken, ip)
-  if (!turnstileOk) {
+  // Step 3: Altcha proof-of-work verify → errors.captcha
+  const altchaOk = await verifyAltcha(data.altcha)
+  if (!altchaOk) {
     return { ok: false, error: 'errors.captcha' }
   }
 
