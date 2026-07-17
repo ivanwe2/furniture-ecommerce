@@ -50,12 +50,24 @@ square mono Badge, brass buttons) → **✅ R7** admin touch-ups (PR #29 —
 `custom.scss`: cream bg, brass primary buttons, square corners, Golos/IBM Plex
 Mono type stacks; CSS-only, no layout changes). **REDESIGN COMPLETE (R1–R7).**
 Logo files added by Ivan (`public/logos/nasteh-*.png`).
-**Admin observation (pre-existing, not a redesign change):** the lexical
-richtext field (product „Описание") shows „Something went wrong: Cannot read
-properties of undefined (reading 'type')" for products seeded without a
-description — a Payload admin editor/data quirk (CSS-only R7 can't cause a JS
-error; the storefront `RichText` renderer is a separate code path). Worth a
-look before launch, but out of redesign scope.
+**Post-S7 admin fixes (2026-07-17, PRs #39–#41) — RESOLVED.** Triggered by the
+admin richtext crash Ivan hit on a product page.
+- **#39 richtext crash** — root cause was the **seed**, not R7 CSS: it wrote
+  product `description` (a richText field) as a **plain string**, and
+  `makeContent` (legal pages) emitted a **partial** Lexical node tree — either
+  makes the admin editor's `parseEditorState` throw „Cannot read properties of
+  undefined (reading 'type')". Fixed `makeContent` to a fully-formed editor
+  state; product descriptions go through it (description-less → explicit
+  `null`). Re-seeded the running stack to heal the existing rows; verified the
+  product edit page opens clean.
+- **#40 admin fonts** — R7 only *named* Golos/IBM Plex, so the panel fell back
+  to system fonts. New `AdminFonts` provider self-hosts them via next/font
+  (same as the storefront); `custom.scss` rewires `--font-body/--font-mono`.
+  Verified the running admin computes to Golos Text (`document.fonts` confirms).
+- **#41 array labels** — array fields lacked `labels.singular`, so add-buttons
+  showed the English field name („Добави Short Spec/Gallery/Item"). Added BG
+  singular/plural to all five array fields (rule 14).
+Verified visually in the Docker stack (login + product edit, 1280px).
 **R3 note:** the old homepage featured-products grid + SEVROLL brand strip are
 removed — the 1A design's homepage is hero → categories → trust only. Category
 cards render the children of the `mebelen-obkov` root (the shoppable
