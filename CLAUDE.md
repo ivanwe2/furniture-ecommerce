@@ -46,13 +46,20 @@ PROGRESS.md → Blocked either way.
    ARCHITECTURE.md §Dependencies. New package or ANY version bump beyond
    patch level ⇒ entry in `PROGRESS.md → ## Decisions log` first (one-line
    why). Never move to a new major. **Payload 4.x (beta) is forbidden.**
-3. **Self-hosted, no cloud lock-in.** The app runs as a Docker container on
-   the client's own infrastructure (ARCHITECTURE §1). Approved external
-   dependency: GitHub (code + CI). Order/contact email leaves via a
-   sysadmin-provided SMTP endpoint (env-configured). No managed infra
-   services — no Cloudflare, no Neon/Upstash, no Vercel, no S3, no
-   third-party image CDNs, no Redis. A new external dependency ⇒ Escalation
-   (§6), not adoption.
+3. **Self-hosted, no cloud lock-in.** The app and its datastores run as
+   Docker containers on the client's own infrastructure (ARCHITECTURE §1) —
+   a multi-service `docker-compose` stack (app + Postgres + Redis + mail
+   relay), no managed cloud. Approved external dependency: GitHub (code +
+   CI). Order/contact email leaves through the in-stack mail relay (optionally
+   a sysadmin smarthost), env-configured. Banned are **managed / SaaS** infra
+   — no Cloudflare, no Neon/Upstash, no Vercel, no S3, no third-party image
+   CDNs (Cloudinary included). **Self-hosted service containers on the
+   client's own box are allowed — that IS self-hosting.** A new *external /
+   managed* dependency ⇒ Escalation (§6), not adoption. (Amended 2026-07-17:
+   the earlier single-container / SQLite / in-memory / "no Redis" design was
+   superseded by Ivan's choice of a fully separated self-hosted stack —
+   Postgres + Redis + mail containers, Altcha instead of Turnstile, local
+   sharp/WebP. See PROGRESS Decisions log 2026-07-17.)
 4. **Money is integer euro cents** (`priceEurCents`). Never floats, never
    strings, never BGN stored anywhere. All display through
    `src/lib/money.ts`. A raw `.toFixed(` or hardcoded `€` in a component is

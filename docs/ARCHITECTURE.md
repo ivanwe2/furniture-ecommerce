@@ -16,25 +16,36 @@ slugs.
 
 ## 1. Platform strategy 🔒
 
-**Self-hosted, containerized.** The client hosts the site on their own
-infrastructure; their sysadmin owns the reverse proxy, TLS, DNS, and mail.
-We ship a single Docker image — a **Next.js standalone Node server** that
-embeds the Payload admin and the storefront — plus a `docker-compose.yml`
-describing the full stack. One image, one repo, `docker compose up`.
-Persistent state is two Docker volumes: `data` (the SQLite DB file) and
-`media` (uploads). The sysadmin's reverse proxy terminates TLS and proxies
-to the container on `:3000`.
+**Self-hosted, containerized — a fully separated multi-service stack.** The
+client hosts the site on their own infrastructure; their sysadmin owns the
+reverse proxy, TLS, and DNS. We ship a `docker-compose.yml` describing the
+whole stack, each concern in its own container:
 
-Rationale for the move off Cloudflare (Ivan, 2026-07-16): the client
-requires on-premise/self-managed hosting and their sysadmin operates it.
-See Decisions log 2026-07-16.
+- **app** — a Next.js production Node server that embeds the Payload admin +
+  storefront (`:3000`, loopback-published behind the sysadmin's proxy).
+- **db** — PostgreSQL (persistent volume `pgdata`).
+- **redis** — Redis for the rate-limit store (and future shared cache).
+- **mail** — a send-only Postfix relay that signs with DKIM and delivers the
+  order/contact notifications for `nasteh.bg`.
 
-Approved external dependency: **GitHub** (repo + CI). Order/contact email
-leaves the box through whatever authenticated SMTP endpoint the sysadmin
-provides for `nasteh.bg` (their own mail server, the domain's mail host, or
-a relay) — configured entirely by env, no vendor baked into the code. No
-other managed services. If a need arises that seems to require one →
-Escalation, not adoption.
+Persistent state = named volumes: `pgdata` (Postgres), `media` (uploads),
+`maildata` (mail spool/keys). Everything runs on an internal Docker network;
+only the app's `:3000` is exposed (to the reverse proxy). `docker compose up`.
+
+Rationale for the move off Cloudflare (Ivan, 2026-07-16): the client requires
+on-premise/self-managed hosting. Rationale for the fully-separated stack over
+the earlier single-container / SQLite / in-memory design (Ivan, 2026-07-17):
+the client wants each concern in its own container for isolation and
+future-proofing, accepts the extra ops, and self-hosts so has the resources.
+See Decisions log 2026-07-16 + 2026-07-17.
+
+Approved external dependency: **GitHub** (repo + CI). Order/contact email is
+generated and delivered inside the stack by the **mail** relay (DKIM-signed);
+its DNS (SPF/DKIM/DMARC + PTR/reverse-DNS on the host IP) is the sysadmin's to
+publish for deliverability, and a `RELAYHOST` smarthost is supported via env
+for hosts where direct outbound `:25` is blocked. No managed cloud services;
+self-hosted service containers are the design, not an exception. If a need
+arises that seems to require a *managed / SaaS* dependency → Escalation.
 
 **Exit seams** (the same seams that made this migration a re-wire, not a
 rewrite — keep them clean): SQL through Payload's adapter only; storage
@@ -50,52 +61,65 @@ import host-specific APIs (Cloudflare or otherwise).
 | Hosting | **Docker container** — Next.js production server (`next start`) | base `node:24-bookworm-slim` | one image embeds Payload admin + storefront; sysadmin's reverse proxy terminates TLS → proxies to `:3000`. Runtime image keeps prod node_modules + source so `payload migrate` runs on start; `output:'standalone'` deferred (it complicates the in-image migrate step) |
 | Framework | Next.js App Router | 15.4.x | Next 16 = deliberate post-launch decision via Decisions log. |
 | CMS | Payload | 3.82.x (v3 line) | **Payload 4 beta forbidden** (no GA, no migration guide; revisit post-launch after v4 GA). 3.85.2 upgrade attempted then reverted — broke `/admin` (RSC serialization). |
-| Database | **SQLite** on a mounted volume | `@payloadcms/db-sqlite` (libSQL) | `DATABASE_URI=file:/app/data/nasteh.db`. Single writer / single instance — correct for one self-hosted box. Backups = copy the file (or Litestream). Migrated from D1 (same SQLite dialect). Caveats: DATA-MODEL §Search |
-| Media storage | **Local disk** on a mounted volume | Payload default disk adapter | originals on the `media` volume; no object store. See §5 |
-| Image sizing | **Payload + sharp** (native, at upload) | `sharp` | sharp runs on Node (unlike Workers) → Payload generates sized variants at upload; served via the app's media route. No `/cdn-cgi/image/` |
-| Rate limiting | **in-memory fixed-window counter** | — | single instance; behind `src/lib/rate-limit.ts` seam. No KV, no Redis |
-| Anti-bot | Cloudflare Turnstile | — | KEPT — a free, server-agnostic API (siteverify over HTTPS); checkout + contact forms |
+| Database | **PostgreSQL** in the `db` container | `@payloadcms/db-postgres` + `pg` | `DATABASE_URI=postgres://…@db:5432/nasteh`. Own container + `pgdata` volume. Migrations are Postgres-dialect (the old SQLite/D1 migration was regenerated). Backups = `pg_dump` (§ backups). Swapped from SQLite 2026-07-17 |
+| Media storage | **Local disk** on a mounted volume | Payload default disk adapter | originals + sized variants on the `media` volume; no object store. See §5 |
+| Image sizing | **Payload + sharp** (native, at upload) | `sharp` | sharp runs on Node → Payload generates responsive sized variants **as WebP** at upload; served via the app's media route. No `/cdn-cgi/image/`, no image CDN |
+| Rate limiting | **Redis** fixed-window counter | `ioredis` + `redis` container | behind `src/lib/rate-limit.ts` seam; `REDIS_URL=redis://redis:6379`. In-memory fallback if Redis is unreachable so a Redis blip never blocks orders |
+| Anti-bot | **Altcha** (self-hosted proof-of-work) | `altcha-lib` + `altcha` widget | replaces Turnstile — server issues an HMAC challenge, the browser solves a PoW, the server verifies locally. No external calls, no keys/account. Checkout + contact forms |
 | Styling | Tailwind CSS | 4.x | tokens in §8 |
 | Cart state | zustand + persist(localStorage) | 5.x | client-only; SSR-safe hydration per CONVENTIONS |
 | Validation | zod | 3.x | every boundary |
-| Email | **SMTP** (nodemailer) | `nodemailer` | env-configured transport → the domain's authenticated SMTP endpoint; sends as `orders@nasteh.bg`. No transactional SaaS. Plain HTML templates in `src/emails/` |
+| Email | **SMTP** (nodemailer) → in-stack **mail** relay | `nodemailer` + Postfix `mail` container | app talks SMTP to the `mail` service on the internal network (`SMTP_HOST=mail`, no auth); Postfix signs DKIM and delivers directly (or via `RELAYHOST`). Sends as `orders@nasteh.bg`. No transactional SaaS. Templates in `src/emails/` |
 | Tests | vitest | 4.x | `src/lib/**` pure logic |
 | CI | GitHub Actions | — | typecheck+lint+test on push/PR |
 | Language | TypeScript strict | 6.x | |
 | Package manager | pnpm | 11.x | |
 
-Explicitly rejected (do not reintroduce): Express/separate API server; Neon
-or any external Postgres SaaS; Redis/Upstash (see §6); Cloudinary and all
-third-party image CDNs; Stripe and every payment SDK (out of scope);
-Econt/Speedy APIs (out of scope); next-intl/i18n routing (single locale);
-Prisma (Payload owns the DB); localStorage libraries beyond zustand/persist.
+Explicitly rejected (do not reintroduce): Express/separate API server; Neon /
+Upstash / any **managed** DB-or-cache SaaS (self-hosted Postgres + Redis
+*containers* are the design — §1); Cloudinary and all third-party image CDNs;
+Stripe and every payment SDK (out of scope); Econt/Speedy APIs (out of scope);
+next-intl/i18n routing (single locale); Prisma (Payload owns the DB);
+localStorage libraries beyond zustand/persist.
 
-Removed in the 2026-07-16 self-host move (do not reintroduce without an
-Escalation): `@opennextjs/cloudflare`, `wrangler`, `@payloadcms/db-d1-sqlite`,
-`@payloadcms/storage-r2`; Cloudflare Workers / D1 / R2 / KV / Image
-Transformations / Turnstile-as-infra; **Resend** (superseded by SMTP).
+Removed off Cloudflare (2026-07-16) — do not reintroduce: `@opennextjs/
+cloudflare`, `wrangler`, `@payloadcms/db-d1-sqlite`, `@payloadcms/storage-r2`;
+Cloudflare Workers / D1 / R2 / KV / Image Transformations; **Resend**
+(superseded by SMTP). Removed in the 2026-07-17 multi-service move:
+`@payloadcms/db-sqlite` (→ `db-postgres`); **Cloudflare Turnstile** + its keys
+(→ self-hosted Altcha); the in-memory-only rate limiter (→ Redis, with
+in-memory only as a fallback).
 
 ## 3. Runtime & topology
 
 ```
-Browser ──▶ sysadmin reverse proxy (nginx/Caddy — TLS termination)
-             └─ app container :3000  (Next 15 `next start` + Payload)
-                  ├─ static assets (served by Next)
-                  ├─ /api/media/*  → sized image variants from the `media` volume
-                  ├─ RSC pages     → query layer → Payload local API → SQLite (`data` volume)
-                  ├─ /admin/*      → Payload admin (auth: Payload users)
-                  └─ server actions (checkout, contact) → SQLite + in-memory rate limit + SMTP
+Browser ─▶ sysadmin reverse proxy (nginx/Caddy — TLS termination)
+            └─ app :3000  (Next 15 `next start` + Payload)
+                 ├─ static assets (served by Next)
+                 ├─ /api/media/*  → WebP sized variants from the `media` volume
+                 ├─ RSC pages     → query layer → Payload local API ─┐
+                 ├─ /admin/*      → Payload admin (Payload users)    │
+                 ├─ /api/altcha   → Altcha challenge (HMAC)          │
+                 └─ server actions (checkout, contact):             │
+                      Altcha verify · rate limit ─▶ redis:6379      │
+                      order write ────────────────────────────────▶ db:5432 (Postgres)
+                      email ─▶ mail:587 (Postfix → DKIM → deliver)  │
+   internal docker network ────────────────────────────────────────┘
 ```
 
-One container, one repo, one deploy. Persistent state = two Docker volumes:
-`data` (SQLite DB file) and `media` (uploads). Configuration is a single
-`.env` file the sysadmin manages on the host — no bindings, no cloud secret
-store (§11). Schema migrations run on container start
-(`payload migrate && next start`).
+Multi-service `docker-compose` on an internal network. Persistent state =
+three Docker volumes (`pgdata` = Postgres, `media` = uploads, `maildata` =
+mail spool/DKIM keys); only `app:3000` is exposed (to the reverse proxy).
+Configuration is a single `.env` file the sysadmin manages on the host — no
+bindings, no cloud secret store (§11). The app waits for Postgres to be
+healthy, then runs schema migrations on start (`payload migrate &&
+next start`).
 
-## 4. Caching 🔒 — and why there is no Redis
+## 4. Caching 🔒 — content cache is in-process; Redis is for rate limiting
 
-Content changes only when the owner edits it (single writer, low frequency).
+Content changes only when the owner edits it (single writer, low frequency),
+so **page/content caching stays in-process (Next's tag cache), not Redis** —
+Redis in this stack backs the *rate-limit* store (§2), not the content cache.
 Therefore:
 
 - Every public read goes through named functions in
@@ -110,9 +134,10 @@ Therefore:
 - Result: catalog pages are cached in-process between edits; a product edit
   propagates in seconds; SQLite sees near-zero read traffic from browsing.
 - Cart is client state. Orders are uncached writes. Admin is uncached.
-- Adding an external cache layer (Redis, a separate KV service) is
-  prohibited — it solves nothing on a single-instance deploy and creates
-  invalidation bugs.
+- Redis is present (own container) but is **not** the content cache — it is
+  the rate-limit store only (`src/lib/rate-limit.ts`). Routing the Next tag
+  cache through Redis would only matter with multiple app replicas; until
+  then it stays in-process to avoid invalidation bugs.
 - NOTE (2026-07-16): the storefront currently runs `export const dynamic =
   'force-dynamic'` (added when the Workers deploy had no incremental-cache
   infra) so CMS edits show live. On a single Node container the tag-cache

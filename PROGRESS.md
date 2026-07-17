@@ -5,8 +5,17 @@
 
 ## Status
 
-**Current phase:** **REDESIGN "1A Editorial"** in progress (Ivan handoff,
-2026-07-16 — ARCHITECTURE §8, Decisions log). Phased PRs R1–R7:
+**Current phase:** **STACK SEPARATION (S1–S7)** — multi-service self-hosted
+stack (Ivan, 2026-07-17; Decisions log). Order (small green PRs):
+**S1** contract flip (CLAUDE rule 3 + ARCHITECTURE §1–5) → **S2** Turnstile→Altcha
+→ **S3** sharp `imageSizes`+WebP → **S4** SQLite→Postgres (regen migrations, `db`
+container) → **S5** Redis rate-limit (`redis` container) → **S6** Postfix mail
+relay (DKIM) → **S7** compose hardening (resource limits, `pg_dump`+media
+backups, networks) + DEPLOY.md rewrite. App-only changes (S2/S3) first, then
+infra; the full stack is tested locally with Docker.
+
+**Previous phase — REDESIGN "1A Editorial" COMPLETE (R1–R7, PRs #23–#29)**
+(Ivan handoff 2026-07-16 — ARCHITECTURE §8, Decisions log). Phased PRs R1–R7:
 **✅ R1** foundation (PR #23 — tokens + Golos/IBM Plex Mono fonts + square
 corners) → **✅ R2** shell (PR #24 — promo bar, header + logo + nav + cart chip,
 dark 4-col footer) → **✅ R3** homepage (engineering-overlay hero + lazy WebGL
@@ -277,6 +286,7 @@ https://nasteh.bg/rukovodstvo-za-administratora
 
 | Date | Decision | Why | Recorded where |
 |---|---|---|---|
+| 2026-07-17 | **FULLY-SEPARATED SELF-HOSTED STACK (Ivan authorized in-session; overrides the single-container design + amends CLAUDE rule 3's "no Redis").** Move from one app container (SQLite embedded + in-memory rate limit + Turnstile) to a multi-service `docker-compose`: **app** + **Postgres** (`db`, `@payloadcms/db-postgres`, `pgdata` vol) + **Redis** (`redis`, `ioredis`, rate-limit store w/ in-memory fallback) + **mail** (Postfix send-only relay, DKIM, `maildata` vol). Also: **Turnstile → self-hosted Altcha** (`altcha-lib` + `altcha` widget; no Cloudflare, no keys); **local image optimization** (Payload `imageSizes` + WebP via sharp). Cloudinary/managed-SaaS still rejected — this is all self-hosted containers on the client's box, which honors "no cloud lock-in". Ivan's reasoning: wants each concern isolated in its own container + future-proofing, self-hosts so has the resources, accepts the extra ops (I recommended the lean+hardened option; Ivan chose full separation with full info). Delivered as small green PRs S1–S7. Deliverability (SPF/DKIM/DMARC/PTR) + optional `RELAYHOST` smarthost are the sysadmin's. | client wants max isolation/future-proofing on own infra | ARCHITECTURE §1–5 · CLAUDE rule 3 · here |
 | 2026-07-06 | All-in Cloudflare: Workers Paid + D1 + R2 + Images + KV | one vendor, official template, honest $5/mo | ARCHITECTURE §1–2 |
 | 2026-07-06 | No separate spike phase; checks absorbed into Phase 1 AC | velocity | PHASES header |
 | 2026-07-06 | Payload v3 line locked; v4 beta forbidden | no GA/migration guide | ARCHITECTURE §2 |
