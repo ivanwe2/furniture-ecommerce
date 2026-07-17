@@ -88,8 +88,8 @@ PROGRESS.md → Blocked either way.
     commit — stop, remove, report.
 11. **Repo stays green.** Never commit with failing
     `pnpm typecheck && pnpm lint && pnpm test && pnpm build`.
-12. **No destructive data ops** against production data — the host's SQLite
-    `data` volume or the `media` volume (drop, delete-all, overwrite) —
+12. **No destructive data ops** against production data — the host's `pgdata`
+    (Postgres) or `media` volume (drop, delete-all, overwrite) —
     without an explicit instruction from Ivan recorded in the session. Local
     dev resources are fair game.
 13. **UI work is verified visually** at 375px and 1280px before its commit
@@ -178,10 +178,11 @@ your memory of them.
 
 ## 7. Working with the platform (Docker / self-hosted)
 
-The app is a single container: a Next.js standalone server embedding Payload,
-SQLite on the `data` volume, uploads on the `media` volume, config from a
-host `.env`. Build and run via `docker compose`; the sysadmin owns the
-reverse proxy, TLS, DNS, and mail. Schema changes apply on container start
+The app is a multi-service `docker compose` stack: a Next.js server embedding
+Payload (app), Postgres (db), Redis (rate limit), and a Postfix mail relay,
+plus a backup sidecar. State lives in volumes (`pgdata`, `media`, `maildata`,
+`backups`); config from a host `.env`. The sysadmin owns the reverse proxy,
+TLS, and DNS (incl. mail SPF/DKIM/DMARC). Schema changes apply on container start
 (`payload migrate`). Never run destructive commands against the host's
 volumes without an explicit instruction (rule 12). If a documented step
 fails, that's an Escalation (§6), not an invitation to improvise. Full ops

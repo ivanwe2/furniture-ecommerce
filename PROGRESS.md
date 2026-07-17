@@ -19,8 +19,18 @@ in-memory fallback if Redis down; `redis:7-alpine` container; verified
 allow/block + TTL) → **✅ S6** Postfix mail relay (PR #35 — `mail` = boky/postfix
 send-only + OpenDKIM, `maildata` vol for keys, `RELAYHOST` smarthost option;
 app relays no-auth over the internal net; verified handoff + **DKIM-signed**;
-DEPLOY §mail DNS docs) → **S7** compose hardening (resource limits, `pg_dump`+
-media backups, networks) + DEPLOY.md rewrite. App-only changes (S2/S3) first, then
+DEPLOY §mail DNS docs) → **✅ S7** compose hardening (PR #36 — per-service memory
+caps so nothing can OOM the host, `backend` network, daily `pg_dump`+media
+`backup` sidecar w/ 14-day retention; DEPLOY.md rewritten; contract docs
+de-SQLited/de-Turnstiled). **STACK SEPARATION COMPLETE (S1–S7).**
+**Verified the whole stack end-to-end** with `docker compose up --build`: app
+migrated-on-start against the `db` container, all routes 200, Redis+mail wired,
+backup sidecar wrote a db+media snapshot, DKIM key generated. Postgres 18 needed
+the volume at `/var/lib/postgresql` (PG18 convention), not `/…/data`.
+**Follow-up (non-blocking):** the secondary reference docs (DATA-MODEL,
+CONVENTIONS, REFERENCE, PHASES, UI-SPEC, HANDOFF) still contain historical
+SQLite/Turnstile prose — the operative contract (CLAUDE, ARCHITECTURE, DEPLOY,
+Decisions log) is current. App-only changes (S2/S3) first, then
 infra; the full stack is tested locally with Docker.
 
 **Previous phase — REDESIGN "1A Editorial" COMPLETE (R1–R7, PRs #23–#29)**

@@ -1,17 +1,22 @@
 # DEPLOY.md — self-hosted Docker operations
 
-The current platform doc. Настех runs as a single Docker container (Next.js
-production server embedding the Payload admin), fronted by the client
+The current platform doc. Настех runs as a multi-service Docker Compose stack
+(app + Postgres + Redis + mail relay + backup), fronted by the client
 sysadmin's reverse proxy. Replaces the retired Cloudflare deploy
 (`CLOUDFLARE.md`, legacy). See ARCHITECTURE §1-3, §11.
 
 ```
-Browser ─▶ reverse proxy (nginx/Caddy — TLS)  ─▶  app container :3000
-                                                   ├─ SQLite   → `data`  volume
-                                                   └─ uploads  → `media` volume
+Browser ─▶ reverse proxy (nginx/Caddy — TLS) ─▶ app :3000  ┐
+                                                db  (Postgres 18) ├ internal
+                                                redis (rate limit) │ `backend`
+                                                mail  (Postfix+DKIM)│ network
+                                                backup (pg_dump+media) ┘
 ```
 
-The sysadmin owns TLS, DNS, and mail. This stack is just the app + its data.
+The sysadmin owns TLS, DNS, and mail-DNS (SPF/DKIM/DMARC + PTR). Only
+`app:3000` is published (to loopback, for the proxy); db/redis/mail/backup are
+internal-only. Persistent state = volumes `pgdata`, `media`, `maildata`,
+`backups`.
 
 ---
 
@@ -20,8 +25,11 @@ The sysadmin owns TLS, DNS, and mail. This stack is just the app + its data.
 - Docker Engine + Compose plugin (`docker compose version`).
 - A reverse proxy terminating TLS for `nasteh.bg` and proxying to the app
   (see §6).
-- An authenticated SMTP endpoint for the domain, with SPF/DKIM/DMARC (and
-  PTR + open port 25 if it's a self-run MTA) — see §7.
+- Mail **DNS** for the domain — SPF, DKIM, DMARC (and a PTR + open outbound
+  port 25, or a `RELAYHOST` smarthost). The mail server itself is in the stack;
+  only its DNS is external — see §7.
+- No external database/cache/mail service to provision — Postgres, Redis, and
+  the Postfix relay all run as containers in the stack.
 
 ---
 
@@ -37,19 +45,24 @@ Every key (`.env.example` is the authoritative list):
 | Key | What | Notes |
 |---|---|---|
 | `PAYLOAD_SECRET` | admin session/JWT secret | `openssl rand -hex 32`. Keep stable — rotating logs everyone out. |
-| `DATABASE_URI` | SQLite file | `file:/app/data/nasteh.db` (the `data` volume). |
+| `DATABASE_URI` | Postgres connection | `postgres://nasteh:<pw>@db:5432/nasteh` — must match the `POSTGRES_*` below. |
+| `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` | `db` container init | first boot creates this role + DB on the `pgdata` volume. |
+| `REDIS_URL` | rate-limit store | `redis://redis:6379`. If unset, the app falls back to an in-process limiter. |
 | `MEDIA_DIR` | uploads dir | `/app/media` (the `media` volume). |
-| `NEXT_PUBLIC_SITE_URL` | public URL | `https://nasteh.bg`. **Build-time** — see §5 note. |
+| `NEXT_PUBLIC_SITE_URL` | public URL | `https://nasteh.bg`. **Build-time** — see the note below. |
 | `NEXT_PUBLIC_SHOW_BGN` | dual EUR/BGN prices | `true` until 2026-08-08, then `false`. **Build-time.** |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile widget id | public. **Build-time.** |
-| `TURNSTILE_SECRET_KEY` | Turnstile server verify | secret, runtime. |
-| `SMTP_HOST`/`SMTP_PORT` | mail relay | 465 = implicit TLS, 587 = STARTTLS. |
-| `SMTP_USER`/`SMTP_PASS` | mail auth | leave empty for a no-auth local relay. |
-| `EMAIL_FROM` | envelope sender | e.g. `Настех <orders@nasteh.bg>` — must be an address the relay may send as. |
+| `ALTCHA_HMAC_KEY` | Altcha challenge secret | `openssl rand -hex 32`. Runtime; self-hosted proof-of-work — no external service. |
+| `SMTP_HOST`/`SMTP_PORT` | app → relay | `mail` / `587` (the in-stack relay, no auth). Or point at an external smarthost. |
+| `SMTP_USER`/`SMTP_PASS` | mail auth | empty for the internal relay; set for an external smarthost. |
+| `EMAIL_FROM` | envelope sender | `Настех <orders@nasteh.bg>` — must be under `MAIL_SENDER_DOMAINS`. |
 | `ORDER_INBOX_EMAIL` | order/contact inbox | where the owner receives notifications. |
+| `MAIL_HOSTNAME` | relay hostname | `mail.nasteh.bg` — used in HELO + DKIM. |
+| `MAIL_SENDER_DOMAINS` | relay allowed senders | `nasteh.bg`. |
+| `RELAYHOST` (+ `_USERNAME`/`_PASSWORD`) | optional smarthost | e.g. `[smtp.provider.com]:587` when outbound :25 is blocked; empty = direct delivery. |
 
 > **`NEXT_PUBLIC_*` are baked in at `docker build`**, not read at runtime.
 > If you change one, rebuild the image (`docker compose up -d --build`).
+> All others (Postgres/Redis/mail/Altcha secrets) are read at runtime.
 
 ---
 
@@ -65,8 +78,7 @@ The compose healthcheck polls `/robots.txt`; `docker compose ps` shows
 `healthy` once it's up.
 
 **First admin user:** open `https://nasteh.bg/admin` — Payload prompts to
-create the first user on an empty DB. (If you imported existing data in §4,
-the owner account comes across with it; skip this.)
+create the first user on the empty DB.
 
 Update to a new version:
 
@@ -77,83 +89,50 @@ docker compose up -d --build      # rebuild + restart; migrations run on boot
 
 ---
 
-## 4. One-time data cutover (from the retired Cloudflare deploy)
+## 4. Data cutover — not needed
 
-> **Not needed for this project.** The Cloudflare instance was a throwaway
-> test — there is no production data to migrate. Go-live starts fresh: the
-> container creates + migrates an empty DB on first boot, and the owner enters
-> content via `/admin`. No Cloudflare/`wrangler` access is required anywhere in
-> this deploy. The procedure below is kept only as reference, in case a future
-> deploy ever needs to import an existing D1/R2.
-
-To bring content from an existing Cloudflare deploy (products, categories,
-media, settings, orders), run from a machine with `wrangler` logged into the
-account:
-
-### 4a. Database: D1 → the SQLite `data` volume
-
-D1 *is* SQLite, so its export loads directly.
-
-```bash
-# 1. Find the DB name, then export the full dump (schema + data + the
-#    payload_migrations row).
-wrangler d1 list
-wrangler d1 export <D1_DATABASE_NAME> --remote --output nasteh-d1.sql
-
-# 2. Materialise a SQLite file from the dump (needs the sqlite3 CLI).
-sqlite3 nasteh.db < nasteh-d1.sql
-```
-
-Because the dump already contains the schema **and** the recorded migration
-`20260709_184644_initial`, the container's start-up `payload migrate` sees it
-as applied and no-ops. Load this file into the `data` volume **before** the
-first `up` (or overwrite the empty one created by a first run):
-
-```bash
-# Compose names the volume <project>_data (project = the compose dir name).
-docker volume ls | grep data
-
-# Copy nasteh.db into the volume via a throwaway container.
-docker run --rm -v <project>_data:/data -v "$PWD":/src alpine \
-  sh -c "cp /src/nasteh.db /data/nasteh.db && chown 1001:1001 /data/nasteh.db"
-```
-
-Then `docker compose up -d`. Verify in `/admin` that products/pages are present.
-
-### 4b. Media: R2 → the `media` volume
-
-Download the R2 bucket, then place the files in the `media` volume. R2 is
-S3-compatible, so `rclone` is the simplest path (configure a remote with the
-account's R2 S3 access key/secret and endpoint):
-
-```bash
-rclone copy r2:nasteh-media ./media-download --progress
-
-docker run --rm -v <project>_media:/media -v "$PWD/media-download":/src alpine \
-  sh -c "cp -r /src/. /media/ && chown -R 1001:1001 /media"
-```
-
-(Or `wrangler r2 object get` per key for a small bucket.) Uploads then serve
-from `https://nasteh.bg/api/media/file/<filename>`.
+Go-live starts **fresh**: on first boot the app runs `payload migrate` against
+the empty `db`, then the owner enters content via `/admin`. The retired
+Cloudflare instance was a throwaway test — there is no production data to
+import, and no Cloudflare/`wrangler` access is needed anywhere in this deploy.
 
 ---
 
 ## 5. Backups
 
-Two volumes hold all state.
+The **`backup`** service already runs automatically: once a day it writes a
+`pg_dump` (`db_<ts>.sql.gz`) and a media tarball (`media_<ts>.tar.gz`) to the
+`backups` volume, keeping the last 14 of each.
 
 ```bash
-# Database — copy the SQLite file (safe while running; add `.backup` via
-# sqlite3 for a guaranteed-consistent snapshot under load).
-docker run --rm -v <project>_data:/data -v "$PWD":/out alpine \
-  cp /data/nasteh.db /out/nasteh-$(date +%F).db
+# List the automatic backups.
+docker compose exec backup ls -lh /backups
 
-# Media — tar the uploads.
-docker run --rm -v <project>_media:/media -v "$PWD":/out alpine \
-  tar czf /out/media-$(date +%F).tgz -C /media .
+# Trigger an extra on-demand snapshot right now.
+docker compose exec backup sh -c 'pg_dump | gzip > /backups/db_manual_$(date +%F).sql.gz'
 ```
 
-Automate both on the host (cron) and copy off-box.
+**These live on the host — copy them OFF-box** (they don't survive host loss).
+Either mount the `backups` volume to an off-host path, or sync it on a host
+cron, e.g.:
+
+```bash
+docker run --rm -v <project>_backups:/b -v "$PWD":/out alpine \
+  cp -r /b/. /out/nasteh-backups/          # then rsync/scp /out off the host
+```
+
+**Restore** into a fresh stack (before the app has data, or after
+`docker compose down` + recreating the `db`):
+
+```bash
+# DB — pipe a dump into the db container (drops into the existing schema).
+gunzip -c db_<ts>.sql.gz | docker compose exec -T db \
+  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+
+# Media — untar into the media volume.
+docker run --rm -v <project>_media:/media -v "$PWD":/in alpine \
+  sh -c 'tar xzf /in/media_<ts>.tar.gz -C /media'
+```
 
 ---
 
@@ -241,15 +220,22 @@ the relay: `docker compose logs -f mail` (look for `status=sent`).
   server secret — no rebuild needed.)
 - **2026-08-08:** flip `NEXT_PUBLIC_SHOW_BGN` to `false` and rebuild (prices
   become EUR-only). Set a reminder.
-- **Single instance.** The in-memory rate limiter and the SQLite single-writer
-  model assume one container. Don't scale to replicas without revisiting both.
+- **Single app instance.** Rate limiting is on Redis (shared-ready) and the DB
+  is Postgres (concurrent writes fine), so scaling the *app* to replicas is
+  feasible — but the Next.js content cache is still in-process, so revisit
+  cache invalidation (ARCHITECTURE §4) before running multiple app replicas.
+- **Postgres 18 volume layout.** The `db` volume mounts at
+  `/var/lib/postgresql` (PG 18+ convention — data lands in a version subdir),
+  NOT `/var/lib/postgresql/data`. A major Postgres upgrade needs `pg_upgrade`
+  (or dump/restore via §5) — don't just bump the image tag.
 
 ---
 
 ## 9. Host & container notes (incl. Proxmox / LXC)
 
-The app is one modest Node process; the risks below are about the host it runs
-on — mostly disk-fill and memory.
+The app is one modest Node process, now alongside Postgres / Redis / the mail
+relay; the risks below are about the host it runs on — mostly disk-fill and
+memory.
 
 - **Docker in a Proxmox LXC.** Running Docker inside an (unprivileged) LXC
   needs the LXC set up for it: `features: nesting=1` (often `keyctl=1` too), and
@@ -258,19 +244,22 @@ on — mostly disk-fill and memory.
   check `docker info | grep "Storage Driver"`. If you have the choice, running
   Docker in a small **VM** instead of an LXC sidesteps all of this — a common
   choice for Docker workloads on Proxmox.
-- **Give it enough RAM.** Next SSR + Payload + sharp want ~1 GB baseline, more
-  under load / image processing. If you cap the LXC/VM tightly, also cap Node's
-  heap so it stays under the limit — Node doesn't always read a cgroup memory
-  cap correctly and can over-allocate, then get OOM-killed:
-  `NODE_OPTIONS=--max-old-space-size=<~75% of the cap in MB> --no-deprecation`
+- **Give it enough RAM.** The whole stack wants ~2 GB: app ~1 GB (Next SSR +
+  Payload + sharp), Postgres ~0.5 GB, Redis/mail/backup ~0.4 GB combined.
+  Compose caps each service (`deploy.resources.limits.memory`) so no single one
+  can OOM-kill the host — tune those caps to the LXC/VM you give it. If you cap
+  tightly, also cap Node's heap for the app so it stays under its limit — Node
+  doesn't always read a cgroup memory cap correctly:
+  `NODE_OPTIONS=--max-old-space-size=<~75% of the app cap in MB> --no-deprecation`
   in `.env` (repeat `--no-deprecation` — `.env` replaces the image's value, it
   doesn't merge).
 - **Host disk creep from image churn.** Every `docker compose up -d --build`
   leaves the previous image's layers behind; on a small host disk they add up.
   Run `docker image prune -f` after redeploys (or `docker system prune -f`
   occasionally). Container logs are already capped (§3 compose).
-- **`.env` permissions.** It holds `PAYLOAD_SECRET` + SMTP creds — `chmod 600 .env`.
-- **SQLite under load.** Writes are serialised; `busyTimeout` (5s) is set so
-  overlapping writes wait rather than error. Back up with `sqlite3 .backup`
-  (§5), not a raw copy of a live file. At higher write volume, WAL mode
-  (`wal: true` on the adapter) is the next lever — not needed at catalog volume.
+- **`.env` permissions.** It holds `PAYLOAD_SECRET`, the Postgres password, and
+  the Altcha secret — `chmod 600 .env`.
+- **Postgres durability.** Concurrent writes are handled natively (no
+  serialisation). Back up via the `backup` sidecar / `pg_dump` (§5), never a raw
+  copy of the data dir. `pgdata` is the only volume that must survive; losing
+  `media` loses uploads (restore from §5), `maildata`/`backups` regenerate.
