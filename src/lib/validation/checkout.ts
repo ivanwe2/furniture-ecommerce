@@ -10,7 +10,7 @@ export const checkoutSchema = z.object({
   city: z.string().trim().min(2, 'errors.required'),
   addressOrOffice: z.string().trim().min(2, 'errors.required'),
   note: z.string().optional(),
-  turnstileToken: z.string().trim().min(1, 'errors.required'),
+  altcha: z.string().trim().min(1, 'errors.captcha'),
   consent: z.literal(true, { errorMap: () => ({ message: 'errors.consentRequired' }) }),
 })
 

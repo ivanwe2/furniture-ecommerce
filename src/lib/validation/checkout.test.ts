@@ -10,7 +10,7 @@ describe('checkoutSchema', () => {
     city: 'Пловдив',
     addressOrOffice: 'бул. Васил Левски 10, ет. 1',
     note: 'Моля, звънете преди доставка',
-    turnstileToken: 'test-token-123',
+    altcha: 'test-altcha-payload',
     consent: true as const,
   }
 
@@ -60,8 +60,8 @@ describe('checkoutSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects empty turnstile token', () => {
-    const result = checkoutSchema.safeParse({ ...valid, turnstileToken: '' })
+  it('rejects empty altcha payload', () => {
+    const result = checkoutSchema.safeParse({ ...valid, altcha: '' })
     expect(result.success).toBe(false)
   })
 })

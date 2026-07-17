@@ -8,7 +8,7 @@ import { t, tSafe } from '@/lib/i18n/bg'
 import { useCart } from '@/lib/cart/store'
 import { computeTotals, type ResolvedLine } from '@/lib/cart/totals'
 import { submitOrder } from '@/actions/order'
-import { Container, Input, Textarea, Button, Checkbox, Price, Alert, Skeleton, Turnstile } from '@/components/ui'
+import { Container, Input, Textarea, Button, Checkbox, Price, Alert, Skeleton, Altcha } from '@/components/ui'
 
 type ResolutionEntry = ResolvedLine & { inStock: boolean }
 
@@ -26,7 +26,7 @@ export function CheckoutForm({ resolution }: CheckoutFormProps) {
 
   const [isPending, startTransition] = useTransition()
   const [method, setMethod] = useState<Method>('address')
-  const [turnstileToken, setTurnstileToken] = useState('')
+  const [altcha, setAltcha] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [globalError, setGlobalError] = useState('')
 
@@ -91,7 +91,7 @@ export function CheckoutForm({ resolution }: CheckoutFormProps) {
       note: (fd.get('note') as string) || undefined,
       consent: fd.get('consent') === 'on',
       website: (fd.get('website') as string) ?? '',
-      turnstileToken,
+      altcha,
       cart: JSON.stringify(totals.ok.map((l) => ({ productSlug: l.productSlug, sku: l.sku, qty: l.qty }))),
     }
 
@@ -244,7 +244,7 @@ export function CheckoutForm({ resolution }: CheckoutFormProps) {
             </p>
           )}
 
-          <Turnstile onToken={setTurnstileToken} />
+          <Altcha onVerified={setAltcha} />
 
           <Button type="submit" pending={isPending} className="w-full">
             {isPending ? t('checkout.submitting') : t('checkout.submit')}

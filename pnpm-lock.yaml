@@ -23,6 +23,12 @@ importers:
       '@payloadcms/ui':
         specifier: 3.82.1
         version: 3.82.1(@types/react@19.2.14)(monaco-editor@0.55.1)(next@15.4.11(@babel/core@7.29.7)(@playwright/test@1.59.1)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(sass@1.77.4))(payload@3.82.1(graphql@16.14.2)(typescript@6.0.3))(react-dom@19.2.1(react@19.2.1))(react@19.2.1)(typescript@6.0.3)
+      altcha:
+        specifier: 3.2.1
+        version: 3.2.1
+      altcha-lib:
+        specifier: 2.2.0
+        version: 2.2.0
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -2145,6 +2151,54 @@ packages:
   ajv@8.18.0:
     resolution: {integrity: sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A==}
 
+  altcha-lib@2.2.0:
+    resolution: {integrity: sha512-O4+q6+JECTRgse9NVDsAJ8PwWhYpb+iAlT3wVcZ/BMGv2wkumAGWK3GE5FGbgzI7K5CJLDoNBKuQBUQui+62Ig==}
+    hasBin: true
+    peerDependencies:
+      '@fastify/cookie': ^11.0.0
+      '@fastify/cors': ^11.0.0
+      '@fastify/formbody': ^8.0.0
+      '@nestjs/common': ^10.0.0 || ^11.0.0
+      '@nestjs/core': ^10.0.0 || ^11.0.0
+      '@nestjs/platform-express': ^10.0.0 || ^11.0.0
+      '@sveltejs/kit': ^2.0.0
+      cookie-parser: ^1.0.0
+      cors: ^2.0.0
+      express: ^4.0.0 || ^5.0.0
+      fastify: ^5.0.0
+      h3: ^2.0.0
+      hono: ^4.0.0
+    peerDependenciesMeta:
+      '@fastify/cookie':
+        optional: true
+      '@fastify/cors':
+        optional: true
+      '@fastify/formbody':
+        optional: true
+      '@nestjs/common':
+        optional: true
+      '@nestjs/core':
+        optional: true
+      '@nestjs/platform-express':
+        optional: true
+      '@sveltejs/kit':
+        optional: true
+      cookie-parser:
+        optional: true
+      cors:
+        optional: true
+      express:
+        optional: true
+      fastify:
+        optional: true
+      h3:
+        optional: true
+      hono:
+        optional: true
+
+  altcha@3.2.1:
+    resolution: {integrity: sha512-MXsnNmgg3BGJja0DXbflv9Bp29uyGv6wUImaaT1yLxCKOj+x9QBMpi/Vdh6XbP4Uf0PykaeQwl8ivJAvIhoo0A==}
+
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
     engines: {node: '>=8'}
@@ -3044,6 +3098,9 @@ packages:
   has-tostringtag@1.0.2:
     resolution: {integrity: sha512-NqADB8VjPFLM2V0VvHUewwwsw0ZWBaIdgo+ieHtK3hasLz4qeCRjYcqfB6AQrBggRKppKF8L52/VqdVsO47Dlw==}
     engines: {node: '>= 0.4'}
+
+  hash-wasm@4.12.0:
+    resolution: {integrity: sha512-+/2B2rYLb48I/evdOIhP+K/DD2ca2fgBjp6O+GBEnCDk2e4rpeXIK8GvIyRPjTezgmWn9gmKwkQjjx6BtqDHVQ==}
 
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
@@ -6509,6 +6566,12 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
+  altcha-lib@2.2.0: {}
+
+  altcha@3.2.1:
+    dependencies:
+      hash-wasm: 4.12.0
+
   ansi-regex@5.0.1: {}
 
   ansi-styles@4.3.0:
@@ -7579,6 +7642,8 @@ snapshots:
   has-tostringtag@1.0.2:
     dependencies:
       has-symbols: 1.1.0
+
+  hash-wasm@4.12.0: {}
 
   hasown@2.0.4:
     dependencies:
