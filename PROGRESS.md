@@ -14,7 +14,9 @@ thumb/card/detail/zoom as WebP, og kept jpeg 1200×630; sharp wired into config;
 `images.ts` serves variants w/ original fallback; verified variants on disk) →
 **✅ S4** SQLite→Postgres (PR #33 — `db-postgres` adapter, fresh PG migration,
 `db` = **postgres:18-alpine** container + `pgdata` vol; migrate+seed+boot
-verified) → **S5** Redis rate-limit (`redis` container) → **S6** Postfix mail
+verified) → **✅ S5** Redis rate-limit (PR #34 — `ioredis` INCR+EXPIRE window,
+in-memory fallback if Redis down; `redis:7-alpine` container; verified
+allow/block + TTL) → **S6** Postfix mail
 relay (DKIM) → **S7** compose hardening (resource limits, `pg_dump`+media
 backups, networks) + DEPLOY.md rewrite. App-only changes (S2/S3) first, then
 infra; the full stack is tested locally with Docker.
