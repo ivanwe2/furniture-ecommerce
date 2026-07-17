@@ -24,17 +24,43 @@ async function upsert(collection: 'categories' | 'brands' | 'products' | 'pages'
   return p.create({ collection, data: data as never, draft: false })
 }
 
+// A minimal but FULLY-FORMED Lexical editor state for one paragraph of plain
+// text (empty text → empty paragraph). Every node must carry the fields the
+// Lexical editor's parseEditorState expects (format/detail/mode/style/version
+// on text; direction/format/indent/version/textFormat on paragraph) — a
+// partial node makes the admin RichText field throw "Cannot read properties of
+// undefined (reading 'type')". Shape mirrors Payload's own empty-richText value.
 function makeContent(text: string) {
   return {
     root: {
       type: 'root',
-      children: [
-        { type: 'paragraph', children: [{ type: 'text', text }] },
-      ],
       direction: null,
       format: '',
       indent: 0,
       version: 1,
+      children: [
+        {
+          type: 'paragraph',
+          direction: null,
+          format: '',
+          indent: 0,
+          version: 1,
+          textFormat: 0,
+          children: text
+            ? [
+                {
+                  type: 'text',
+                  text,
+                  detail: 0,
+                  format: 0,
+                  mode: 'normal',
+                  style: '',
+                  version: 1,
+                },
+              ]
+            : [],
+        },
+      ],
     },
   }
 }
@@ -313,7 +339,7 @@ for (const prod of catalog) {
     status: prod.status ?? 'published',
     category: categoryId,
     ...(prod.brand ? { brand: brandMap.get(prod.brand) } : {}),
-    description: prod.description ?? '',
+    description: prod.description ? makeContent(prod.description) : null,
     items: prod.items.map((i) => ({ inStock: true, ...i })),
     featured: prod.featured ?? false,
   })
