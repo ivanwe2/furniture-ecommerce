@@ -16,9 +16,11 @@ thumb/card/detail/zoom as WebP, og kept jpeg 1200×630; sharp wired into config;
 `db` = **postgres:18-alpine** container + `pgdata` vol; migrate+seed+boot
 verified) → **✅ S5** Redis rate-limit (PR #34 — `ioredis` INCR+EXPIRE window,
 in-memory fallback if Redis down; `redis:7-alpine` container; verified
-allow/block + TTL) → **S6** Postfix mail
-relay (DKIM) → **S7** compose hardening (resource limits, `pg_dump`+media
-backups, networks) + DEPLOY.md rewrite. App-only changes (S2/S3) first, then
+allow/block + TTL) → **✅ S6** Postfix mail relay (PR #35 — `mail` = boky/postfix
+send-only + OpenDKIM, `maildata` vol for keys, `RELAYHOST` smarthost option;
+app relays no-auth over the internal net; verified handoff + **DKIM-signed**;
+DEPLOY §mail DNS docs) → **S7** compose hardening (resource limits, `pg_dump`+
+media backups, networks) + DEPLOY.md rewrite. App-only changes (S2/S3) first, then
 infra; the full stack is tested locally with Docker.
 
 **Previous phase — REDESIGN "1A Editorial" COMPLETE (R1–R7, PRs #23–#29)**

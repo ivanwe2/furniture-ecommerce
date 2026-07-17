@@ -7,9 +7,11 @@
 #   1. cp .env.example .env   # then fill it in (see DEPLOY.md)
 #   2. docker compose up -d --build
 #
-# Services: app (Next + Payload) · db (PostgreSQL) · redis (rate-limit store).
-# Mail lands in the next phase. Persistent state = named volumes: `pgdata`
-# (Postgres) and `media` (uploads). Back both up (see DEPLOY.md).
+# Services: app (Next + Payload) · db (PostgreSQL) · redis (rate-limit store) ·
+# mail (send-only Postfix relay, DKIM). Persistent state = named volumes:
+# `pgdata` (Postgres), `media` (uploads), `maildata` (DKIM keys). Back up
+# pgdata + media (see DEPLOY.md). Mail deliverability needs DNS the sysadmin
+# publishes (SPF/DKIM/DMARC + PTR) — see DEPLOY.md §mail.
 
 services:
   app:
@@ -23,6 +25,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # NOT service_healthy — email is non-blocking (rule 9); the app must
+      # start (and take orders) even if the relay is down.
+      mail:
+        condition: service_started
     # Cap container log growth (structured JSON logs + Next/Payload output).
     logging:
       driver: json-file
@@ -92,6 +98,39 @@ services:
       retries: 5
       start_period: 10s
 
+  mail:
+    # Send-only Postfix relay with OpenDKIM. Digest-pinned (boky/postfix,
+    # Postfix 3.10.5) for reproducibility. The app relays through it with no
+    # auth over the internal network; it DKIM-signs and delivers directly (or
+    # via RELAYHOST). NEVER expose its ports to the public network.
+    image: boky/postfix@sha256:aafc772384232497bed875e1eb66b4d3e54ba1ebc86e2e185a6dc1dbc48182ef
+    restart: unless-stopped
+    hostname: ${MAIL_HOSTNAME:-mail.nasteh.bg}
+    environment:
+      HOSTNAME: ${MAIL_HOSTNAME:-mail.nasteh.bg}
+      ALLOWED_SENDER_DOMAINS: ${MAIL_SENDER_DOMAINS:-nasteh.bg}
+      # Auto-generate a DKIM key on first boot (persisted on `maildata`); publish
+      # its DNS record (see DEPLOY.md §mail).
+      DKIM_AUTOGENERATE: '1'
+      # Optional smarthost for hosts where direct outbound :25 is blocked.
+      RELAYHOST: ${RELAYHOST:-}
+      RELAYHOST_USERNAME: ${RELAYHOST_USERNAME:-}
+      RELAYHOST_PASSWORD: ${RELAYHOST_PASSWORD:-}
+    volumes:
+      - maildata:/etc/opendkim/keys # persist DKIM keys across restarts
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    healthcheck:
+      test: ['CMD', 'postfix', 'status']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
 volumes:
   pgdata:
   media:
+  maildata:
