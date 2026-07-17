@@ -24,17 +24,23 @@ html[data-theme='light'] {
   --color-success-500: #a9803f; /* brass accent for links / highlights */
   --theme-success-500: #a9803f;
 
-  /* Match the storefront's type stacks. Golos Text / IBM Plex Mono are used
-     when present on the machine; otherwise the same system fallbacks the site
-     itself uses. (The admin layout is Payload-generated, so fonts are set here
-     via CSS vars rather than next/font.) */
-  --font-body: 'Golos Text', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
-
   /* Square corners everywhere — the storefront's signature. */
   --style-radius-s: 0;
   --style-radius-m: 0;
   --style-radius-l: 0;
+}
+
+/* Match the storefront's type stacks. The AdminFonts provider (payload.config)
+   wraps the panel and self-hosts Golos Text / IBM Plex Mono via next/font,
+   exposing --font-golos / --font-plex on `.nasteh-admin-fonts`. We rewire
+   Payload's --font-body / --font-mono to them there (so the vars actually
+   resolve — they're defined on this wrapper, not on <html>), and set the base
+   family for the whole subtree. */
+.nasteh-admin-fonts {
+  --font-body: var(--font-golos), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: var(--font-plex), ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  font-family: var(--font-body);
 }
 
 /* Primary actions (Save, Create, Publish …) in brass to match the storefront

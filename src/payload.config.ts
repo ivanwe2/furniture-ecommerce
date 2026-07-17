@@ -54,6 +54,8 @@ export default buildConfig({
         Logo: '/components/admin/Logo#Logo',
         Icon: '/components/admin/Icon#Icon',
       },
+      // Wraps the whole panel (incl. login) to load the storefront fonts.
+      providers: ['/components/admin/AdminFonts#AdminFonts'],
     },
     importMap: {
       baseDir: path.resolve(dirname),
