@@ -32,6 +32,7 @@ export const SiteSettings: GlobalConfig = {
       name: 'phones',
       type: 'array',
       label: 'Телефони',
+      labels: { singular: 'телефон', plural: 'телефони' },
       defaultValue: [{ number: '0898 272 567' }],
       fields: [
         { name: 'number', type: 'text', required: true, label: 'Номер' },
