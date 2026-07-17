@@ -3,6 +3,7 @@ import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor, EXPERIMENTAL_TableFeature } from '@payloadcms/richtext-lexical'
 import { bg } from '@payloadcms/translations/languages/bg'
 import { buildConfig } from 'payload'
+import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
 import { Users } from './collections/Users'
@@ -40,6 +41,8 @@ const jsonLogger = {
 } as any
 
 export default buildConfig({
+  // Image processing for upload.imageSizes (WebP variants) — runs on Node.
+  sharp,
   admin: {
     user: Users.slug,
     theme: 'light',
