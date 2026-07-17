@@ -1,5 +1,5 @@
 import path from 'path'
-import { sqliteAdapter } from '@payloadcms/db-sqlite'
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor, EXPERIMENTAL_TableFeature } from '@payloadcms/richtext-lexical'
 import { bg } from '@payloadcms/translations/languages/bg'
 import { buildConfig } from 'payload'
@@ -72,12 +72,13 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: sqliteAdapter({
-    client: { url: process.env.DATABASE_URI ?? 'file:./nasteh.db' },
-    // SQLite serialises writes; wait up to 5s for a locked DB rather than
-    // erroring immediately (SQLITE_BUSY) when requests overlap, e.g. two
-    // checkouts at the same instant.
-    busyTimeout: 5000,
+  db: postgresAdapter({
+    // Postgres runs in its own `db` container on the internal network. The
+    // connection string is env-driven; the adapter manages the pg pool.
+    pool: {
+      connectionString:
+        process.env.DATABASE_URI ?? 'postgres://postgres:postgres@localhost:5432/nasteh',
+    },
   }),
   logger: isProduction ? jsonLogger : undefined,
 })

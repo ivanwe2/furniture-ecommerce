@@ -27,7 +27,7 @@
   "dependencies": {
     "altcha": "3.2.1",
     "altcha-lib": "2.2.0",
-    "@payloadcms/db-sqlite": "3.82.1",
+    "@payloadcms/db-postgres": "3.82.1",
     "@payloadcms/next": "3.82.1",
     "@payloadcms/richtext-lexical": "3.82.1",
     "@payloadcms/translations": "3.82.1",
