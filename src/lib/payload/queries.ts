@@ -20,6 +20,13 @@ export interface CategoryNode {
   children: CategoryNode[]
 }
 
+// `parent` is an id at depth 0 but a populated object at depth 1 (which we now
+// use so the category `image` is populated for the homepage cards).
+function parentKey(parent: Category['parent']): string | null {
+  if (parent == null) return null
+  return typeof parent === 'object' ? String(parent.id) : String(parent)
+}
+
 function assembleTree(docs: Category[]): CategoryNode[] {
   const byId = new Map<string, Category & { children: CategoryNode[] }>()
   for (const d of docs) {
@@ -27,10 +34,11 @@ function assembleTree(docs: Category[]): CategoryNode[] {
   }
   const roots: CategoryNode[] = []
   for (const node of byId.values()) {
-    if (!node.parent || !byId.has(String(node.parent))) {
+    const pid = parentKey(node.parent)
+    if (!pid || !byId.has(pid)) {
       roots.push(node as CategoryNode)
     } else {
-      const parent = byId.get(String(node.parent))
+      const parent = byId.get(pid)
       if (parent && Array.isArray(parent.children)) {
         parent.children.push(node as CategoryNode)
       }
@@ -51,7 +59,9 @@ export const getCategoryTree = unstable_cache(
     const { docs } = await payload.find({
       collection: 'categories',
       limit: 500,
-      depth: 0,
+      // depth 1 populates `image` (upload) + `parent` so category cards can
+      // render their cover image; assembleTree reads parent via parentKey().
+      depth: 1,
       sort: 'sortOrder',
     })
     return assembleTree(docs)
