@@ -19,6 +19,7 @@ import React, { useEffect, useRef } from 'react'
 const AltchaWidget = 'altcha-widget' as unknown as React.FC<{
   ref?: React.Ref<HTMLElement>
   challenge?: string
+  auto?: string
   style?: React.CSSProperties
 }>
 
@@ -54,5 +55,7 @@ export function Altcha({ onVerified }: { onVerified: (payload: string) => void }
   } as React.CSSProperties
 
   // v3 attribute is `challenge` (a URL to fetch, or inline JSON) — not `challengeurl`.
-  return <AltchaWidget ref={ref} challenge="/altcha" style={style} />
+  // `auto="onload"` pre-solves the proof-of-work in the background on page load,
+  // so the token is ready by the time the user submits (no perceptible wait).
+  return <AltchaWidget ref={ref} challenge="/altcha" auto="onload" style={style} />
 }
