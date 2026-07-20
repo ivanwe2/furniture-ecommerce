@@ -48,6 +48,9 @@ export default buildConfig({
     theme: 'light',
     meta: {
       titleSuffix: ' - Настех',
+      // Brand the admin browser tab with the storefront favicon (/icon.svg —
+      // the Настех badge) instead of Payload's default logo.
+      icons: [{ rel: 'icon', type: 'image/svg+xml', url: '/icon.svg' }],
     },
     components: {
       graphics: {

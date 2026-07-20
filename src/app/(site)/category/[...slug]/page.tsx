@@ -22,14 +22,15 @@ export async function generateMetadata({ params }: CategoryPageProps) {
   const category = await findCategoryBySlug(tree, categorySlug)
   if (!category) return { title: t('category.notFoundTitle') }
   const siteName = t('seo.siteName')
-  const metaTitle = `${category.name} | ${siteName}`
+  const ogTitle = `${category.name} | ${siteName}`
   const metaDesc = category.description?.trim() || t('seo.categoryDesc').replace('{name}', category.name)
   return {
-    title: metaTitle,
+    // Bare name — the layout template adds the „| Настех" suffix.
+    title: category.name,
     description: metaDesc,
     alternates: { canonical: `/category/${categorySlug}` },
     openGraph: {
-      title: metaTitle,
+      title: ogTitle,
       description: metaDesc,
       type: 'website',
       url: `/category/${categorySlug}`,

@@ -15,14 +15,14 @@ export async function generateMetadata({ searchParams }: SearchPageProps) {
   const q = typeof qRaw === 'string' ? qRaw : ''
   if (q.trim()) {
     return {
-      title: `${t('search.resultsFor')} "${q}" | ${t('seo.siteName')}`,
+      title: `${t('search.resultsFor')} "${q}"`,
       description: t('seo.searchDesc').replace('{q}', q),
       alternates: { canonical: `/search?q=${encodeURIComponent(q)}` },
       robots: { index: false, follow: true },
     }
   }
   return {
-    title: `${t('search.title')} | ${t('seo.siteName')}`,
+    title: t('search.title'),
     description: t('seo.searchDesc').replace('{q}', ''),
     alternates: { canonical: '/search' },
   }
