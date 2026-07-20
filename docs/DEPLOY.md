@@ -187,6 +187,13 @@ Caching the media route (`/api/media/file/`) at the proxy is a nice-to-have.
 
 ## 7. Email — the in-stack `mail` relay (§mail)
 
+> **Local testing (Mailpit).** You can't send real mail from a dev box —
+> outbound `:25` is blocked, so the `mail` relay just queues (`mailq`) and never
+> delivers. To *see* order/contact emails locally, start the stack with the
+> dev overlay, which adds a **Mailpit** catcher and points the app's SMTP at it:
+> `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`,
+> then open **http://localhost:8025**. Production ignores this file.
+
 Mail is generated and sent **inside the stack**: the app relays (no auth, over
 the internal Docker network) to the **`mail`** service — a send-only Postfix +
 OpenDKIM relay — which **DKIM-signs** each message and delivers it (directly, or

@@ -1,0 +1,36 @@
+# Dev-only overlay — adds Mailpit (a mail catcher with a web inbox) and points
+# the app's SMTP at it, so order/contact emails are viewable in the browser
+# instead of being handed to Postfix for real delivery (which needs open :25 +
+# DNS you don't have locally — see DEPLOY §mail).
+#
+# PRODUCTION IS UNAFFECTED: it runs plain `docker compose up` and never loads
+# this file (it is applied only when passed with -f).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#   → then open http://localhost:8025 to read every email the app sends.
+
+services:
+  app:
+    # Inline env beats the .env SMTP_* — send to Mailpit instead of the relay.
+    environment:
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      SMTP_USER: ''
+    depends_on:
+      mailpit:
+        condition: service_started
+
+  mailpit:
+    image: axllent/mailpit@sha256:b868afa176bfd6cce2323ea316cd99ccad77915e51e595748f6d786700ecf109
+    restart: unless-stopped
+    networks: [backend]
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: '1' # accept mail without auth
+      MP_SMTP_AUTH_ALLOW_INSECURE: '1' # ...over plain (internal network only)
+    ports:
+      - '127.0.0.1:8025:8025' # web inbox (SMTP :1025 stays internal)
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
