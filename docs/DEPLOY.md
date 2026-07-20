@@ -244,6 +244,16 @@ the relay: `docker compose logs -f mail` (look for `status=sent`).
   `/var/lib/postgresql` (PG 18+ convention — data lands in a version subdir),
   NOT `/var/lib/postgresql/data`. A major Postgres upgrade needs `pg_upgrade`
   (or dump/restore via §5) — don't just bump the image tag.
+- **Media volume must be writable by uid 1001.** The app runs as the non-root
+  `nasteh` user (uid 1001) and writes uploads (+ their WebP variants) to
+  `/app/media`. A *fresh* named `media` volume inherits the image dir's 1001
+  ownership, so the default compose setup just works. But a volume created
+  root-owned by an earlier image, or a **host bind-mount** in place of the named
+  volume, will be root-owned → uploads fail in the admin with `EACCES` and a
+  **400 Bad Request**. Fix by chowning the mount to the app user:
+  `docker compose exec -u root app chown -R 1001:1001 /app/media` (or, for a
+  bind-mount, `chown -R 1001:1001 <hostpath>` on the host). Ownership persists,
+  so this is a one-time fix per volume.
 
 ---
 
