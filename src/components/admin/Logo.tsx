@@ -1,24 +1,10 @@
 /**
  * Custom Payload admin logo — shown on the login screen and account view.
- * Replaces the default Payload wordmark. Colors use the brand brass plus
- * Payload's theme elevation vars so the subtitle adapts to light/dark.
+ * The Настех wordmark (same vector lockup as the storefront). The admin is
+ * forced light (payload.config admin.theme), so the dark fill reads on the
+ * cream panel.
  */
 export function Logo() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', lineHeight: 1 }}>
-      <span style={{ fontSize: '38px', fontWeight: 700, letterSpacing: '0.14em', color: 'var(--nasteh-brass)' }}>
-        НАСТЕХ
-      </span>
-      <span
-        style={{
-          fontSize: '12px',
-          letterSpacing: '0.3em',
-          textTransform: 'uppercase',
-          color: 'var(--theme-elevation-600, var(--nasteh-steel))',
-        }}
-      >
-        мебелен обков
-      </span>
-    </div>
-  )
+  // eslint-disable-next-line @next/next/no-img-element -- static brand asset in the Payload admin (outside the Next image pipeline)
+  return <img src="/logos/nasteh-dark.svg" alt="Настех" style={{ height: '58px', width: 'auto' }} />
 }
