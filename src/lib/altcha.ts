@@ -14,9 +14,13 @@ import { verify as altchaVerify } from 'altcha-lib/frameworks/shared'
  * reused). Challenge issuance (`/altcha`) and verification share the same store.
  */
 
-/** Difficulty: the widget brute-forces 0..cost. ~100k solves fast on mobile
- *  while staying costly to farm out at scale. */
-const COST = 100_000
+/** Difficulty upper bound (the widget brute-forces 0..cost). This uses the
+ *  deriveKey challenge, so per-attempt cost dominates the solve; `cost` mainly
+ *  caps the worst case. The real UX win is pre-solving on page load (Altcha.tsx
+ *  `auto="onload"`) so the proof is ready before submit. Lowered 100k→50k to
+ *  shorten the unlucky tail. (A larger speedup would be switching to the plain
+ *  SHA-256 PoW challenge — much cheaper per attempt — if needed later.) */
+const COST = 50_000
 
 /**
  * The HMAC secret. In production it MUST be set (fail closed if not). In
