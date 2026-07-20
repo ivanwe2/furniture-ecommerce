@@ -7,7 +7,8 @@ export async function generateMetadata() {
   const siteName = t('seo.siteName')
   const contactTitle = `${t('nav.contact')} | ${siteName}`
   return {
-    title: contactTitle,
+    // Bare label — the layout template adds the „| Настех" suffix.
+    title: t('nav.contact'),
     description: t('seo.contactDesc'),
     alternates: { canonical: '/contact' },
     openGraph: {

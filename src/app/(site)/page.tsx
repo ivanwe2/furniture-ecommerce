@@ -7,14 +7,15 @@ import { imageUrl, imageSrcSet } from '@/lib/images'
 import type { Media } from '@/payload-types'
 
 export async function generateMetadata() {
-  const siteName = t('seo.siteName')
+  const homeTitle = t('seo.homeTitle')
   const description = t('seo.homeDesc')
   return {
-    title: siteName,
+    // `absolute` so the layout's `%s | Настех` template isn't appended.
+    title: { absolute: homeTitle },
     description,
     alternates: { canonical: '/' },
     openGraph: {
-      title: siteName,
+      title: homeTitle,
       description,
       type: 'website',
       url: '/',

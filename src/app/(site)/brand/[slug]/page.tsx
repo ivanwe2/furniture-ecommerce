@@ -18,7 +18,8 @@ export async function generateMetadata({ params }: BrandPageProps) {
   if (!brand) return { title: t('brand.notFoundTitle') }
   const siteName = t('seo.siteName')
   return {
-    title: `${brand.name} | ${siteName}`,
+    // Bare name — the layout template adds the „| Настех" suffix.
+    title: brand.name,
     description: t('seo.brandDesc').replace('{name}', brand.name),
     alternates: { canonical: `/brand/${brand.slug}` },
     openGraph: {

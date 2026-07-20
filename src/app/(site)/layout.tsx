@@ -29,7 +29,7 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: t('seo.siteName'),
+    default: t('seo.homeTitle'),
     template: `%s | ${t('seo.siteName')}`,
   },
   description: t('seo.homeDesc'),

@@ -37,17 +37,20 @@ export async function generateMetadata({ params }: ProductPageProps) {
   const product = await getProductBySlug(resolvedParams.slug)
   if (!product) return { title: t('product.notFoundTitle') }
   const siteName = t('seo.siteName')
-  const seoTitle = product.seo?.title ?? `${product.name} | ${siteName}`
+  // Full title for OpenGraph (the layout title template isn't applied there);
+  // the browser-tab title below lets the template add the „| Настех" suffix.
+  const ogTitle = product.seo?.title ?? `${product.name} | ${siteName}`
   const seoDesc =
     product.seo?.description ??
     (richTextExcerpt(product.description) || t('seo.productDesc').replace('{name}', product.name))
   const firstImage = product.gallery?.[0]?.image
   return {
-    title: seoTitle,
+    // Custom SEO title used verbatim (absolute); otherwise the name + template.
+    title: product.seo?.title ? { absolute: product.seo.title } : product.name,
     description: seoDesc,
     alternates: { canonical: `/product/${product.slug}` },
     openGraph: {
-      title: seoTitle,
+      title: ogTitle,
       description: seoDesc,
       type: 'website',
       url: `/product/${product.slug}`,

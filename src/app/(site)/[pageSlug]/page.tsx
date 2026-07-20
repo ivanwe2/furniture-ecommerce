@@ -14,7 +14,8 @@ export async function generateMetadata({ params }: Props) {
   if (!page) return { title: t('notFound.title') }
   const siteName = t('seo.siteName')
   return {
-    title: `${page.title} | ${siteName}`,
+    // Bare title — the layout template adds the „| Настех" suffix.
+    title: page.title,
     description: t('seo.pageDesc').replace('{title}', page.title),
     alternates: { canonical: `/${page.slug ?? resolvedParams.pageSlug}` },
     openGraph: {
