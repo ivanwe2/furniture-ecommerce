@@ -49,7 +49,8 @@ palette; primitives: mono-uppercase form labels, hairline inputs w/ brass focus,
 square mono Badge, brass buttons) → **✅ R7** admin touch-ups (PR #29 —
 `custom.scss`: cream bg, brass primary buttons, square corners, Golos/IBM Plex
 Mono type stacks; CSS-only, no layout changes). **REDESIGN COMPLETE (R1–R7).**
-Logo files added by Ivan (`public/logos/nasteh-*.png`).
+Logo files (`public/logos/nasteh-*.svg` — vector wordmark; the favicon
+`src/app/icon.svg` is the bronze wordmark). Earlier PNGs replaced 2026-07-21.
 **Post-S7 admin fixes (2026-07-17, PRs #39–#41) — RESOLVED.** Triggered by the
 admin richtext crash Ivan hit on a product page.
 - **#39 richtext crash** — root cause was the **seed**, not R7 CSS: it wrote
