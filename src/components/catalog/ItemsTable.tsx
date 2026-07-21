@@ -13,7 +13,7 @@ interface ItemRow {
   lengthMm?: number | null
   color?: string | null
   priceEurCents: number
-  inStock?: boolean | null
+  stockQty?: number | null
 }
 
 interface ItemsTableProps {
@@ -57,7 +57,7 @@ export function ItemsTable({ items, productSlug }: ItemsTableProps) {
         </thead>
         <tbody>
           {items.map((item) => {
-            const isInStock = item.inStock !== false
+            const isInStock = (item.stockQty ?? 0) > 0
             const isAdded = addedSku === item.sku
 
             return (
@@ -74,11 +74,7 @@ export function ItemsTable({ items, productSlug }: ItemsTableProps) {
                 {hasColor && <td className="px-4 py-3 text-steel" data-label={t('product.colColor')}>{item.color ?? ''}</td>}
                 <td className="px-4 py-3 font-mono text-steel" data-label={t('product.colSku')}>{item.sku}</td>
                 <td className="px-4 py-3 text-right font-mono tabular-nums" data-label={t('product.colPrice')}>
-                  {isInStock ? (
-                    <Price eurCents={item.priceEurCents} className="text-ink" />
-                  ) : (
-                    <span className="font-sans text-steel">{t('product.onRequest')}</span>
-                  )}
+                  <Price eurCents={item.priceEurCents} className="text-ink" />
                 </td>
                 <td className="px-4 py-3" data-label={t('product.colQty')}>
                   {isInStock ? (
@@ -113,12 +109,9 @@ export function ItemsTable({ items, productSlug }: ItemsTableProps) {
                       )}
                     </button>
                   ) : (
-                    <a
-                      href={`/contact?about=${item.sku}`}
-                      className="font-mono text-[11px] uppercase tracking-[0.08em] text-brass-dark hover:text-brass"
-                    >
-                      {t('product.onRequest')}
-                    </a>
+                    <span className="inline-flex min-w-[7rem] items-center justify-center border border-ink/15 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.08em] text-steel">
+                      {t('product.soldOut')}
+                    </span>
                   )}
                 </td>
               </tr>

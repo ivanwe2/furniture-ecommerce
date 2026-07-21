@@ -297,7 +297,10 @@ export interface Product {
          * Пример: 31,14 € → 3114
          */
         priceEurCents: number;
-        inStock?: boolean | null;
+        /**
+         * Брой в наличност. 0 = изчерпан (не може да се поръча).
+         */
+        stockQty?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -632,7 +635,7 @@ export interface ProductsSelect<T extends boolean = true> {
         lengthMm?: T;
         color?: T;
         priceEurCents?: T;
-        inStock?: T;
+        stockQty?: T;
         id?: T;
       };
   featured?: T;

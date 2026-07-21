@@ -69,7 +69,7 @@ slug + `revalidateTag('brands')` + `revalidateTag('products')`.
 | `lengthMm` | number | optional, label "Дължина (мм)" |
 | `color` | text | optional, label "Цвят" |
 | `priceEurCents` | number | required, integer, min 1, label "Цена (евроцентове)"; `admin.description`: "Пример: 31,14 € → 3114" |
-| `inStock` | checkbox | default true, label "В наличност" |
+| `stockQty` | number | default 0, min 0, label "Наличност (брой)"; availability is derived (`stockQty > 0`), 0 = «Изчерпан» (not orderable) |
 
 Hooks:
 - `beforeValidate`: slug; normalize SKUs (trim; preserve leading zeros —

@@ -296,8 +296,8 @@ export async function resolveCartLines(lines: { productSlug: string; sku: string
     const item = product.items.find((i) => i.sku === line.sku)
     if (!item) continue
 
-    // Reject out-of-stock items
-    if (item.inStock === false) continue
+    // Reject out-of-stock items (stockQty <= 0)
+    if ((item.stockQty ?? 0) <= 0) continue
 
     resolution.set(`${line.productSlug}:${line.sku}`, {
       productSlug: line.productSlug,
