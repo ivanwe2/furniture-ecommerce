@@ -46,7 +46,7 @@ type ItemRow = {
   lengthMm?: number | null
   color?: string | null
   priceEurCents: number
-  inStock?: boolean | null
+  stockQty?: number | null
   id?: string | null
 }
 
@@ -405,7 +405,7 @@ async function processRow(
     lengthMm: row.length_mm ? Number(row.length_mm) : null,
     color: row.color.trim() || null,
     priceEurCents: eurCents,
-    inStock: true,
+    stockQty: 25,
   }
 
   // Check if SKU already exists

@@ -35,7 +35,7 @@ export const bg = {
   product: { itemsTitle: 'Артикули и цени', colName: 'Наименование',
     colUnit: 'Мярка', colLength: 'Дължина (мм)', colColor: 'Цвят',
     colSku: 'Код', colPrice: 'Цена', colQty: 'Количество',
-    added: 'Добавено', onRequest: 'по запитване',
+    added: 'Добавено', onRequest: 'по запитване', soldOut: 'Изчерпан',
     inStockSummary: 'Артикули в наличност',
     notFoundTitle: 'Продукт не е намерен',
     qtyDecrease: 'Намали количество', qtyIncrease: 'Увеличи количество',

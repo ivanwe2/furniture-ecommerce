@@ -79,9 +79,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
     return entry.image as Media
   })
 
-  // Check if any item is in stock
+  // Check if any item is in stock (stockQty > 0)
   const items = product.items ?? []
-  const hasInStockItem = items.some((i) => i.inStock !== false)
+  const hasInStockItem = items.some((i) => (i.stockQty ?? 0) > 0)
 
   // Brand info
   const brandName = typeof product.brand === 'object' && product.brand?.name ? (product.brand as { name: string }).name : undefined

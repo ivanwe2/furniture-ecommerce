@@ -21,7 +21,7 @@ export default async function CheckoutPage() {
         name: item.name,
         unit: item.unit ?? t('common.unitDefault'),
         priceEurCents: item.priceEurCents,
-        inStock: item.inStock !== false,
+        inStock: (item.stockQty ?? 0) > 0,
       })
     }
   }
