@@ -9,6 +9,7 @@
  */
 export interface CompanyInfo {
   name: string
+  eik: string
   city: string
   addressLine: string
   phoneDisplay: string
@@ -20,6 +21,7 @@ export interface CompanyInfo {
 
 export const company: CompanyInfo = {
   name: 'Настех ООД',
+  eik: '201869034',
   city: 'Пловдив',
   addressLine: 'ул. „Жан Жорес“ 9',
   phoneDisplay: '0898 272 567',

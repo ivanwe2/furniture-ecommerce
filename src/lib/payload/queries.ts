@@ -346,6 +346,7 @@ export async function getCompany(): Promise<CompanyInfo> {
     .filter(Boolean)
   return {
     name: s?.companyName?.trim() || companyDefaults.name,
+    eik: s?.eik?.trim() || companyDefaults.eik,
     city: s?.city?.trim() || companyDefaults.city,
     addressLine: s?.addressLine?.trim() || companyDefaults.addressLine,
     phoneDisplay: phone,
