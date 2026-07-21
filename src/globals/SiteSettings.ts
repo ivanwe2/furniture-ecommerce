@@ -1,10 +1,22 @@
 import type { GlobalConfig } from 'payload'
+import { revalidateTags } from '@/lib/payload/revalidate'
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
   label: 'Настройки на сайта',
   access: {
     read: () => true,
+  },
+  hooks: {
+    // The storefront reads settings through `getSettings`, an unstable_cache
+    // tagged 'settings'. Without this the cache is never busted, so admin edits
+    // (hero title, announcement, contact info) never reach the site until the
+    // container restarts. Revalidate on every save.
+    afterChange: [
+      async () => {
+        await revalidateTags('settings')
+      },
+    ],
   },
   fields: [
     {
