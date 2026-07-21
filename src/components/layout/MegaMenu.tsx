@@ -82,10 +82,10 @@ export function MegaMenu({ categories }: MegaMenuProps) {
             ) : (
               <Link
                 href={`/category/${categories[activeIndex].slug}`}
-                className="text-sm text-ink hover:text-brass"
+                className="inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.1em] text-brass-dark hover:text-brass"
                 role="menuitem"
               >
-                {t('nav.categories')}
+                {t('home.viewAll')} <span aria-hidden="true">→</span>
               </Link>
             )}
           </div>

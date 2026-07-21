@@ -104,11 +104,8 @@ export default async function HomePage() {
           </div>
 
           <div className="relative z-[1] max-w-xl py-16 sm:py-24 lg:py-28">
-            <div className="mb-6 flex items-center gap-3">
-              <span className="h-px w-9 bg-brass" />
-              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-brass-dark sm:text-xs">
-                {t('home.heroSlogan')}
-              </span>
+            <div className="mb-6 font-mono text-[11px] uppercase tracking-[0.2em] text-brass-dark sm:text-xs">
+              {t('home.heroSlogan')}
             </div>
             <h1 className="font-display text-[2.5rem] font-semibold leading-[1.04] tracking-[-0.025em] text-balance text-ink sm:text-5xl lg:text-6xl">
               {heroTitle}
