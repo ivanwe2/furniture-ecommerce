@@ -37,7 +37,7 @@
     "dotenv": "16.4.7",
     "graphql": "^16.8.1",
     "ioredis": "5.11.1",
-    "next": "15.4.11",
+    "next": "16.2.11",
     "nodemailer": "^9.0.3",
     "payload": "3.86.0",
     "react": "19.2.8",
