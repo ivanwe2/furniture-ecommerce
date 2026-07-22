@@ -14,13 +14,20 @@ import { verify as altchaVerify } from 'altcha-lib/frameworks/shared'
  * reused). Challenge issuance (`/altcha`) and verification share the same store.
  */
 
-/** Difficulty upper bound (the widget brute-forces 0..cost). This uses the
- *  deriveKey challenge, so per-attempt cost dominates the solve; `cost` mainly
- *  caps the worst case. The real UX win is pre-solving on page load (Altcha.tsx
- *  `auto="onload"`) so the proof is ready before submit. Lowered 100k→50k to
- *  shorten the unlucky tail. (A larger speedup would be switching to the plain
- *  SHA-256 PoW challenge — much cheaper per attempt — if needed later.) */
-const COST = 50_000
+/**
+ * Proof-of-work difficulty. In altcha-lib v2's deriveKey scheme `cost` is the
+ * KDF *iteration count* — each brute-force attempt runs `cost` chained SHA-256
+ * hashes. The solver tries counters until a derived key lands on the 1-byte
+ * default prefix (≈1/256), so a solve costs on average ~256 × cost hashes.
+ *
+ * Altcha's recommended default difficulty is ~1,000,000 hashes; 4000 hits that
+ * (256 × 4000 ≈ 1.0M). The previous 50_000 was ~13× that (≈12.8M) — measured at
+ * ~30s single-threaded, the source of the perceived slowness — with no extra
+ * bot deterrence to show for it. This keeps the identical SHA-256 PoW and pins
+ * difficulty to the standard level; the pre-solve (Altcha.tsx `auto="onload"`)
+ * then hides it entirely.
+ */
+const COST = 4_000
 
 /**
  * The HMAC secret. In production it MUST be set (fail closed if not). In
