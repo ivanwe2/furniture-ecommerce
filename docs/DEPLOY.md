@@ -18,6 +18,47 @@ The sysadmin owns TLS, DNS, and mail-DNS (SPF/DKIM/DMARC + PTR). Only
 internal-only. Persistent state = volumes `pgdata`, `media`, `maildata`,
 `backups`.
 
+**Stack versions (current):** Next.js 16.2.11 · Payload 3.86.0 · React 19.2.8 ·
+Node 24 · Postgres 18 · Redis 7 · pnpm 11.10. No cutover/data import (§4) —
+go-live starts on an empty DB.
+
+---
+
+## 0. Go-live checklist (first deploy, in order)
+
+Each step links to the detailed section below. Tick as you go.
+
+- [ ] **Host ready** — Docker Engine + Compose plugin; ~2 GB RAM for the whole
+      stack; storage driver `overlay2` (§1, §9).
+- [ ] **Get the code + `.env`** — clone the repo, `cp .env.example .env`, fill
+      **every** key. Generate the two secrets fresh: `PAYLOAD_SECRET` and
+      `ALTCHA_HMAC_KEY` (`openssl rand -hex 32` each); set a strong
+      `POSTGRES_PASSWORD` and make `DATABASE_URI` match it; set
+      `NEXT_PUBLIC_SITE_URL=https://nasteh.bg`, `NEXT_PUBLIC_SHOW_BGN=true`,
+      `EMAIL_FROM`, `ORDER_INBOX_EMAIL`, `MAIL_HOSTNAME`, `MAIL_SENDER_DOMAINS`
+      (+ `RELAYHOST*` if outbound :25 is blocked). `chmod 600 .env` (§2, §9).
+- [ ] **DNS — web** — `A`/`AAAA` for `nasteh.bg` → the host (through the proxy).
+- [ ] **Build & run** — `docker compose up -d --build`; watch
+      `docker compose logs -f app` (migrations then server); `docker compose ps`
+      shows `healthy` (§3).
+- [ ] **Reverse proxy + TLS** — terminate TLS, proxy to `127.0.0.1:3000`, pass
+      `X-Forwarded-For`, set `client_max_body_size 12m` (§6).
+- [ ] **First admin user** — open `https://nasteh.bg/admin`, create it. (Optional:
+      seed demo content, then change the seeded admin password.) (§3)
+- [ ] **DNS — mail** — publish DKIM (read it after first boot, §7 step 1), SPF,
+      DMARC; ensure a matching PTR + open outbound :25, **or** set `RELAYHOST`
+      (§7).
+- [ ] **Email test** — place a real order; confirm owner **and** customer mail
+      arrive (check spam) at a `gmail.com` and an `abv.bg` address;
+      `docker compose logs -f mail` shows `status=sent` (§7).
+- [ ] **Smoke test** — homepage, a product page, add-to-cart, place a full
+      cash-on-delivery order; edit a product in `/admin` and confirm it appears
+      on the site.
+- [ ] **Backups off-box** — confirm the `backup` sidecar wrote snapshots and set
+      up an off-host copy (§5).
+- [ ] **Set a reminder — 2026-08-08:** flip `NEXT_PUBLIC_SHOW_BGN=false` and
+      rebuild (prices go EUR-only) (§8).
+
 ---
 
 ## 1. Prerequisites (on the host)
