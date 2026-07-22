@@ -24,8 +24,8 @@ export const company: CompanyInfo = {
   eik: '201869034',
   city: 'Пловдив',
   addressLine: 'ул. „Жан Жорес“ 9',
-  phoneDisplay: '0898 272 567',
-  phoneHref: 'tel:+359898272567',
+  phoneDisplay: '+359 32 671 585',
+  phoneHref: 'tel:+35932671585',
   email: 'nastehsales@gmail.com',
   emailHref: 'mailto:nastehsales@gmail.com',
   workingHours: {
