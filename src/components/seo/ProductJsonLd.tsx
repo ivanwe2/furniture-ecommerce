@@ -1,3 +1,5 @@
+import { jsonLdScript } from '@/lib/json-ld'
+
 /**
  * schema.org/Product structured data for a product page, enabling price /
  * availability rich results in search. Prices are euro cents → EUR string.
@@ -49,6 +51,6 @@ export default function ProductJsonLd({
   }
 
   return (
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(data) }} />
   )
 }

@@ -129,6 +129,21 @@ const C = {
 const FONT = "'Golos Text', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
 const MONO = "'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace"
 
+/**
+ * HTML-escape a value before interpolating it into an email body. Order/contact
+ * fields (name, address, note, message, …) are customer-supplied and land in the
+ * OWNER's inbox — without this, a customer could inject markup/links there.
+ * Covers text content and double-quoted attribute values (e.g. `href`).
+ */
+function esc(v: unknown): string {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 /** Wordmark header — the logo's uppercase, letter-spaced bronze lockup. */
 function header(): string {
   return `<tr><td style="padding:28px 24px 20px;border-bottom:1px solid ${C.line};">
@@ -165,8 +180,8 @@ function itemsTable(lines: OrderLine[], totalEurCents: number): string {
   const th = `padding:8px 6px;border-bottom:2px solid ${C.line};font-family:${MONO};font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:${C.muted};`
   const td = `padding:9px 6px;border-bottom:1px solid ${C.line};font-size:13px;color:${C.ink};`
   const rows = lines.map((l) => `<tr>
-<td style="${td}">${l.itemName}<br/><span style="font-family:${MONO};font-size:11px;color:${C.muted};">${l.itemSku}</span></td>
-<td style="${td}text-align:center;white-space:nowrap;">${l.qty} ${l.unit}</td>
+<td style="${td}">${esc(l.itemName)}<br/><span style="font-family:${MONO};font-size:11px;color:${C.muted};">${esc(l.itemSku)}</span></td>
+<td style="${td}text-align:center;white-space:nowrap;">${l.qty} ${esc(l.unit)}</td>
 <td style="${td}text-align:right;white-space:nowrap;">${formatEur(l.unitPriceEurCents)}</td>
 <td style="${td}text-align:right;white-space:nowrap;">${formatEur(l.lineTotalEurCents)}</td>
 </tr>`).join('')
@@ -178,7 +193,7 @@ ${rows}
 }
 
 function link(href: string, label: string): string {
-  return `<a href="${href}" style="color:${C.bronze};">${label}</a>`
+  return `<a href="${esc(href)}" style="color:${C.bronze};">${esc(label)}</a>`
 }
 
 // --- HTML templates ---
@@ -194,13 +209,13 @@ ${eyebrow('Нова поръчка')}
 <h1 style="margin:4px 0 2px;font-size:22px;color:${C.ink};">№ ${d.orderNumber}</h1>
 <div style="font-size:13px;color:${C.muted};">${d.orderDate}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
-<tr><td style="${row}"><strong>Клиент:</strong> ${d.customerName}</td></tr>
+<tr><td style="${row}"><strong>Клиент:</strong> ${esc(d.customerName)}</td></tr>
 <tr><td style="${row}">${link('tel:' + d.customerPhone, d.customerPhone)}</td></tr>
 <tr><td style="${row}">${link('mailto:' + d.customerEmail, d.customerEmail)}</td></tr>
-<tr><td style="${row}"><strong>Доставка:</strong> ${d.deliveryMethod} — ${d.city}, ${d.addressOrOffice}</td></tr>
+<tr><td style="${row}"><strong>Доставка:</strong> ${esc(d.deliveryMethod)} — ${esc(d.city)}, ${esc(d.addressOrOffice)}</td></tr>
 </table>
 ${itemsTable(d.lines, d.totalEurCents)}
-${d.note ? `<p style="font-size:13px;color:${C.muted};margin:10px 0 0;"><strong>Бележка:</strong> ${d.note}</p>` : ''}
+${d.note ? `<p style="font-size:13px;color:${C.muted};margin:10px 0 0;"><strong>Бележка:</strong> ${esc(d.note)}</p>` : ''}
 <p style="font-size:12px;color:${C.muted};margin:16px 0 0;">${link(SITE_URL + '/admin/collections/orders', 'Виж в административния панел →')}</p>`)
 }
 
@@ -236,7 +251,7 @@ ${eyebrow('Потвърждение на поръчка')}
 <p style="font-size:14px;line-height:1.6;margin:16px 0;color:${C.ink};">Благодарим Ви за поръчката! Ще се свържем с Вас по телефона за потвърждение.</p>
 ${itemsTable(d.lines, d.totalEurCents)}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0 0;">
-<tr><td style="padding:3px 0;font-size:13px;color:${C.muted};"><strong style="color:${C.ink};">Доставка:</strong> ${d.deliveryMethod} — ${d.city}, ${d.addressOrOffice}</td></tr>
+<tr><td style="padding:3px 0;font-size:13px;color:${C.muted};"><strong style="color:${C.ink};">Доставка:</strong> ${esc(d.deliveryMethod)} — ${esc(d.city)}, ${esc(d.addressOrOffice)}</td></tr>
 <tr><td style="padding:3px 0;font-size:13px;color:${C.muted};"><strong style="color:${C.ink};">Плащане:</strong> при доставка (наложен платеж). Цените са с включено ДДС.</td></tr>
 </table>
 <hr style="border:none;border-top:1px solid ${C.line};margin:18px 0;"/>
@@ -273,12 +288,12 @@ function contactOwnerHtml(d: { name: string; email: string; phone?: string; mess
   const row = `padding:3px 0;font-size:14px;color:${C.ink};`
   return shell(`
 ${eyebrow('Запитване от сайта')}
-<h1 style="margin:4px 0 12px;font-size:22px;color:${C.ink};">${d.name}</h1>
+<h1 style="margin:4px 0 12px;font-size:22px;color:${C.ink};">${esc(d.name)}</h1>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;">
 ${d.email ? `<tr><td style="${row}">${link('mailto:' + d.email, d.email)}</td></tr>` : ''}
 ${d.phone ? `<tr><td style="${row}">${link('tel:' + d.phone, d.phone)}</td></tr>` : ''}
 </table>
-<div style="background:${C.page};border:1px solid ${C.line};padding:14px;font-size:14px;line-height:1.6;white-space:pre-wrap;color:${C.ink};">${d.message}</div>
+<div style="background:${C.page};border:1px solid ${C.line};padding:14px;font-size:14px;line-height:1.6;white-space:pre-wrap;color:${C.ink};">${esc(d.message)}</div>
 <p style="font-size:12px;color:${C.muted};margin:14px 0 0;">${link(SITE_URL + '/admin', 'Административен панел →')}</p>`)
 }
 

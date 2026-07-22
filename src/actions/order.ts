@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { checkoutSchema } from '@/lib/validation/checkout'
 import { verifyAltcha } from '@/lib/altcha'
 import { rateLimit } from '@/lib/rate-limit'
+import { clientIp } from '@/lib/request-ip'
 import { resolveCartLines } from '@/lib/payload/queries'
 import { computeTotals } from '@/lib/cart/totals'
 import { getPayload } from 'payload'
@@ -32,10 +33,7 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
   // Server-derived request metadata — never trust client-supplied IP/UA.
   // IP comes from the reverse proxy's X-Forwarded-For (self-hosted; §7).
   const hdrs = await headers()
-  const ip =
-    hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    hdrs.get('x-real-ip') ??
-    'unknown'
+  const ip = clientIp(hdrs)
   const userAgent = hdrs.get('user-agent') ?? ''
 
   // Step 1: Honeypot — fake success if filled
