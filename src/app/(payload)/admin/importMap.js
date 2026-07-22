@@ -27,6 +27,7 @@ import { Logo as Logo_91a09b539d3c86b0aebf520e7564ce08 } from '../../../componen
 import { AdminFonts as AdminFonts_1a7dbd9a670a2dd0dc56d863acf43b09 } from '../../../components/admin/AdminFonts'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
+/** @type import('payload').ImportMap */
 export const importMap = {
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalField": RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e,
