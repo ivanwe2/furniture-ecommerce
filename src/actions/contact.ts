@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { contactSchema } from '@/lib/validation/contact'
 import { verifyAltcha } from '@/lib/altcha'
 import { rateLimit } from '@/lib/rate-limit'
+import { clientIp } from '@/lib/request-ip'
 import { sendContactEmail } from '@/emails/send'
 
 export type ActionResult<T> =
@@ -17,10 +18,7 @@ export async function submitContact(input: unknown): Promise<ActionResult<unknow
   // Server-derived IP — never trust client-supplied values.
   // IP comes from the reverse proxy's X-Forwarded-For (self-hosted; §7).
   const hdrs = await headers()
-  const ip =
-    hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    hdrs.get('x-real-ip') ??
-    'unknown'
+  const ip = clientIp(hdrs)
 
   // Step 1: Honeypot — fake success if filled
   if (record['website'] != null && String(record['website']).trim() !== '') {

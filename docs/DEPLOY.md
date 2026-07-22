@@ -200,9 +200,12 @@ Terminate TLS and proxy to `127.0.0.1:3000`. The compose publishes the app on
 directly; a proxy on another host needs the port mapping adjusted (see the
 `docker-compose.yml` comment). Two things the app relies on:
 
-- **`X-Forwarded-For`** — the checkout/contact rate limiter and logs derive
-  the client IP from it (ARCHITECTURE §7). Without it every visitor shares one
-  bucket.
+- **`X-Real-IP` (+ `X-Forwarded-For`)** — the checkout/contact rate limiter
+  derives the client IP from these (ARCHITECTURE §7). The app **prefers
+  `X-Real-IP`** because a client cannot forge it — set it to `$remote_addr`. It
+  falls back to the *last* `X-Forwarded-For` hop; do **not** rely on the first
+  hop, which is client-supplied. Without either header, every visitor shares one
+  rate-limit bucket.
 - **`client_max_body_size` ~12M** — product image uploads in the admin
   (~10 MB cap) must not be truncated by the proxy.
 
@@ -215,6 +218,7 @@ server {
   location / {
     proxy_pass http://127.0.0.1:3000;
     proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
     proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
   }

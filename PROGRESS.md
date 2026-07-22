@@ -13,10 +13,14 @@ held: eslint 10 / TS 7 / graphql 17 / zod 4, see Decisions log 2026-07-22).
 Payload 3.86 + Next 16 were **Docker-verified** (admin+Lexical, storefront 200s,
 revalidation correctness). Security audit **49→39** advisories (high 15→11) —
 all transitive in the Payload/admin + dev-tool trees. Go-live checklist added to
-`docs/DEPLOY.md §0`. **Next:** (1) sysadmin executes the go-live checklist on the
-client's infra; (2) in-depth security review in progress (this session). Legacy
-`docs/HANDOFF.md` is a retired CF-era autonomous-build prompt — ignore for deploy;
-`docs/DEPLOY.md` is the handover doc.
+`docs/DEPLOY.md §0`. **In-depth security review done** (`docs/SECURITY-REVIEW.md`):
+posture strong (orders server-action-only + `create:false`, DB-recomputed prices,
+layered anti-bot, REST access control probed — users/orders 403); 3 defence-in-depth
+issues found + fixed this session (email HTML-escaping, JSON-LD `</script>` escaping,
+non-spoofable client-IP for rate-limit); residual = accepted-risk/sysadmin (CSP,
+HSTS at proxy, transitive dep advisories). **Next:** sysadmin executes the go-live
+checklist on the client's infra. Legacy `docs/HANDOFF.md` is a retired CF-era
+autonomous-build prompt — ignore for deploy; `docs/DEPLOY.md` is the handover doc.
 
 **Current phase:** **STACK SEPARATION (S1–S7)** — multi-service self-hosted
 stack (Ivan, 2026-07-17; Decisions log). Order (small green PRs):
