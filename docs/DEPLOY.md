@@ -45,9 +45,12 @@ Each step links to the detailed section below. Tick as you go.
       `X-Forwarded-For`, set `client_max_body_size 12m` (§6).
 - [ ] **First admin user** — open `https://nasteh.bg/admin`, create it. (Optional:
       seed demo content, then change the seeded admin password.) (§3)
-- [ ] **DNS — mail** — publish DKIM (read it after first boot, §7 step 1), SPF,
-      DMARC; ensure a matching PTR + open outbound :25, **or** set `RELAYHOST`
-      (§7).
+- [ ] **DNS — mail (sending)** — publish DKIM (read it after first boot, §7
+      step 1), SPF, DMARC; ensure a matching PTR + open outbound :25, **or** set
+      `RELAYHOST` (§7).
+- [ ] **DNS — mail (receiving)** — add an MX + forwarding rule at the registrar
+      (or ImprovMX) so `orders@`/`info@nasteh.bg` reach the owner's real inbox;
+      set `ORDER_INBOX_EMAIL` accordingly (§7 · Receiving).
 - [ ] **Email test** — place a real order; confirm owner **and** customer mail
       arrive (check spam) at a `gmail.com` and an `abv.bg` address;
       `docker compose logs -f mail` shows `status=sent` (§7).
@@ -267,7 +270,27 @@ docker compose exec mail cat /etc/opendkim/keys/nasteh.bg.txt
 host's public IP, and **outbound port 25 open** (many ISPs/clouds block it).
 If either isn't available, set **`RELAYHOST`** (+ `RELAYHOST_USERNAME/PASSWORD`)
 in `.env` to a smarthost (the domain's mail host or a Workspace SMTP relay) and
-the reputation problem goes away.
+the reputation problem goes away. **Check whether the target host allows outbound
+:25 before choosing** — it decides direct-vs-`RELAYHOST`.
+
+### Receiving (mail sent *to* the domain)
+
+The `mail` relay is **send-only** — it does not accept inbound mail, and it is
+not a mailbox. So mail addressed to `orders@` / `info@nasteh.bg` (e.g. a customer
+replying to their confirmation) needs an **email-forwarding** setup — the app's
+DNS does not create inboxes:
+
+- At the **domain registrar** (or a forwarder such as ImprovMX), add an **MX**
+  record + a rule forwarding `orders@nasteh.bg` and `info@nasteh.bg` to the real
+  inbox the owner reads (e.g. `nastehsales@gmail.com`).
+- Then set `ORDER_INBOX_EMAIL=orders@nasteh.bg` — order/contact notifications
+  land in that inbox via the forward, and customer replies do too. (You *can*
+  point `ORDER_INBOX_EMAIL` straight at the gmail to skip the forward for the
+  app's own notifications, but you still want forwarding for replies.)
+
+> A personal `@gmail.com` cannot host `@nasteh.bg` addresses — hence the
+> forwarder. A Google **Workspace** account on the domain would instead make
+> `orders@` a real mailbox (no forwarder needed).
 
 Test after wiring: place a real order and confirm both the owner and customer
 emails arrive (check spam too) at a `gmail.com` and an `abv.bg` address. Watch
