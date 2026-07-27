@@ -29,15 +29,18 @@ go-live starts on an empty DB.
 Each step links to the detailed section below. Tick as you go.
 
 - [ ] **Host ready** — Docker Engine + Compose plugin; ~2 GB RAM for the whole
-      stack; storage driver `overlay2` (§1, §9).
+      stack; storage driver `overlay2` (§1, §10).
 - [ ] **Get the code + `.env`** — clone the repo, `cp .env.example .env`, fill
       **every** key. Generate the two secrets fresh: `PAYLOAD_SECRET` and
       `ALTCHA_HMAC_KEY` (`openssl rand -hex 32` each); set a strong
       `POSTGRES_PASSWORD` and make `DATABASE_URI` match it; set
       `NEXT_PUBLIC_SITE_URL=https://nasteh.bg`, `NEXT_PUBLIC_SHOW_BGN=true`,
       `EMAIL_FROM`, `ORDER_INBOX_EMAIL`, `MAIL_HOSTNAME`, `MAIL_SENDER_DOMAINS`
-      (+ `RELAYHOST*` if outbound :25 is blocked). `chmod 600 .env` (§2, §9).
+      (+ `RELAYHOST*` if outbound :25 is blocked). `chmod 600 .env` (§2, §10).
 - [ ] **DNS — web** — `A`/`AAAA` for `nasteh.bg` → the host (through the proxy).
+- [ ] **Lock the site while content is prepared** (optional but recommended if
+      the domain is live before launch) — set `SITE_LOCK_USER`/`SITE_LOCK_PASSWORD`;
+      **clear both before announcing the site** (§8).
 - [ ] **Build & run** — `docker compose up -d --build`; watch
       `docker compose logs -f app` (migrations then server); `docker compose ps`
       shows `healthy` (§3).
@@ -60,7 +63,7 @@ Each step links to the detailed section below. Tick as you go.
 - [ ] **Backups off-box** — confirm the `backup` sidecar wrote snapshots and set
       up an off-host copy (§5).
 - [ ] **Set a reminder — 2026-08-08:** flip `NEXT_PUBLIC_SHOW_BGN=false` and
-      rebuild (prices go EUR-only) (§8).
+      rebuild (prices go EUR-only) (§9).
 
 ---
 
@@ -96,6 +99,7 @@ Every key (`.env.example` is the authoritative list):
 | `NEXT_PUBLIC_SITE_URL` | public URL | `https://nasteh.bg`. **Build-time** — see the note below. |
 | `NEXT_PUBLIC_SHOW_BGN` | dual EUR/BGN prices | `true` until 2026-08-08, then `false`. **Build-time.** |
 | `ALTCHA_HMAC_KEY` | Altcha challenge secret | `openssl rand -hex 32`. Runtime; self-hosted proof-of-work — no external service. |
+| `SITE_LOCK_USER`/`SITE_LOCK_PASSWORD` | pre-launch Basic Auth | Both set = storefront locked (`/admin`, `/api` stay open). ASCII. Runtime — restart, no rebuild. Empty both to go live (§8). |
 | `SMTP_HOST`/`SMTP_PORT` | app → relay | `mail` / `587` (the in-stack relay, no auth). Or point at an external smarthost. |
 | `SMTP_USER`/`SMTP_PASS` | mail auth | empty for the internal relay; set for an external smarthost. |
 | `EMAIL_FROM` | envelope sender | `Настех <orders@nasteh.bg>` — must be under `MAIL_SENDER_DOMAINS`. |
@@ -298,7 +302,63 @@ the relay: `docker compose logs -f mail` (look for `status=sent`).
 
 ---
 
-## 8. Known watch-items
+## 8. Pre-launch site lock (в разработка)
+
+While the catalogue is still being prepared on the live domain, the storefront
+can be put behind HTTP Basic Auth so a stray visitor can't mistake it for an
+open shop and place an order. Set **both** keys in `.env`:
+
+```bash
+SITE_LOCK_USER=nasteh
+SITE_LOCK_PASSWORD=<a shared password — ASCII only>
+docker compose up -d app        # restart only; NO rebuild needed
+```
+
+The lock is ON iff both are non-empty — there is no separate on/off flag to
+drift out of sync.
+
+**What a visitor sees.** Two stages, deliberately:
+
+1. Any storefront URL answers **503** with a Bulgarian "Сайтът е в разработка"
+   notice — no browser password box, so a customer gets an explanation rather
+   than a bare credential prompt. 503 (not 401) is what tells crawlers
+   "temporary, don't index, come back later"; a 401 without a
+   `WWW-Authenticate` header would also be invalid HTTP.
+2. The notice's **"Вход за тестване"** button re-requests the same path with
+   `?unlock=1`, which answers **401 + `WWW-Authenticate`** — only then does the
+   browser prompt. After a correct login it redirects back to the clean URL
+   (other query params are preserved) and the browser caches the credentials
+   for the origin, so testers are prompted once, not per page.
+
+`?unlock=1` is a hint, not a secret — it gets you the prompt, not past it.
+
+Verify:
+
+```bash
+curl -si https://nasteh.bg/ | head -1                     # HTTP/2 503
+curl -si 'https://nasteh.bg/?unlock=1' | head -1          # HTTP/2 401
+curl -so /dev/null -w '%{http_code}\n' -u nasteh:<pw> https://nasteh.bg/   # 200
+curl -so /dev/null -w '%{http_code}\n' https://nasteh.bg/robots.txt       # 200
+```
+
+**To go live:** empty both values and `docker compose up -d app`. Confirm the
+homepage returns `200` anonymously before announcing the site.
+
+Notes:
+- **`/admin` and `/api` are exempt** — Payload has its own login, and gating them
+  would prompt the owner twice per session and break the admin's own API calls.
+  The admin is therefore reachable normally while the storefront is locked.
+- **`/robots.txt` is exempt** — the container healthcheck polls it; a 401 there
+  would put the app in a restart loop.
+- Unlike `NEXT_PUBLIC_*`, these are **runtime** env — verified: the same image
+  locks and unlocks across restarts with no rebuild.
+- ASCII credentials only: Basic Auth transports them base64-encoded as latin1.
+- Crawlers get a 503 + `X-Robots-Tag: noindex`, so a locked site is not indexed;
+  `robots.txt` itself is unchanged and stays as configured for launch.
+
+---
+
+## 9. Known watch-items
 
 - **Native build scripts (sharp/esbuild).** pnpm 11 runs these only if
   approved in `pnpm-workspace.yaml` (`allowBuilds:` — NOT the older
@@ -332,7 +392,7 @@ the relay: `docker compose logs -f mail` (look for `status=sent`).
 
 ---
 
-## 9. Host & container notes (incl. Proxmox / LXC)
+## 10. Host & container notes (incl. Proxmox / LXC)
 
 The app is one modest Node process, now alongside Postgres / Redis / the mail
 relay; the risks below are about the host it runs on — mostly disk-fill and

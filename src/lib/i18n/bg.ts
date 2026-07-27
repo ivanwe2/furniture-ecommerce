@@ -98,6 +98,17 @@ export const bg = {
     contactDesc: 'Контакти, адрес и работно време на Настех ООД - мебелен обков в Пловдив.',
     pageDesc: '{title} - информация от Настех.',
   },
+  siteLock: {
+    // ASCII ONLY — this goes into the `WWW-Authenticate` header, and HTTP header
+    // values are latin1 ByteStrings (Cyrillic throws at response construction).
+    // Not a visible-copy regression: current browsers no longer show the realm.
+    realm: 'Nasteh - site in development',
+    title: 'Сайтът е в разработка',
+    body: 'В момента подготвяме онлайн каталога и все още не приемаме поръчки. Благодарим за търпението!',
+    contact: 'За запитвания: info@nasteh.bg',
+    unlockCta: 'Вход за тестване',
+    unlockHint: 'Само за екипа по разработката',
+  },
 } as const
 
 export type BgKeys = keyof typeof bg
