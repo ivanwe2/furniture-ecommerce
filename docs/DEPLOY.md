@@ -315,11 +315,30 @@ docker compose up -d app        # restart only; NO rebuild needed
 ```
 
 The lock is ON iff both are non-empty — there is no separate on/off flag to
-drift out of sync. Verify:
+drift out of sync.
+
+**What a visitor sees.** Two stages, deliberately:
+
+1. Any storefront URL answers **503** with a Bulgarian "Сайтът е в разработка"
+   notice — no browser password box, so a customer gets an explanation rather
+   than a bare credential prompt. 503 (not 401) is what tells crawlers
+   "temporary, don't index, come back later"; a 401 without a
+   `WWW-Authenticate` header would also be invalid HTTP.
+2. The notice's **"Вход за тестване"** button re-requests the same path with
+   `?unlock=1`, which answers **401 + `WWW-Authenticate`** — only then does the
+   browser prompt. After a correct login it redirects back to the clean URL
+   (other query params are preserved) and the browser caches the credentials
+   for the origin, so testers are prompted once, not per page.
+
+`?unlock=1` is a hint, not a secret — it gets you the prompt, not past it.
+
+Verify:
 
 ```bash
-curl -si https://nasteh.bg/ | head -1                    # HTTP/1.1 401
+curl -si https://nasteh.bg/ | head -1                     # HTTP/2 503
+curl -si 'https://nasteh.bg/?unlock=1' | head -1          # HTTP/2 401
 curl -so /dev/null -w '%{http_code}\n' -u nasteh:<pw> https://nasteh.bg/   # 200
+curl -so /dev/null -w '%{http_code}\n' https://nasteh.bg/robots.txt       # 200
 ```
 
 **To go live:** empty both values and `docker compose up -d app`. Confirm the
@@ -331,14 +350,11 @@ Notes:
   The admin is therefore reachable normally while the storefront is locked.
 - **`/robots.txt` is exempt** — the container healthcheck polls it; a 401 there
   would put the app in a restart loop.
-- The browser caches the credentials per origin, so testers are prompted once,
-  not per page. Dismissing the prompt shows a Bulgarian "Сайтът е в разработка"
-  page instead.
 - Unlike `NEXT_PUBLIC_*`, these are **runtime** env — verified: the same image
   locks and unlocks across restarts with no rebuild.
 - ASCII credentials only: Basic Auth transports them base64-encoded as latin1.
-- The lock returns 401 to crawlers, so a locked site cannot be indexed; it does
-  not change `robots.txt`, which stays as configured for launch.
+- Crawlers get a 503 + `X-Robots-Tag: noindex`, so a locked site is not indexed;
+  `robots.txt` itself is unchanged and stays as configured for launch.
 
 ---
 

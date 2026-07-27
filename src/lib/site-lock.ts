@@ -16,6 +16,18 @@
 
 export type SiteLock = { user: string; password: string }
 
+/**
+ * Query flag that asks for the browser's credential prompt.
+ *
+ * Without it a locked page answers 503 + the "в разработка" notice and NO
+ * `WWW-Authenticate` — so a customer reads an explanation instead of a bare
+ * password box. The notice's button links to `?unlock=1`, which answers 401
+ * *with* the header, and only then does the browser prompt.
+ *
+ * It is a hint, not a secret: knowing it gets you the prompt, not past it.
+ */
+export const UNLOCK_PARAM = 'unlock'
+
 /** `null` when the lock is off (either credential missing/empty). */
 export function readSiteLock(user: string | undefined, password: string | undefined): SiteLock | null {
   const u = user?.trim() ?? ''

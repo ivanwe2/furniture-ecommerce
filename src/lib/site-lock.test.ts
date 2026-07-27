@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bg } from './i18n/bg'
-import { isAuthorized, isLockExempt, readSiteLock, type SiteLock } from './site-lock'
+import { isAuthorized, isLockExempt, readSiteLock, UNLOCK_PARAM, type SiteLock } from './site-lock'
 
 const lock: SiteLock = { user: 'nasteh', password: 's3cret' }
 const basic = (user: string, password: string) => `Basic ${btoa(`${user}:${password}`)}`
@@ -24,6 +24,18 @@ describe('readSiteLock', () => {
 
   it('does not trim the password — spaces may be intentional', () => {
     expect(readSiteLock(' nasteh ', ' pw ')).toEqual({ user: 'nasteh', password: ' pw ' })
+  })
+})
+
+describe('UNLOCK_PARAM', () => {
+  it('is URL-safe (it is written into a query string unescaped)', () => {
+    expect(UNLOCK_PARAM).toMatch(/^[a-z0-9_-]+$/)
+  })
+
+  it('does not collide with a query param the storefront reads', () => {
+    // `q` = search, `page` = pagination. A collision would strip a real param
+    // on the post-auth redirect.
+    expect(['q', 'page']).not.toContain(UNLOCK_PARAM)
   })
 })
 
