@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import type { Category, Product } from '@/payload-types'
 import { company as companyDefaults, type CompanyInfo } from '@/lib/company'
+import { searchTokens } from '@/lib/search'
 
 async function p() {
   return getPayload({ config })
@@ -222,7 +223,7 @@ export function getProductsByBrand(brandSlug: string, page: number = 1, limit: n
 }
 
 export function searchProducts(qRaw: string) {
-  const tokens = qRaw.toLowerCase().trim().split(/\s+/).filter(Boolean).slice(0, 5)
+  const tokens = searchTokens(qRaw)
   if (tokens.length === 0) return Promise.resolve([] as Product[])
   return unstable_cache(
     async () => {

@@ -2,6 +2,8 @@ import type { NextConfig } from 'next'
 import { withPayload } from '@payloadcms/next/withPayload'
 
 const nextConfig: NextConfig = {
+  // Don't advertise the stack in every response (`X-Powered-By: Next.js`).
+  poweredByHeader: false,
   images: {
     localPatterns: [
       {

@@ -3,6 +3,7 @@ import 'server-only'
 
 import { headers } from 'next/headers'
 import { checkoutSchema } from '@/lib/validation/checkout'
+import { parseCartField } from '@/lib/validation/cart'
 import { verifyAltcha } from '@/lib/altcha'
 import { rateLimit } from '@/lib/rate-limit'
 import { clientIp } from '@/lib/request-ip'
@@ -68,21 +69,12 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
     return { ok: false, error: 'errors.rateLimited' }
   }
 
-  // Step 5: Resolve items from DB by (productId, sku); reject unknown/unpublished/out-of-stock
-  const rawCart = record['cart']
-  if (!rawCart || typeof rawCart !== 'string') {
-    return { ok: false, error: 'errors.cartStale' }
-  }
-
-  let cartLines: Array<{ productSlug: string; sku: string; qty: number }>
-  try {
-    cartLines = JSON.parse(rawCart)
-  }
-  catch {
-    return { ok: false, error: 'errors.cartStale' }
-  }
-
-  if (cartLines.length === 0) {
+  // Step 5: Resolve items from DB by (productId, sku); reject unknown/unpublished/out-of-stock.
+  // The cart rides along as a JSON string from localStorage, so it is parsed
+  // under the same schema discipline as the form fields — shape AND bounds,
+  // since each line costs a DB lookup below.
+  const cartLines = parseCartField(record['cart'])
+  if (!cartLines) {
     return { ok: false, error: 'errors.cartStale' }
   }
 

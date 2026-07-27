@@ -216,12 +216,36 @@ directly; a proxy on another host needs the port mapping adjusted (see the
 - **`client_max_body_size` ~12M** — product image uploads in the admin
   (~10 MB cap) must not be truncated by the proxy.
 
+- **HTTPS only, with HSTS.** The admin session cookie is issued `Secure`,
+  `HttpOnly`, `SameSite=Lax`. Redirect :80 → :443 and send HSTS so a bookmarked
+  `http://` link never makes a cleartext request carrying that cookie.
+  **The `Secure` flag is decided at image-build time** from
+  `NEXT_PUBLIC_SITE_URL` (`https://…` → on) — like every `NEXT_PUBLIC_*`, so
+  editing `.env` and restarting will not change it; rebuild instead. The build
+  arg defaults to `https://nasteh.bg`, so a normal production image is `Secure`.
+  Confirm after deploy:
+  ```bash
+  curl -si https://nasteh.bg/api/users/login -X POST \
+    -H 'Content-Type: application/json' -d '{"email":"…","password":"…"}' \
+    | grep -i set-cookie      # expect: Secure=true; HttpOnly=true; SameSite=Lax
+  ```
+
 nginx sketch:
 
 ```nginx
+# :80 exists only to bounce to TLS.
 server {
+  listen 80;
+  server_name nasteh.bg;
+  return 301 https://$host$request_uri;
+}
+
+server {
+  listen 443 ssl;
   server_name nasteh.bg;
   client_max_body_size 12m;
+  # 1 year; add `preload` only if you intend to submit to the HSTS preload list.
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
   location / {
     proxy_pass http://127.0.0.1:3000;
     proxy_set_header Host              $host;
@@ -229,9 +253,14 @@ server {
     proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
   }
-  # ... listen 443 ssl; TLS cert config ...
+  # ... TLS cert config ...
 }
 ```
+
+> **`X-Real-IP` is security-relevant, not just cosmetic.** The app trusts it for
+> rate-limit keys. nginx must **overwrite** it with `$remote_addr` as above; if
+> it is merely passed through, a client can forge it and bypass the checkout and
+> contact rate limits.
 
 Caching the media route (`/api/media/file/`) at the proxy is a nice-to-have.
 
@@ -348,6 +377,12 @@ Notes:
 - **`/admin` and `/api` are exempt** — Payload has its own login, and gating them
   would prompt the owner twice per session and break the admin's own API calls.
   The admin is therefore reachable normally while the storefront is locked.
+  **Consequence:** published catalogue data stays readable over the REST API
+  (`/api/products`) while the storefront is gated. That is accepted — the lock
+  is a confusion layer for customers, not a secrecy boundary, and the thing it
+  must prevent (placing an order) *is* blocked, because the order server action
+  lives on a locked page route. Do not put anything genuinely secret in a
+  published collection and rely on the lock to hide it.
 - **`/robots.txt` is exempt** — the container healthcheck polls it; a 401 there
   would put the app in a restart loop.
 - Unlike `NEXT_PUBLIC_*`, these are **runtime** env — verified: the same image
