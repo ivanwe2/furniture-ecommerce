@@ -4,7 +4,7 @@
   "description": "Nasteh OOD furniture-fittings catalog (Payload + Next, self-hosted Docker)",
   "license": "MIT",
   "type": "module",
-  "packageManager": "pnpm@11.10.0",
+  "packageManager": "pnpm@11.10.0+sha512.0b7f8b98060031904c017e3a41eb187a16d40eeb829b95c4f8cb03681761fc4ab53dd219115b9b447f4dce1a05a214764461e7d3703392a9f32f9511ce8c86c8",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
@@ -43,7 +43,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
-    "sharp": "0.34.5",
+    "sharp": "0.35.3",
     "three": "0.160.1",
     "zod": "^3.25.76",
     "zustand": "^5.0.14"

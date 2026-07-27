@@ -5,3 +5,10 @@ allowBuilds:
   esbuild: true
   sharp: true
   unrs-resolver: true
+
+# Force ONE sharp across the tree. Our direct dependency is patched, but
+# next@16 pulls its own sharp for the image optimizer, and <0.35.0 inherits the
+# libvips CVEs (GHSA-f88m-g3jw-g9cj). Without this the vulnerable copy stays
+# installed and reachable. Drop the override once next ships >=0.35 itself.
+overrides:
+  sharp: 0.35.3
