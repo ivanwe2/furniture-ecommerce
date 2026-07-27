@@ -471,6 +471,12 @@ _(Quirks, workarounds, deliberate TODOs the next session must know.)_
   `Logo.tsx` use `--nasteh-*` CSS vars defined in `(payload)/custom.scss`). Added
   `--color-graphite` token. Run those two greps before committing any SVG/color.
   `src/app/icon.svg` keeps raw hex — it's a `.svg` asset, not matched by the grep.
+  **Third guardrail (also invisible locally): "Env key-drift check"** — every key
+  in `.env.example` must also be listed in `.github/workflows/env-keys.txt`, or
+  CI fails on the LAST step (so everything else looks green first). Adding an env
+  key ⇒ regenerate the list in the same commit:
+  `grep -oP '^[A-Z_]+(?==)' .env.example | sort > .github/workflows/env-keys.txt`.
+  Tripped by the SITE_LOCK_* keys (PR #63).
 
 - `wrangler.jsonc` carries Ivan's real bindings (D1 id `85538a45-…`, bucket
   `nasteh-media`, worker `nasteh-bg`) but was an **uncommitted working-tree
