@@ -28,6 +28,7 @@ This file is the contract. Read it at the start of EVERY session.
 | `docs/UI-SPEC.md` | Page-by-page specs, components, BG copy, a11y | Before building/altering any UI |
 | `docs/PHASES.md` | Ordered tasks + acceptance criteria + commit points | Before starting/resuming any task |
 | `docs/REFERENCE.md` | Authoritative code skeletons for high-drift seams | Before implementing anything it covers |
+| `docs/SECURITY.md` | Threat model, the controls and how to re-verify them, audit record + accepted risks | Before touching the order path, auth config, or `src/actions/**` |
 
 Precedence if documents ever conflict: PHASES < UI-SPEC < DATA-MODEL <
 CONVENTIONS < CLOUDFLARE < ARCHITECTURE < CLAUDE.md. Report the conflict in

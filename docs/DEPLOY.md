@@ -202,6 +202,9 @@ docker run --rm -v <project>_media:/media -v "$PWD":/in alpine \
 
 ## 6. Reverse proxy (sysadmin)
 
+> The three settings below are **security-relevant**, not cosmetic — see
+> `docs/SECURITY.md` §5 for what breaks without each.
+
 Terminate TLS and proxy to `127.0.0.1:3000`. The compose publishes the app on
 **loopback only** (not exposed to the network) — a same-host proxy reaches it
 directly; a proxy on another host needs the port mapping adjusted (see the
