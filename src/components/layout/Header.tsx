@@ -20,7 +20,7 @@ export function Header({ categories }: HeaderProps) {
         <div className="flex h-16 items-center gap-6 lg:h-[84px]">
           {/* Logo */}
           <Link href="/" className="shrink-0" aria-label="Настех - начало">
-            <BrandLogo variant="dark" className="h-7 lg:h-9" />
+            <BrandLogo variant="dark" className="h-9 lg:h-11" />
           </Link>
 
           {/* Desktop nav */}
