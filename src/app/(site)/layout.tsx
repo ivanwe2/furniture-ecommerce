@@ -8,6 +8,7 @@ import { PromoBar } from '@/components/layout/PromoBar'
 import Footer from '@/components/layout/Footer'
 import CookieNotice from '@/components/layout/CookieNotice'
 import { CartHydrator } from '@/components/cart/CartHydrator'
+import { ScrollReset } from '@/components/layout/ScrollReset'
 import { getCategoryTree } from '@/lib/payload/queries'
 
 // Self-hosted via next/font (no runtime Google-Fonts call — GDPR + offline).
@@ -48,6 +49,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   return (
     <html lang="bg" className={`${golos.variable} ${mono.variable}`}>
       <body>
+        <ScrollReset />
         <div className="flex min-h-screen flex-col">
           <a href="#main" className="skip-link">
             {t('common.skipToContent')}
