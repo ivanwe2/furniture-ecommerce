@@ -65,6 +65,15 @@ from `getCategoryPath`.
   `useSearchParams` (which opts the subtree into client rendering) and would
   break without JS. Changing sort resets to page 1; paging keeps the sort.
   Sorted views are `noindex, follow` with the canonical on the clean URL.
+- **Brand filter** (`BrandFilterChips`) below the sort row on category
+  listings: „Марка" then Всички + one chip per brand actually present in the
+  category, each with its count. Hidden when fewer than two brands appear
+  (a single chip filters to the same list). Clicking the active chip clears
+  the filter; changing brand or sort resets to page 1. The controls row
+  renders even when the result is empty, so a visitor can pick another brand
+  instead of only clearing. Filtered views are `noindex, follow` too.
+- Filtered-to-nothing empty state uses `filter.emptyForBrand` and offers
+  `filter.clear` back to the unfiltered listing — not the generic home link.
 - ProductCard: cover (card preset, fixed aspect 4:3, object-cover, cream
   letterbox), name (2-line clamp), category (steel, small), price line:
   single item → formatted price; multiple → `catalog.fromPrice` with min
