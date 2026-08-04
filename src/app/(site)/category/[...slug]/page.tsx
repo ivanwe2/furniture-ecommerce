@@ -6,9 +6,11 @@ import { ProductCard } from '@/components/catalog/ProductCard'
 import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import { Pagination } from '@/components/catalog/Pagination'
 import { SortLinks } from '@/components/catalog/SortLinks'
+import { BrandFilterChips } from '@/components/catalog/BrandFilterChips'
 import { payloadSort } from '@/lib/catalog/sort'
+import { listingHref } from '@/lib/catalog/href'
 import BreadcrumbList from '@/components/seo/BreadcrumbList'
-import { getProductsByCategory, getCategoryTree } from '@/lib/payload/queries'
+import { getProductsByCategory, getCategoryTree, getBrandsInCategory } from '@/lib/payload/queries'
 import type { CategoryNode } from '@/lib/payload/queries'
 
 interface CategoryPageProps {
@@ -32,10 +34,12 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
     title: category.name,
     description: metaDesc,
     alternates: { canonical: `/category/${categorySlug}` },
-    // A sorted view is the same products in a different order — let the canonical
-    // above carry the ranking rather than spawning an indexable duplicate per
-    // sort×page combination.
-    ...(resolvedSearch.sort ? { robots: { index: false, follow: true } } : {}),
+    // A sorted or brand-filtered view is a subset/reordering of the same
+    // products — let the canonical above carry the ranking rather than spawning
+    // an indexable duplicate for every sort×brand×page combination.
+    ...(resolvedSearch.sort || resolvedSearch.brand
+      ? { robots: { index: false, follow: true } }
+      : {}),
     openGraph: {
       title: ogTitle,
       description: metaDesc,
@@ -62,12 +66,18 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const breadcrumbs = buildBreadcrumbs(tree, category.id)
 
   // Get products in this category and all descendants
-  const { docs: products, totalPages, page } = await getProductsByCategory(
-    categorySlug,
-    Number(resolvedSearch.page) || 1,
-    24,
-    payloadSort(resolvedSearch.sort),
-  )
+  const activeBrand = Array.isArray(resolvedSearch.brand) ? resolvedSearch.brand[0] : resolvedSearch.brand
+
+  const [{ docs: products, totalPages, page }, brandsInCategory] = await Promise.all([
+    getProductsByCategory(
+      categorySlug,
+      Number(resolvedSearch.page) || 1,
+      24,
+      payloadSort(resolvedSearch.sort),
+      activeBrand,
+    ),
+    getBrandsInCategory(categorySlug),
+  ])
 
   // Find subcategories (direct children of this category)
   const subcategories = category.children ?? []
@@ -129,14 +139,27 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
         {/* Products */}
         <section className="mt-10">
-          {products.length > 0 ? (
-            <>
-              <div className="mb-5 flex flex-col gap-3 border-b border-ink/12 pb-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Controls sit OUTSIDE the results branch on purpose: when a filter
+              matches nothing, the visitor still needs the chips to pick another
+              brand. Inside the branch they vanished, leaving "clear" as the only
+              way out. */}
+          {(products.length > 0 || brandsInCategory.length > 0) && (
+            <div className="mb-5 space-y-3 border-b border-ink/12 pb-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="font-mono text-xs uppercase tracking-[0.16em] text-steel">
                   {t('category.allIn')}
                 </h2>
                 <SortLinks basePath={`/category/${categorySlug}`} params={resolvedSearch} />
               </div>
+              <BrandFilterChips
+                basePath={`/category/${categorySlug}`}
+                params={resolvedSearch}
+                brands={brandsInCategory}
+              />
+            </div>
+          )}
+          {products.length > 0 ? (
+            <>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {products.map((product) => (
                   <ProductCard
@@ -160,12 +183,23 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
             </>
           ) : (
             <div className="border border-ink/14 bg-sand p-10 text-center">
-              <p className="text-ink2">{t('category.empty')}</p>
+              <p className="text-ink2">
+                {activeBrand ? t('filter.emptyForBrand') : t('category.empty')}
+              </p>
+              {/* A filtered-to-nothing listing needs a way back to the full one,
+                  otherwise the only escape is editing the URL. */}
               <Link
-                href="/"
+                href={
+                  activeBrand
+                    ? listingHref(`/category/${categorySlug}`, resolvedSearch, {
+                        brand: undefined,
+                        page: undefined,
+                      })
+                    : '/'
+                }
                 className="mt-3 inline-block font-mono text-xs uppercase tracking-[0.1em] text-brass-dark hover:text-brass"
               >
-                {t('common.home')} →
+                {activeBrand ? t('filter.clear') : t('common.home')} →
               </Link>
             </div>
           )}

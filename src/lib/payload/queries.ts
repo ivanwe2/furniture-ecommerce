@@ -109,6 +109,7 @@ export function getProductsByCategory(
   page: number = 1,
   limit: number = 24,
   sort: string = DEFAULT_PAYLOAD_SORT,
+  brandSlug?: string,
 ) {
   return unstable_cache(
     async () => {
@@ -119,6 +120,17 @@ export function getProductsByCategory(
       const tree = await getCategoryTree()
       const ids = collectSubtreeIds(tree, categorySlug)
       if (ids.length === 0) return { docs: [] as Product[], totalPages: 0, page }
+
+      // An unknown brand slug must narrow to nothing, not be ignored — silently
+      // returning the unfiltered list would tell the visitor these products are
+      // that brand's.
+      let brandId: number | string | null = null
+      if (brandSlug) {
+        const brand = await getBrandBySlug(brandSlug)
+        if (!brand) return { docs: [] as Product[], totalPages: 0, page }
+        brandId = brand.id
+      }
+
       const result = await payload.find({
         collection: 'products',
         depth: 1,
@@ -126,6 +138,7 @@ export function getProductsByCategory(
           and: [
             { status: { equals: 'published' } },
             { category: { in: ids } },
+            ...(brandId !== null ? [{ brand: { equals: brandId } }] : []),
           ],
         },
         sort,
@@ -134,11 +147,11 @@ export function getProductsByCategory(
       })
       return result
     },
-    // `sort` MUST be in the key: without it, page 2 of "най-евтини" would be
-    // served from the cache entry for page 2 of the default ordering — silently
-    // the wrong products, with no error anywhere.
-    ['products-by-category', categorySlug, String(page), String(limit), sort],
-    { tags: ['products', 'categories'] },
+    // `sort` and `brand` MUST be in the key: without them, page 2 of
+    // "най-евтини, само Blum" would be served from the cache entry for page 2
+    // of the plain listing — silently the wrong products, with no error.
+    ['products-by-category', categorySlug, String(page), String(limit), sort, brandSlug ?? ''],
+    { tags: ['products', 'categories', 'brands'] },
   )()
 }
 
@@ -248,6 +261,59 @@ export const getBrandsWithCounts = unstable_cache(
   ['brands-with-counts'],
   { tags: ['brands', 'products'] },
 )
+
+/**
+ * Brands present among a category's published products, with per-category
+ * counts — the filter chips above a category listing.
+ *
+ * Only brands that actually appear here are offered: a chip that returns an
+ * empty grid is a dead end, and the counts let a visitor see the split before
+ * clicking. Counts are scoped to the same descendant id set the listing uses,
+ * so they always match what the filter will show.
+ */
+export function getBrandsInCategory(categorySlug: string) {
+  return unstable_cache(
+    async (): Promise<BrandWithCount[]> => {
+      const payload = await p()
+      const tree = await getCategoryTree()
+      const ids = collectSubtreeIds(tree, categorySlug)
+      if (ids.length === 0) return []
+
+      const { docs } = await payload.find({
+        collection: 'brands',
+        depth: 1, // populates `logo`
+        limit: 200,
+        sort: 'name',
+      })
+
+      const withCounts = await Promise.all(
+        docs.map(async (brand) => {
+          const { totalDocs } = await payload.count({
+            collection: 'products',
+            where: {
+              and: [
+                { status: { equals: 'published' } },
+                { category: { in: ids } },
+                { brand: { equals: brand.id } },
+              ],
+            },
+          })
+          return {
+            id: brand.id,
+            name: brand.name,
+            slug: brand.slug,
+            logo: brand.logo,
+            productCount: totalDocs,
+          }
+        }),
+      )
+
+      return withCounts.filter((b) => b.productCount > 0)
+    },
+    ['brands-in-category', categorySlug],
+    { tags: ['products', 'categories', 'brands'] },
+  )()
+}
 
 export function getProductsByBrand(
   brandSlug: string,

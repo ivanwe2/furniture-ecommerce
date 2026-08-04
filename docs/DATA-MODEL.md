@@ -176,8 +176,13 @@ getProductsByCategory(categorySlug, page=1, limit=24) // tags: [products] — in
 getProductBySlug(slug): Promise<Product | null>       // tags: [product-<slug>]
 getFeaturedProducts(limit=8)                          // tags: [products]
 getBrandBySlug(slug) / getProductsByBrand(slug, page) // tags: [brands, products]
-getProductsByCategory(slug, page, limit, sort)        // includes DESCENDANT categories
-  // via collectSubtreeIds(); `sort` is part of the cache key (see below).
+getProductsByCategory(slug, page, limit, sort, brand) // includes DESCENDANT categories
+  // via collectSubtreeIds(). BOTH `sort` and `brand` are part of the cache
+  // key — omitting either serves a cached page from a different view.
+  // An unknown brand slug returns nothing rather than the unfiltered list.
+getBrandsInCategory(slug): BrandWithCount[]           // tags: [products, categories, brands]
+  // Brands present in that category's subtree, counted over the SAME id set
+  // the listing uses, so chip counts always match the filtered result.
 getBrandsWithCounts(): BrandWithCount[]               // tags: [brands, products]
   // Brands with ≥1 published product + that count. One payload.count per
   // brand (a handful of brands; COUNT stays cheap as products grow). Tagged
