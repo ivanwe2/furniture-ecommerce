@@ -6,6 +6,7 @@ import { ProductCard } from '@/components/catalog/ProductCard'
 import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import { Pagination } from '@/components/catalog/Pagination'
 import { getBrandBySlug, getProductsByBrand } from '@/lib/payload/queries'
+import { imageUrl, imageSrcSet } from '@/lib/images'
 
 interface BrandPageProps {
   params: Promise<{ slug: string }>
@@ -58,10 +59,13 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
 
       {/* Brand info */}
       <header className="mb-8 flex items-center gap-5 border-b border-ink/12 pb-6">
-        {brand.logo && typeof brand.logo === 'object' && 'filename' in brand.logo && (brand.logo as { filename?: string | null }).filename ? (
+        {brand.logo && typeof brand.logo === 'object' && 'filename' in brand.logo && brand.logo.filename ? (
+          // Via images.ts (the project rule) rather than the raw `.url`, so the
+          // sized WebP variants are used instead of the full-size original.
           <img
-            src={(brand.logo as { url?: string | null }).url ?? ''}
-            alt={(brand.logo as { alt?: string | null }).alt ?? brand.name}
+            src={imageUrl(brand.logo, 'card')}
+            srcSet={imageSrcSet(brand.logo, ['thumb', 'card'])}
+            alt={brand.logo.alt ?? brand.name}
             className="h-14 w-auto border border-ink/12 bg-raised object-contain p-2"
           />
         ) : null}

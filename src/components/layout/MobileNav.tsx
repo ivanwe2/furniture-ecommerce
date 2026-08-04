@@ -181,6 +181,13 @@ export function MobileNav({ categories }: MobileNavProps) {
 
             <div className="p-4 border-t border-ink/10 space-y-3">
               <Link
+                href="/brands"
+                className="block text-sm font-medium text-ink hover:text-brass py-2"
+                onClick={() => setOpen(false)}
+              >
+                {t('nav.brands')}
+              </Link>
+              <Link
                 href="/contact"
                 className="block text-sm font-medium text-ink hover:text-brass py-2"
                 onClick={() => setOpen(false)}

@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { HingeBackdrop } from '@/components/home/HingeBackdrop'
-import { getSettings, getCategoryTree, getCompany, type CategoryNode } from '@/lib/payload/queries'
+import { getSettings, getCategoryTree, getCompany, getBrandsWithCounts, type CategoryNode } from '@/lib/payload/queries'
+import { BrandCard } from '@/components/catalog/BrandCard'
 import { imageUrl, imageSrcSet } from '@/lib/images'
 import type { Media } from '@/payload-types'
 
@@ -70,10 +71,11 @@ function CategoryCard({ cat, idx }: { cat: CategoryNode; idx: string }) {
 }
 
 export default async function HomePage() {
-  const [settings, categories, company] = await Promise.all([
+  const [settings, categories, company, brands] = await Promise.all([
     getSettings(),
     getCategoryTree(),
     getCompany(),
+    getBrandsWithCounts(),
   ])
 
   const catalogRoot = categories.find((c) => c.slug === 'mebelen-obkov')
@@ -186,6 +188,38 @@ export default async function HomePage() {
           </div>
         </Container>
       </section>
+
+      {/* Brands — a way into the catalogue for customers who know the maker
+          rather than the category. Hidden entirely when nothing is published,
+          so the homepage never shows an empty rail. */}
+      {brands.length > 0 && (
+        <section className="border-t border-ink/12 py-14 sm:py-16">
+          <Container>
+            <div className="mb-8 flex items-end justify-between gap-4 border-b border-ink/18 pb-5">
+              <div>
+                <div className="mb-2.5 font-mono text-xs uppercase tracking-[0.18em] text-brass-dark">
+                  {t('nav.brands')} / {String(brands.length).padStart(2, '0')}
+                </div>
+                <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-[34px]">
+                  {t('brands.homeTitle')}
+                </h2>
+              </div>
+              <Link
+                href="/brands"
+                className="shrink-0 font-mono text-xs uppercase tracking-[0.1em] text-brass-dark transition-colors hover:text-brass"
+              >
+                {t('home.viewAll')} →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {brands.slice(0, 8).map((brand) => (
+                <BrandCard key={brand.id} brand={brand} />
+              ))}
+            </div>
+          </Container>
+        </section>
+      )}
 
       {/* Trust band */}
       <section className="border-y border-ink/12 bg-sand py-12 sm:py-14">

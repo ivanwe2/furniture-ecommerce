@@ -5,7 +5,7 @@ export const bg = {
     skipToContent: 'Прескочи към съдържанието',
     priceOnRequest: 'по запитване', vatIncluded: 'Цените са с включено ДДС.' },
   nav: { categories: 'Категории', contact: 'Контакти', menu: 'Меню',
-    subcategories: 'Подкатегории', catalog: 'Каталог' },
+    subcategories: 'Подкатегории', catalog: 'Каталог', brands: 'Марки' },
   topbar: { cod: 'Плащане при доставка' },
   home: { featured: 'Акценти', categoriesTitle: 'Категории',
     heroSlogan: 'Мебелен обков · производство и търговия',
@@ -76,6 +76,16 @@ export const bg = {
     tooLong: 'Текстът е твърде дълъг.',
     pageTitle: 'Нещо се обърка' },
   brand: { notFoundTitle: 'Марка не е намерена' },
+  brands: {
+    title: 'Марки',
+    lead: 'Официален представител на водещи производители. Разгледайте продуктите по марка.',
+    countOne: '{count} продукт',
+    countMany: '{count} продукта',
+    empty: 'Все още няма добавени марки.',
+    // Kept short on purpose — at 375px a longer heading wraps to three lines
+    // and crowds the „виж всички" link sitting beside it.
+    homeTitle: 'Нашите марки',
+  },
   notFound: { title: 'Страницата не е намерена',
     body: 'Потърсете продукт или разгледайте категориите.' },
   footer: { info: 'Информация', categories: 'Категории',

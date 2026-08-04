@@ -43,8 +43,11 @@ block.
 - Featured: `getFeaturedProducts(8)` as ProductCard grid (4/2/1 per row).
   Section title `home.featured`.
 - Category grid: top-level categories as image cards with name overlay.
-- SEVROLL strip: brand logo + one line + link to `/brand/sevroll` (only if
-  brand exists — render conditionally).
+- Brand strip: `getBrandsWithCounts()` as `BrandCard` grid (max 8), eyebrow
+  `nav.brands` + count, heading `brands.homeTitle`, „виж всички" → `/brands`.
+  The whole section is omitted when no brand has a published product.
+  (Supersedes the earlier single-brand "SEVROLL strip" spec, which was never
+  built — client asked for all brands with counts, 2026-08-04.)
 - Trust block: three quiet items with icons — years in business /
   наложен платеж / lightning contact (copy keys `home.trust1..3`).
 
@@ -61,6 +64,21 @@ from `getCategoryPath`.
   single item → formatted price; multiple → `catalog.fromPrice` with min
   item price. Whole card is one `<a>`.
 - Empty category: friendly empty state `category.empty` + link home.
+
+## 3b. Brands `/brands` and `/brand/[slug]`
+
+Brands are their own section (`nav.brands` in header, mobile menu and footer),
+**never** a category — they are a parallel way into the catalogue for a customer
+who knows the maker rather than the fitting type.
+
+- `/brands`: heading `brands.title` + lead `brands.lead`, then a `BrandCard`
+  grid (2/3/4 per row). Only brands with ≥1 published product appear.
+- `BrandCard`: logo in a fixed-height box, `object-contain` (supplier artwork
+  varies wildly in proportion — never crop or stretch it), name, and the count
+  in brackets via `productCount()` — `1 продукт` / `2 продукта`. A brand with no
+  logo yet falls back to its name set in the display face, so the grid has no
+  holes.
+- `/brand/[slug]`: unchanged — logo, description, product grid, pagination.
 
 ## 4. Product `/product/[slug]` — the signature page
 

@@ -2,7 +2,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import type { Category, Product } from '@/payload-types'
+import type { Brand, Category, Product } from '@/payload-types'
 import { company as companyDefaults, type CompanyInfo } from '@/lib/company'
 import { searchTokens } from '@/lib/search'
 
@@ -195,6 +195,52 @@ export function getBrandBySlug(slug: string) {
     { tags: [`brand-${slug}`, 'brands'] },
   )()
 }
+
+export type BrandWithCount = Pick<Brand, 'id' | 'name' | 'slug' | 'logo'> & { productCount: number }
+
+/**
+ * Brands that actually have published products, with the count of them —
+ * the client asked for "the brands we offer" with the number in brackets, so a
+ * brand with nothing published is noise and is dropped.
+ *
+ * One `count` per brand rather than fetching every product and tallying in JS:
+ * the catalogue is a handful of brands, and COUNT stays cheap as products grow.
+ * Tagged with both collections so publishing a product refreshes the numbers
+ * (Products and Brands hooks already revalidate 'products' / 'brands').
+ */
+export const getBrandsWithCounts = unstable_cache(
+  async (): Promise<BrandWithCount[]> => {
+    const payload = await p()
+    const { docs } = await payload.find({
+      collection: 'brands',
+      depth: 1, // populates `logo`
+      limit: 200,
+      sort: 'name',
+    })
+
+    const withCounts = await Promise.all(
+      docs.map(async (brand) => {
+        const { totalDocs } = await payload.count({
+          collection: 'products',
+          where: {
+            and: [{ status: { equals: 'published' } }, { brand: { equals: brand.id } }],
+          },
+        })
+        return {
+          id: brand.id,
+          name: brand.name,
+          slug: brand.slug,
+          logo: brand.logo,
+          productCount: totalDocs,
+        }
+      }),
+    )
+
+    return withCounts.filter((b) => b.productCount > 0)
+  },
+  ['brands-with-counts'],
+  { tags: ['brands', 'products'] },
+)
 
 export function getProductsByBrand(brandSlug: string, page: number = 1, limit: number = 24) {
   return unstable_cache(

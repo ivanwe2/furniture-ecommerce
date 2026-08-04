@@ -175,6 +175,10 @@ getProductsByCategory(categorySlug, page=1, limit=24) // tags: [products] — in
 getProductBySlug(slug): Promise<Product | null>       // tags: [product-<slug>]
 getFeaturedProducts(limit=8)                          // tags: [products]
 getBrandBySlug(slug) / getProductsByBrand(slug, page) // tags: [brands, products]
+getBrandsWithCounts(): BrandWithCount[]               // tags: [brands, products]
+  // Brands with ≥1 published product + that count. One payload.count per
+  // brand (a handful of brands; COUNT stays cheap as products grow). Tagged
+  // with BOTH collections so publishing a product refreshes the numbers.
 searchProducts(q): Promise<Product[]>                 // tags: [products] — §7 semantics
 getPage(slug): Promise<Page | null>                   // tags: [page-<slug>]
 getSettings(): Promise<SiteSettings>                  // tags: [settings]
