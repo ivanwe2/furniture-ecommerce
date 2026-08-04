@@ -59,6 +59,12 @@ from `getCategoryPath`.
   products of all descendants (grid + pagination) under `category.allIn`.
 - Leaf: heading + description + product grid, pagination (24/page, numbered
   `?page=N` links — real links, SSR, no infinite scroll).
+- **Sort control** (`SortLinks`) above the grid on category + brand listings:
+  `sort.label` then chips По име / Най-евтини / Най-скъпи / Най-нови, active
+  chip in brass. Plain `<Link>`s, never a JS `<select>` — a select would need
+  `useSearchParams` (which opts the subtree into client rendering) and would
+  break without JS. Changing sort resets to page 1; paging keeps the sort.
+  Sorted views are `noindex, follow` with the canonical on the clean URL.
 - ProductCard: cover (card preset, fixed aspect 4:3, object-cover, cream
   letterbox), name (2-line clamp), category (steel, small), price line:
   single item → formatted price; multiple → `catalog.fromPrice` with min

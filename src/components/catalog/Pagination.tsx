@@ -1,19 +1,26 @@
 import Link from 'next/link'
 import { t } from '@/lib/i18n/bg'
+import { listingHref, type ListingParams } from '@/lib/catalog/href'
 
 /**
- * Prev / „страница N от M" / next pager (redesign R4). `basePath` carries the
- * leading path (e.g. `/category/panti`); the page number is appended as
- * `?page=`. Renders nothing for a single page; edge buttons show disabled.
+ * Prev / „страница N от M" / next pager (redesign R4). Renders nothing for a
+ * single page; edge buttons show disabled.
+ *
+ * `params` is the page's current searchParams and should always be passed:
+ * links go through `listingHref` so the active sort and brand filter survive
+ * paging. The previous version hardcoded `?page=N`, which silently dropped them
+ * and showed a different list than the one being paged through.
  */
 export function Pagination({
   basePath,
   page,
   totalPages,
+  params = {},
 }: {
   basePath: string
   page: number
   totalPages: number
+  params?: ListingParams
 }) {
   if (totalPages <= 1) return null
 
@@ -27,7 +34,10 @@ export function Pagination({
       className="mt-10 flex items-center justify-center gap-3 font-mono text-xs uppercase tracking-[0.1em]"
     >
       {page > 1 ? (
-        <Link href={`${basePath}?page=${page - 1}`} className={`${edge} ${active}`}>
+        <Link
+          href={listingHref(basePath, params, { page: page - 1 })}
+          className={`${edge} ${active}`}
+        >
           ← {t('common.back')}
         </Link>
       ) : (
@@ -37,7 +47,10 @@ export function Pagination({
         {t('common.pageOf').replace('{page}', String(page)).replace('{total}', String(totalPages))}
       </span>
       {page < totalPages ? (
-        <Link href={`${basePath}?page=${page + 1}`} className={`${edge} ${active}`}>
+        <Link
+          href={listingHref(basePath, params, { page: page + 1 })}
+          className={`${edge} ${active}`}
+        >
           {t('common.next')} →
         </Link>
       ) : (

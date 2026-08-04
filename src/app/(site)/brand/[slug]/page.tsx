@@ -5,6 +5,8 @@ import { Container } from '@/components/ui'
 import { ProductCard } from '@/components/catalog/ProductCard'
 import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import { Pagination } from '@/components/catalog/Pagination'
+import { SortLinks } from '@/components/catalog/SortLinks'
+import { payloadSort } from '@/lib/catalog/sort'
 import { getBrandBySlug, getProductsByBrand } from '@/lib/payload/queries'
 import { imageUrl, imageSrcSet } from '@/lib/images'
 
@@ -13,8 +15,9 @@ interface BrandPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export async function generateMetadata({ params }: BrandPageProps) {
+export async function generateMetadata({ params, searchParams }: BrandPageProps) {
   const resolvedParams = await params
+  const resolvedSearch = await searchParams
   const brand = await getBrandBySlug(resolvedParams.slug)
   if (!brand) return { title: t('brand.notFoundTitle') }
   const siteName = t('seo.siteName')
@@ -23,6 +26,8 @@ export async function generateMetadata({ params }: BrandPageProps) {
     title: brand.name,
     description: t('seo.brandDesc').replace('{name}', brand.name),
     alternates: { canonical: `/brand/${brand.slug}` },
+    // See the category page — sorted views are not separately indexable.
+    ...(resolvedSearch.sort ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       title: `${brand.name} | ${siteName}`,
       description: t('seo.brandDesc').replace('{name}', brand.name),
@@ -45,6 +50,7 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
     resolvedParams.slug,
     Number(resolvedSearch.page) || 1,
     24,
+    payloadSort(resolvedSearch.sort),
   )
 
   return (
@@ -79,6 +85,9 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
       {/* Products */}
       {products.length > 0 ? (
         <>
+          <div className="mb-5 flex justify-end">
+            <SortLinks basePath={`/brand/${resolvedParams.slug}`} params={resolvedSearch} />
+          </div>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product) => (
               <ProductCard key={product.id} product={{
@@ -90,7 +99,12 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
               }} />
             ))}
           </div>
-          <Pagination basePath={`/brand/${resolvedParams.slug}`} page={page ?? 1} totalPages={totalPages} />
+          <Pagination
+            basePath={`/brand/${resolvedParams.slug}`}
+            page={page ?? 1}
+            totalPages={totalPages}
+            params={resolvedSearch}
+          />
         </>
       ) : (
         <div className="border border-ink/14 bg-sand p-10 text-center">
