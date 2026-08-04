@@ -306,6 +306,7 @@ export interface Product {
     | null;
   featured?: boolean | null;
   searchText?: string | null;
+  minPriceEurCents?: number | null;
   /**
    * Не е задължително. Ако оставите полетата празни, заглавието и описанието за търсачки се генерират автоматично от името и описанието на продукта. Попълнете само ако искате различен текст.
    */
@@ -640,6 +641,7 @@ export interface ProductsSelect<T extends boolean = true> {
       };
   featured?: T;
   searchText?: T;
+  minPriceEurCents?: T;
   seo?:
     | T
     | {

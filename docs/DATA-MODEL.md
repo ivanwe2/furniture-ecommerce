@@ -57,6 +57,7 @@ slug + `revalidateTag('brands')` + `revalidateTag('products')`.
 | `items` | array, **minRows 1**, label "Артикули (SKU)" | see below | THE central field |
 | `featured` | checkbox | default false, label "Показвай на началната страница" | |
 | `searchText` | text | `admin.hidden: true` | derived — see §Search |
+| `minPriceEurCents` | number | `admin.hidden: true`, indexed | derived in `beforeValidate` as `MIN(items[].priceEurCents)`. Payload cannot sort on an array subfield, so this is the sort key for price ordering. NULL when a product has no items. |
 | `seo` | group `{ title, description }` | optional overrides | |
 
 `items` row:
@@ -175,6 +176,8 @@ getProductsByCategory(categorySlug, page=1, limit=24) // tags: [products] — in
 getProductBySlug(slug): Promise<Product | null>       // tags: [product-<slug>]
 getFeaturedProducts(limit=8)                          // tags: [products]
 getBrandBySlug(slug) / getProductsByBrand(slug, page) // tags: [brands, products]
+getProductsByCategory(slug, page, limit, sort)        // includes DESCENDANT categories
+  // via collectSubtreeIds(); `sort` is part of the cache key (see below).
 getBrandsWithCounts(): BrandWithCount[]               // tags: [brands, products]
   // Brands with ≥1 published product + that count. One payload.count per
   // brand (a handful of brands; COUNT stays cheap as products grow). Tagged

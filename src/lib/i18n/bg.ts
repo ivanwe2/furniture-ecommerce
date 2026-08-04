@@ -29,6 +29,13 @@ export const bg = {
     trust3Body: 'Свържете се за оферта, наличности и съвет.' },
   catalog: { fromPrice: 'от {price}', from: 'от', inStock: 'в наличност',
     outOfStock: 'изчерпан' },
+  sort: {
+    label: 'Подреди',
+    nameAsc: 'По име',
+    priceAsc: 'Най-евтини',
+    priceDesc: 'Най-скъпи',
+    newest: 'Най-нови',
+  },
   category: { allIn: 'Всички продукти в категорията',
     empty: 'Все още няма продукти в тази категория.',
     notFoundTitle: 'Категория не е намерена' },

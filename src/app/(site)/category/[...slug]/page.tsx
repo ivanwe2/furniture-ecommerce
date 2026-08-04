@@ -5,6 +5,8 @@ import { Container } from '@/components/ui'
 import { ProductCard } from '@/components/catalog/ProductCard'
 import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import { Pagination } from '@/components/catalog/Pagination'
+import { SortLinks } from '@/components/catalog/SortLinks'
+import { payloadSort } from '@/lib/catalog/sort'
 import BreadcrumbList from '@/components/seo/BreadcrumbList'
 import { getProductsByCategory, getCategoryTree } from '@/lib/payload/queries'
 import type { CategoryNode } from '@/lib/payload/queries'
@@ -14,8 +16,9 @@ interface CategoryPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export async function generateMetadata({ params }: CategoryPageProps) {
+export async function generateMetadata({ params, searchParams }: CategoryPageProps) {
   const resolvedParams = await params
+  const resolvedSearch = await searchParams
   const slugParts = Array.isArray(resolvedParams.slug) ? resolvedParams.slug : [resolvedParams.slug]
   const categorySlug = slugParts[slugParts.length - 1] ?? ''
   const tree = await getCategoryTree()
@@ -29,6 +32,10 @@ export async function generateMetadata({ params }: CategoryPageProps) {
     title: category.name,
     description: metaDesc,
     alternates: { canonical: `/category/${categorySlug}` },
+    // A sorted view is the same products in a different order — let the canonical
+    // above carry the ranking rather than spawning an indexable duplicate per
+    // sort×page combination.
+    ...(resolvedSearch.sort ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       title: ogTitle,
       description: metaDesc,
@@ -55,7 +62,12 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const breadcrumbs = buildBreadcrumbs(tree, category.id)
 
   // Get products in this category and all descendants
-  const { docs: products, totalPages, page } = await getProductsByCategory(categorySlug, Number(resolvedSearch.page) || 1, 24)
+  const { docs: products, totalPages, page } = await getProductsByCategory(
+    categorySlug,
+    Number(resolvedSearch.page) || 1,
+    24,
+    payloadSort(resolvedSearch.sort),
+  )
 
   // Find subcategories (direct children of this category)
   const subcategories = category.children ?? []
@@ -119,9 +131,12 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         <section className="mt-10">
           {products.length > 0 ? (
             <>
-              <h2 className="mb-5 border-b border-ink/12 pb-3 font-mono text-xs uppercase tracking-[0.16em] text-steel">
-                {t('category.allIn')}
-              </h2>
+              <div className="mb-5 flex flex-col gap-3 border-b border-ink/12 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="font-mono text-xs uppercase tracking-[0.16em] text-steel">
+                  {t('category.allIn')}
+                </h2>
+                <SortLinks basePath={`/category/${categorySlug}`} params={resolvedSearch} />
+              </div>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {products.map((product) => (
                   <ProductCard
@@ -136,7 +151,12 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                   />
                 ))}
               </div>
-              <Pagination basePath={`/category/${categorySlug}`} page={page ?? 1} totalPages={totalPages} />
+              <Pagination
+                basePath={`/category/${categorySlug}`}
+                page={page ?? 1}
+                totalPages={totalPages}
+                params={resolvedSearch}
+              />
             </>
           ) : (
             <div className="border border-ink/14 bg-sand p-10 text-center">
