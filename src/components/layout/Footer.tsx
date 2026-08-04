@@ -16,6 +16,7 @@ export default async function Footer({ categories }: FooterProps) {
   const company = await getCompany()
 
   const infoLinks = [
+    { href: '/brands', label: t('nav.brands') },
     { href: '/terms', label: t('legal.terms') },
     { href: '/privacy', label: t('legal.privacy') },
     { href: '/delivery-payment', label: t('legal.deliveryPayment') },

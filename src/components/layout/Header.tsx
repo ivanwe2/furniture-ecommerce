@@ -27,6 +27,12 @@ export function Header({ categories }: HeaderProps) {
           <nav className="hidden flex-1 items-center gap-7 lg:flex">
             <MegaMenu categories={categories} />
             <Link
+              href="/brands"
+              className="font-mono text-xs uppercase tracking-[0.13em] text-ink transition-colors hover:text-brass"
+            >
+              {t('nav.brands')}
+            </Link>
+            <Link
               href="/contact"
               className="font-mono text-xs uppercase tracking-[0.13em] text-ink transition-colors hover:text-brass"
             >
