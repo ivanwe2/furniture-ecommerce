@@ -121,6 +121,10 @@ export const Products: CollectionConfig = {
       label: 'Показвай на началната страница',
     },
     { name: 'searchText', type: 'text', admin: { hidden: true } },
+    // Derived from items[].priceEurCents in beforeValidate — the sort key for
+    // price ordering. Indexed because every "cheapest/priciest first" listing
+    // orders by it. Hidden: the owner edits item prices, never this.
+    { name: 'minPriceEurCents', type: 'number', index: true, admin: { hidden: true } },
     {
       name: 'seo',
       type: 'group',
@@ -190,6 +194,20 @@ export const Products: CollectionConfig = {
         }
         if (brandName) parts.push(brandName)
         data.searchText = parts.join(' ').toLowerCase()
+
+        // Denormalise the cheapest item price so listings can sort by price.
+        // Prices live in the `items` array and Payload cannot sort on an array
+        // subfield, so without this column "най-евтини" is impossible. Kept in
+        // step with `items` on every save, exactly like searchText above.
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          const prices = data.items
+            .map((it) => Number(it?.priceEurCents))
+            .filter((n) => Number.isFinite(n))
+          data.minPriceEurCents = prices.length > 0 ? Math.min(...prices) : null
+        } else {
+          data.minPriceEurCents = null
+        }
+
         return data
       },
     ],

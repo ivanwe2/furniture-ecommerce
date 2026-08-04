@@ -5,6 +5,11 @@ import config from '@payload-config'
 import type { Brand, Category, Product } from '@/payload-types'
 import { company as companyDefaults, type CompanyInfo } from '@/lib/company'
 import { searchTokens } from '@/lib/search'
+import { payloadSort as toPayloadSort, DEFAULT_SORT } from '@/lib/catalog/sort'
+import { collectSubtreeIds } from '@/lib/catalog/category-tree'
+
+/** Payload sort string for the default ordering — see lib/catalog/sort.ts. */
+const DEFAULT_PAYLOAD_SORT = toPayloadSort(DEFAULT_SORT)
 
 async function p() {
   return getPayload({ config })
@@ -99,21 +104,20 @@ export const getCategoryPath = async (id: number | string): Promise<CategoryNode
   return findPath(tree, String(id)) ?? []
 }
 
-export function getProductsByCategory(categorySlug: string, page: number = 1, limit: number = 24) {
+export function getProductsByCategory(
+  categorySlug: string,
+  page: number = 1,
+  limit: number = 24,
+  sort: string = DEFAULT_PAYLOAD_SORT,
+) {
   return unstable_cache(
     async () => {
       const payload = await p()
-      // Get all descendant category IDs
+      // The category plus every descendant — products hang off the leaves while
+      // customers browse from the parent. See collectSubtreeIds for the bug the
+      // previous inline version had.
       const tree = await getCategoryTree()
-      const collectIds = (nodes: CategoryNode[]): string[] => {
-        const ids: string[] = []
-        for (const n of nodes) {
-          if (n.slug === categorySlug) ids.push(String(n.id))
-          ids.push(...collectIds(n.children))
-        }
-        return ids
-      }
-      const ids = collectIds(tree)
+      const ids = collectSubtreeIds(tree, categorySlug)
       if (ids.length === 0) return { docs: [] as Product[], totalPages: 0, page }
       const result = await payload.find({
         collection: 'products',
@@ -124,13 +128,16 @@ export function getProductsByCategory(categorySlug: string, page: number = 1, li
             { category: { in: ids } },
           ],
         },
-        sort: 'name',
+        sort,
         limit,
         page,
       })
       return result
     },
-    ['products-by-category', categorySlug, String(page), String(limit)],
+    // `sort` MUST be in the key: without it, page 2 of "най-евтини" would be
+    // served from the cache entry for page 2 of the default ordering — silently
+    // the wrong products, with no error anywhere.
+    ['products-by-category', categorySlug, String(page), String(limit), sort],
     { tags: ['products', 'categories'] },
   )()
 }
@@ -242,7 +249,12 @@ export const getBrandsWithCounts = unstable_cache(
   { tags: ['brands', 'products'] },
 )
 
-export function getProductsByBrand(brandSlug: string, page: number = 1, limit: number = 24) {
+export function getProductsByBrand(
+  brandSlug: string,
+  page: number = 1,
+  limit: number = 24,
+  sort: string = DEFAULT_PAYLOAD_SORT,
+) {
   return unstable_cache(
     async () => {
       const payload = await p()
@@ -257,13 +269,14 @@ export function getProductsByBrand(brandSlug: string, page: number = 1, limit: n
             { brand: { equals: brand.id } },
           ],
         },
-        sort: 'name',
+        sort,
         limit,
         page,
       })
       return result
     },
-    ['products-by-brand', brandSlug, String(page), String(limit)],
+    // `sort` in the key for the same reason as the category listing above.
+    ['products-by-brand', brandSlug, String(page), String(limit), sort],
     { tags: ['products', 'brands'] },
   )()
 }
