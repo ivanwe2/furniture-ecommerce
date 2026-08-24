@@ -327,8 +327,6 @@ const smooth = (x: number) => {
  *  with `tlmenie` never slams, and that deceleration IS the product feature. */
 const softClose = (x: number) => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3.2)
 
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t
-
 /** Horizontal field of view; vertical is derived per-aspect in `resize`. */
 const HFOV_DEG = 30
 
