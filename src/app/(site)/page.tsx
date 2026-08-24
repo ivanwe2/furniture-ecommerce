@@ -135,7 +135,7 @@ export default async function HomePage() {
               <span className="hidden h-3 w-px bg-ink/20 sm:inline-block" aria-hidden="true" />
               <span>гр. {company.city}</span>
               <span className="hidden h-3 w-px bg-ink/20 sm:inline-block" aria-hidden="true" />
-              <span>{t('home.statCod')}</span>
+              <span>{t('home.statRep')}</span>
             </div>
           </div>
         </Container>

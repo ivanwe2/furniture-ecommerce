@@ -1,9 +1,11 @@
-import { t } from '@/lib/i18n/bg'
 import { getCompany } from '@/lib/payload/queries'
 
 /**
- * Dark promo top-bar (redesign 1A). Company identity + COD reassurance in the
- * mono/uppercase technical treatment. Scrolls away above the sticky header.
+ * Dark promo top-bar (redesign 1A). Company identity in the mono/uppercase
+ * technical treatment. Scrolls away above the sticky header.
+ *
+ * Payment terms deliberately do NOT appear here: the client asked for
+ * "наложен платеж" to be stated only in the cart/checkout, not on every page.
  */
 export async function PromoBar() {
   const company = await getCompany()
@@ -14,11 +16,7 @@ export async function PromoBar() {
         <span className="hidden truncate uppercase sm:inline">
           {company.name} · гр. {company.city}, {company.addressLine}
         </span>
-        <span className="shrink-0 uppercase">
-          {company.phoneDisplay}
-          <span className="mx-2 text-on-dark-muted">·</span>
-          {t('topbar.cod')}
-        </span>
+        <span className="shrink-0 uppercase">{company.phoneDisplay}</span>
       </div>
     </div>
   )

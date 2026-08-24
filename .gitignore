@@ -62,4 +62,5 @@ node_modules/
 .wrangler
 
 # Local screenshot helper (redesign visual checks) — dev-only, never commit
-/_shot.mjs
+# (frame capture + canvas measurement helpers land here too, hence the glob)
+/_*.mjs
