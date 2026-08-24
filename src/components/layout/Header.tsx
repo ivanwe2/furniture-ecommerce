@@ -23,7 +23,8 @@ export function Header({ categories }: HeaderProps) {
   const pathname = usePathname()
   // Client feedback: „да се махне отгоре" — the mark should not sit over the
   // hero. Only the homepage hides the bar; every other page is entered by
-  // navigation and must offer its nav immediately.
+  // navigation and must offer its nav immediately. (And only from lg up — see
+  // the class list below.)
   const hidesAtTop = pathname === '/'
   const [scrolledPast, setScrolledPast] = useState(false)
   const [tabbedInto, setTabbedInto] = useState(false)
@@ -58,7 +59,11 @@ export function Header({ categories }: HeaderProps) {
       className={clsx(
         'sticky top-0 z-40 border-b border-ink/12 bg-cream',
         'transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none',
-        !revealed && '-translate-y-full opacity-0 pointer-events-none',
+        // Desktop only. Below lg the bar always stays put: on a phone hiding it
+        // would also take the burger menu and the cart off the landing screen,
+        // and there is no room up there for the brand statement anyway. Gated in
+        // CSS rather than by matchMedia so there is no viewport guess to hydrate.
+        !revealed && 'lg:-translate-y-full lg:opacity-0 lg:pointer-events-none',
       )}
     >
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
