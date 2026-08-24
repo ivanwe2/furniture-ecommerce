@@ -4,6 +4,10 @@ export const bg = {
     unitDefault: 'бр.', pageOf: 'Страница {page} от {total}',
     skipToContent: 'Прескочи към съдържанието',
     priceOnRequest: 'по запитване', vatIncluded: 'Цените са с включено ДДС.' },
+  logo: { name: 'Настех',
+    // „НАСТЕХ" set with Latin look-alike capitals + interpuncts, as on the
+    // storefront sign. Decorative only — the accessible name is logo.name.
+    wordmark: 'H·A·C·T·E·X·' },
   nav: { categories: 'Категории', contact: 'Контакти', menu: 'Меню',
     subcategories: 'Подкатегории', catalog: 'Каталог', brands: 'Марки' },
   home: { featured: 'Акценти', categoriesTitle: 'Категории',

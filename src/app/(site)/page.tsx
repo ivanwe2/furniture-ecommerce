@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
+import { SignBand } from '@/components/home/SignBand'
 import { HingeBackdrop } from '@/components/home/HingeBackdrop'
 import { getSettings, getCategoryTree, getCompany, getBrandsWithCounts, type CategoryNode } from '@/lib/payload/queries'
 import { BrandCard } from '@/components/catalog/BrandCard'
@@ -140,6 +141,9 @@ export default async function HomePage() {
           </div>
         </Container>
       </section>
+
+      {/* The storefront sign — the wordmark on its own dark fascia. */}
+      <SignBand />
 
       {/* Categories */}
       <section className="py-14 sm:py-20">

@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Golos_Text, IBM_Plex_Mono } from 'next/font/google'
+import { Golos_Text, IBM_Plex_Mono, Montserrat } from 'next/font/google'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { Header } from '@/components/layout/Header'
@@ -28,6 +28,17 @@ const mono = IBM_Plex_Mono({
   display: 'swap',
 })
 
+// The wordmark face. The storefront sign is set in Factor (Iconian), which is
+// licensed personal-use only — Montserrat ExtraLight is the closest match that
+// is free for commercial use (OFL). Latin subset only: the mark is „НАСТЕХ"
+// drawn with Latin look-alike capitals (H A C T E X), as on the sign itself.
+const wordmark = Montserrat({
+  subsets: ['latin'],
+  weight: ['200'],
+  variable: '--font-montserrat',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   title: {
     default: t('seo.homeTitle'),
@@ -47,7 +58,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const categories = await getCategoryTree()
 
   return (
-    <html lang="bg" className={`${golos.variable} ${mono.variable}`}>
+    <html lang="bg" className={`${golos.variable} ${mono.variable} ${wordmark.variable}`}>
       <body>
         <ScrollReset />
         <div className="flex min-h-screen flex-col">

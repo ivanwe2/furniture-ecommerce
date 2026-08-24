@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Container } from '@/components/ui'
-import { BrandLogo } from './BrandLogo'
+import { Wordmark } from './Wordmark'
 import { t } from '@/lib/i18n/bg'
 import { getCompany, type CategoryNode } from '@/lib/payload/queries'
 
@@ -31,7 +31,7 @@ export default async function Footer({ categories }: FooterProps) {
         <div className="grid gap-10 border-b border-on-dark-bright/12 pb-11 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1.1fr]">
           {/* Brand + tagline */}
           <div>
-            <BrandLogo variant="cream" className="h-10" />
+            <Wordmark className="text-on-dark-bright text-[17px]" />
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-on-dark-muted">
               {t('footer.tagline')}
             </p>
