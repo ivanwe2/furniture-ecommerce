@@ -427,6 +427,16 @@ Notes:
   `docker compose exec -u root app chown -R 1001:1001 /app/media` (or, for a
   bind-mount, `chown -R 1001:1001 <hostpath>` on the host). Ownership persists,
   so this is a one-time fix per volume.
+- **Uploads have two size ceilings, and both bite before sharp runs.** The
+  proxy's `client_max_body_size` (§6, set it to `12m`) is the outer one — below
+  it, nginx answers `413` and the app never sees the request. The inner one is
+  Next's `middlewareClientMaxBodySize` (10MB default), which applies to any path
+  the **middleware matcher** matches: a matched upload larger than the cap is
+  silently TRUNCATED and Payload then fails with `Unexpected end of form` (a 500
+  + unhandledRejection, not a clear "file too large"). `src/middleware.ts`
+  therefore excludes `api` from its matcher — do not re-add it when editing the
+  site-lock gate. Symptom to recognise: uploads under ~10MB work, larger ones
+  500 instantly. Regression test: `src/middleware.test.ts`.
 
 ---
 
