@@ -124,5 +124,15 @@ export const config = {
   // every page. The redirect lookups below are exact-key map hits (all keys
   // start `index.php`/`controller=`), so the wider matcher adds no new
   // redirects. Static assets are skipped — they carry no content worth gating.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  //
+  // `api` is excluded deliberately, and it is NOT merely an optimisation:
+  // Next buffers a request body to hand it to middleware, capped by
+  // `middlewareClientMaxBodySize` (10MB default). A matched /api/media upload
+  // larger than that is TRUNCATED, and Payload's multipart parser then dies
+  // with "Unexpected end of form" — a 500 and an unhandledRejection, i.e. any
+  // product photo over 10MB fails to upload. `isLockExempt` already exempts
+  // /api from the lock, so skipping it here changes no behaviour.
+  // The `(?:/|$)` boundary matters: a bare `api` alternative would also exclude
+  // look-alikes such as /apixyz, quietly leaving them outside the lock.
+  matcher: ['/((?!api(?:/|$)|_next/static|_next/image|favicon.ico).*)'],
 }
