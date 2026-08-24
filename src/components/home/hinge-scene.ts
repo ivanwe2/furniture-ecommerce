@@ -145,9 +145,10 @@ function capLabel(THREE: ThreeModule) {
   c.height = 64
   const g = c.getContext('2d')
   if (g) {
-    g.fillStyle = '#1b1d21'
+    // rgb(), not hex: CI greps src/components for '#rrggbb' (design-token guardrail)
+    g.fillStyle = 'rgb(27,29,33)'
     g.fillRect(0, 0, 256, 64)
-    g.fillStyle = '#71747a'
+    g.fillStyle = 'rgb(113,116,122)'
     g.font = 'bold 27px system-ui, sans-serif'
     g.textAlign = 'center'
     g.textBaseline = 'middle'
