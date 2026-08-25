@@ -49,7 +49,7 @@
   --font-display: var(--font-golos), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-golos), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex), ui-monospace, 'SFMono-Regular', Menlo, monospace;
-  --font-wordmark: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-wordmark: var(--font-wordmark-face), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {

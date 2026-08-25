@@ -3,8 +3,10 @@ import { t } from '@/lib/i18n/bg'
 
 /**
  * The Настех wordmark, as it appears on the storefront fascia: „НАСТЕХ" drawn
- * with Latin look-alike capitals and interpuncts, hairline weight, wide
- * tracking, light on a dark ground.
+ * with Latin look-alike capitals, hairline weight, wide tracking.
+ *
+ * The face is Factor Expanded with its built-in dots stripped — Factor renders
+ * a lone "H" as "H·", which is why the sign appears to be studded with them.
  *
  * Real text rather than an SVG, so it stays crisp at any size and needs no
  * asset pipeline. The letters are decorative — a screen reader would say
@@ -24,7 +26,7 @@ export function Wordmark({ className, tracking = '0.3em' }: { className?: string
       // `tracking-[…]` classes have equal specificity, so which one wins would
       // depend on stylesheet order rather than on the caller.
       style={{ letterSpacing: tracking, textIndent: tracking }}
-      className={clsx('font-wordmark whitespace-nowrap font-extralight leading-none', className)}
+      className={clsx('font-wordmark whitespace-nowrap leading-none', className)}
     >
       <span aria-hidden="true">{t('logo.wordmark')}</span>
     </span>
