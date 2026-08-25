@@ -32,17 +32,32 @@ export function Header({ categories }: HeaderProps) {
       const id = requestAnimationFrame(() => setRevealed(true))
       return () => cancelAnimationFrame(id)
     }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry) return
-        // `top < 0` distinguishes "scrolled up past it" from "still below the
-        // fold", which both report isIntersecting === false.
-        setRevealed(!entry.isIntersecting && entry.boundingClientRect.top < 0)
-      },
-      { threshold: 0 },
-    )
+
+    const evaluate = () => {
+      const rect = sentinel.getBoundingClientRect()
+      // A page shorter than the viewport can never scroll the band away, so
+      // waiting for it would leave that page with NO navigation at all — an
+      // empty cart is exactly that. Show the bar when the band is out of
+      // reach, as well as when it has actually been scrolled past.
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+      const sentinelTop = rect.top + window.scrollY
+      setRevealed(sentinelTop > maxScroll || rect.top < 0)
+    }
+
+    // `top < 0` is what distinguishes "scrolled up past it" from "still below
+    // the fold", which both report isIntersecting === false.
+    const io = new IntersectionObserver(evaluate, { threshold: 0 })
     io.observe(sentinel)
-    return () => io.disconnect()
+    // Page height is not fixed — a cart gains rows, an accordion opens — and
+    // that changes whether the band is reachable at all.
+    const ro = new ResizeObserver(evaluate)
+    ro.observe(document.body)
+    const id = requestAnimationFrame(evaluate)
+    return () => {
+      io.disconnect()
+      ro.disconnect()
+      cancelAnimationFrame(id)
+    }
   }, [])
 
   const showBar = revealed || tabbedInto
