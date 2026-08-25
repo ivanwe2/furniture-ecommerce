@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { MegaMenu } from './MegaMenu'
@@ -16,6 +17,10 @@ interface HeaderProps {
 }
 
 export function Header({ categories }: HeaderProps) {
+  // Re-run per route: the band only exists on the landing page, so navigating
+  // away leaves the observer watching a detached node and the bar would stay
+  // hidden on a page that has no band at all.
+  const pathname = usePathname()
   // The bar is hidden while the sign band is on screen and slides into its place
   // once it scrolls away. The trigger is a sentinel at the band's base rather
   // than a pixel threshold, so it stays correct whatever height the band takes
@@ -58,7 +63,7 @@ export function Header({ categories }: HeaderProps) {
       ro.disconnect()
       cancelAnimationFrame(id)
     }
-  }, [])
+  }, [pathname])
 
   const showBar = revealed || tabbedInto
 
@@ -75,18 +80,18 @@ export function Header({ categories }: HeaderProps) {
       className={clsx(
         'sticky top-0 z-40 border-b border-ink/12 bg-cream',
         'transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none',
-        // Desktop only. Below lg the bar always stays put: on a phone hiding it
-        // would also take the burger menu and the cart off the landing screen,
-        // and there is no room up there for the brand statement anyway. Gated in
-        // CSS rather than by matchMedia so there is no viewport guess to hydrate.
-        !showBar && 'lg:-translate-y-full lg:opacity-0 lg:pointer-events-none',
+        // Every width, not just desktop: the band is the top of the landing page
+        // on phones too, and the bar slides in behind it. This only ever applies
+        // where a band exists — inner pages have none, so the bar is present the
+        // moment they load.
+        !showBar && '-translate-y-full opacity-0 pointer-events-none',
       )}
     >
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center gap-6 lg:h-[84px]">
           {/* Logo */}
           <Link href="/" className="shrink-0" aria-label={t('logo.name')}>
-            <Wordmark className="text-ink text-[13px] lg:text-[15px]" tracking="0.14em" />
+            <Wordmark className="text-ink text-[13px] lg:text-[15px]" tracking="0.14em" stroke="0.35px" />
           </Link>
 
           {/* Desktop nav */}

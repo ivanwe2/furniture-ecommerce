@@ -1,17 +1,26 @@
-import { Wordmark } from '@/components/layout/Wordmark'
+'use client'
+
+import { usePathname } from 'next/navigation'
+import { Wordmark } from './Wordmark'
 
 /**
- * The storefront sign, rebuilt at the top of every page: the wordmark alone on
- * a dark fascia, directly under the info strip so the two read as one shopfront.
+ * The storefront sign at the top of the landing page: the wordmark alone on a
+ * dark fascia, directly under the info strip so the two read as one shopfront.
  *
- * Client feedback — the business-card lockup „мн мн не се вижда", so the mark
- * leaves the header and gets a band where it can actually be read. Scrolling
- * takes the band away and the sticky header slides into its place; the sentinel
- * below is what tells the header when that moment is (see Header.tsx), which
- * keeps the trigger tied to the band's real height at every breakpoint instead
- * of to a hard-coded scroll offset.
+ * Landing only. On inner pages the navbar already carries the mark, and a
+ * full-width band there would just push the content down — the visitor has
+ * arrived by navigation and wants the page, not the shopfront again.
+ *
+ * Scrolling takes the band away and the sticky header slides into its place;
+ * the sentinel below is what tells the header when that moment is, which ties
+ * the trigger to the band's real height at each breakpoint rather than to a
+ * hard-coded scroll offset. Its ABSENCE is equally meaningful: on a page with
+ * no band the header simply stays visible (see Header.tsx).
  */
 export function SignBand() {
+  const pathname = usePathname()
+  if (pathname !== '/') return null
+
   return (
     <section className="bg-dark">
       <div className="flex items-center justify-center px-6 py-9 sm:py-10 lg:py-12">
