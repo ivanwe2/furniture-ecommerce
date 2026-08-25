@@ -125,6 +125,9 @@ const C = {
   bronze: '#785a3a', // wordmark + links/accents (the logo bronze)
   line: '#e4ddce', // hairlines
   thead: '#efe9dc', // table header fill
+  dark: '#221e19', // fascia bar — mirrors --color-dark
+  onDark: '#efe9dc', // wordmark on the fascia
+  onDarkMuted: '#a79e8b', // strapline on the fascia
 }
 const FONT = "'Golos Text', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
 const MONO = "'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace"
@@ -144,11 +147,20 @@ function esc(v: unknown): string {
     .replace(/'/g, '&#39;')
 }
 
-/** Wordmark header — the logo's uppercase, letter-spaced bronze lockup. */
+/**
+ * Wordmark header — the storefront fascia: the mark, letter-spaced and light,
+ * on a dark bar.
+ *
+ * Deliberately Cyrillic „НАСТЕХ" and NOT the site's Latin look-alike „HACTEX".
+ * The site can render that because it loads Factor; email clients strip
+ * webfonts, so the look-alikes would fall back to a normal face and read as a
+ * meaningless Latin word. Background sits on the <td>, not a <div>, because
+ * Outlook drops backgrounds on block elements.
+ */
 function header(): string {
-  return `<tr><td style="padding:28px 24px 20px;border-bottom:1px solid ${C.line};">
-<div style="font-family:${FONT};font-size:22px;font-weight:700;letter-spacing:0.16em;color:${C.bronze};">НАСТЕХ</div>
-<div style="font-family:${MONO};font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:${C.muted};margin-top:5px;">Мебелен обков</div>
+  return `<tr><td align="center" style="padding:30px 24px 26px;background:${C.dark};">
+<div style="font-family:${FONT};font-size:21px;font-weight:300;letter-spacing:0.34em;text-indent:0.34em;color:${C.onDark};line-height:1.1;">НАСТЕХ</div>
+<div style="font-family:${MONO};font-size:10px;letter-spacing:0.26em;text-transform:uppercase;color:${C.onDarkMuted};margin-top:9px;">Мебелен обков</div>
 </td></tr>`
 }
 
@@ -161,7 +173,7 @@ ${company.phoneDisplay} · ${company.email}
 
 /** Wrap inner content in the branded, email-safe outer shell. */
 function shell(inner: string): string {
-  return `<!DOCTYPE html><html lang="bg"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+  return `<!DOCTYPE html><html lang="bg"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="color-scheme" content="light dark"/><meta name="supported-color-schemes" content="light dark"/></head>
 <body style="margin:0;padding:0;background:${C.page};font-family:${FONT};color:${C.ink};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.page};"><tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:${C.panel};border:1px solid ${C.line};">
