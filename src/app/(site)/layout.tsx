@@ -6,6 +6,7 @@ import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { Header } from '@/components/layout/Header'
 import { PromoBar } from '@/components/layout/PromoBar'
+import { SignBand } from '@/components/layout/SignBand'
 import Footer from '@/components/layout/Footer'
 import CookieNotice from '@/components/layout/CookieNotice'
 import { CartHydrator } from '@/components/cart/CartHydrator'
@@ -72,6 +73,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           </a>
 
           <PromoBar />
+          <SignBand />
           <Header categories={categories} />
 
           <Container id="main" className="flex-1">

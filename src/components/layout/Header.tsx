@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
 import { MegaMenu } from './MegaMenu'
 import { MobileNav } from './MobileNav'
@@ -16,35 +15,37 @@ interface HeaderProps {
   categories: CategoryNode[]
 }
 
-/** How far down the homepage the bar waits before sliding in. */
-const REVEAL_AT = 140
-
 export function Header({ categories }: HeaderProps) {
-  const pathname = usePathname()
-  // Client feedback: „да се махне отгоре" — the mark should not sit over the
-  // hero. Only the homepage hides the bar; every other page is entered by
-  // navigation and must offer its nav immediately. (And only from lg up — see
-  // the class list below.)
-  const hidesAtTop = pathname === '/'
-  const [scrolledPast, setScrolledPast] = useState(false)
+  // The bar is hidden while the sign band is on screen and slides into its place
+  // once it scrolls away. The trigger is a sentinel at the band's base rather
+  // than a pixel threshold, so it stays correct whatever height the band takes
+  // at a given breakpoint — and it costs no scroll handler.
+  const [revealed, setRevealed] = useState(false)
   const [tabbedInto, setTabbedInto] = useState(false)
-  // Derived, not synced: the bar persists across navigations, so a state copy
-  // of "is the homepage" would need an effect to correct itself on every route
-  // change (and setting state straight from an effect cascades renders).
-  const revealed = !hidesAtTop || scrolledPast || tabbedInto
 
   useEffect(() => {
-    if (!hidesAtTop) return
-    const read = () => setScrolledPast(window.scrollY > REVEAL_AT)
-    // rAF rather than a direct call: a reload part-way down the page must not
-    // start hidden, but reading it synchronously here would be a render cascade.
-    const id = requestAnimationFrame(read)
-    window.addEventListener('scroll', read, { passive: true })
-    return () => {
-      cancelAnimationFrame(id)
-      window.removeEventListener('scroll', read)
+    const sentinel = document.querySelector('[data-banner-end]')
+    // Fail open: no band on the page means the bar must simply be visible.
+    // Deferred a frame because setting state straight from an effect body
+    // cascades renders (and lint rejects it).
+    if (!sentinel) {
+      const id = requestAnimationFrame(() => setRevealed(true))
+      return () => cancelAnimationFrame(id)
     }
-  }, [hidesAtTop])
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return
+        // `top < 0` distinguishes "scrolled up past it" from "still below the
+        // fold", which both report isIntersecting === false.
+        setRevealed(!entry.isIntersecting && entry.boundingClientRect.top < 0)
+      },
+      { threshold: 0 },
+    )
+    io.observe(sentinel)
+    return () => io.disconnect()
+  }, [])
+
+  const showBar = revealed || tabbedInto
 
   return (
     <header
@@ -63,7 +64,7 @@ export function Header({ categories }: HeaderProps) {
         // would also take the burger menu and the cart off the landing screen,
         // and there is no room up there for the brand statement anyway. Gated in
         // CSS rather than by matchMedia so there is no viewport guess to hydrate.
-        !revealed && 'lg:-translate-y-full lg:opacity-0 lg:pointer-events-none',
+        !showBar && 'lg:-translate-y-full lg:opacity-0 lg:pointer-events-none',
       )}
     >
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
