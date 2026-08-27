@@ -76,7 +76,19 @@ export function Header({ categories }: HeaderProps) {
       // who may never scroll. It stays reachable, and `onFocusCapture` brings
       // it back into view the moment it is tabbed into; `pointer-events-none`
       // stops a mouse from hitting links it cannot see.
-      onFocusCapture={() => setTabbedInto(true)}
+      onFocusCapture={(e) => {
+        // Only a KEYBOARD focus pins the bar open. A mouse click on a link in
+        // the bar focuses it too, so without the :focus-visible test, clicking
+        // the logo to go home left the bar pinned open for the rest of the
+        // session — visible at the top of the landing page alongside the band.
+        const el = e.target
+        if (el instanceof HTMLElement && el.matches(':focus-visible')) setTabbedInto(true)
+      }}
+      onBlurCapture={(e) => {
+        // Moving between links inside the bar keeps it open; focus leaving it
+        // releases the pin, so it can hide again on scroll.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setTabbedInto(false)
+      }}
       className={clsx(
         'sticky top-0 z-40 border-b border-ink/12 bg-cream',
         'transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none',
