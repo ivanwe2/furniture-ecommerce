@@ -212,6 +212,61 @@ function brushed(THREE: ThreeModule) {
   return tex
 }
 
+/**
+ * Micro-surface: fine speckle plus faint scratches. Uniform materials are most
+ * of what makes a render look like a game asset — real hardware has tooling
+ * marks and handling wear, and breaking the highlight up is what stops a
+ * surface reading as a perfect mathematical plane.
+ *
+ * Used as both a bump map (very small scale) and a roughness map, so the
+ * scratches both catch light and dull the reflection where they sit.
+ */
+function microSurface(THREE: ThreeModule) {
+  const c = document.createElement('canvas')
+  c.width = c.height = 512
+  const g = c.getContext('2d')
+  if (g) {
+    g.fillStyle = 'rgb(140,140,140)'
+    g.fillRect(0, 0, 512, 512)
+    // speckle — cast/blasted surface
+    const img = g.getImageData(0, 0, 512, 512)
+    for (let i = 0; i < img.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * 46
+      img.data[i] = Math.max(0, Math.min(255, (img.data[i] ?? 140) + n))
+      img.data[i + 1] = img.data[i] ?? 140
+      img.data[i + 2] = img.data[i] ?? 140
+    }
+    g.putImageData(img, 0, 0)
+    // directional tooling marks
+    for (let i = 0; i < 900; i++) {
+      const v = (110 + Math.random() * 90) | 0
+      g.strokeStyle = `rgba(${v},${v},${v},0.22)`
+      g.lineWidth = 0.35 + Math.random() * 0.8
+      const y = Math.random() * 512
+      g.beginPath()
+      g.moveTo(0, y)
+      g.lineTo(512, y + (Math.random() - 0.5) * 6)
+      g.stroke()
+    }
+    // occasional deeper scratch
+    for (let i = 0; i < 26; i++) {
+      g.strokeStyle = `rgba(210,210,210,${0.10 + Math.random() * 0.16})`
+      g.lineWidth = 0.5 + Math.random() * 0.7
+      const x = Math.random() * 512
+      const y = Math.random() * 512
+      g.beginPath()
+      g.moveTo(x, y)
+      g.lineTo(x + (Math.random() - 0.5) * 260, y + (Math.random() - 0.5) * 40)
+      g.stroke()
+    }
+  }
+  const tex = new THREE.CanvasTexture(c)
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+  tex.repeat.set(2.5, 2.5)
+  tex.anisotropy = 8
+  return tex
+}
+
 function buildScene(deps: HingeDeps) {
   const { THREE, RoundedBoxGeometry: RB } = deps
 
@@ -223,20 +278,19 @@ function buildScene(deps: HingeDeps) {
   // The catalogue SKU is black, but a black body against cream renders as a
   // silhouette: the parts merge into one mass and no detail survives. Steel
   // with charcoal and brass keeps it legible AND sits in the fascia palette.
-  // Mid-tone, deliberately. Light metal on a cream page has little tonal
-  // contrast at the stage's opacity and goes faint; near-black goes to a
-  // silhouette. This sits between, and keeps the brass readable.
-  // Semi-metal, not a full mirror. At metalness 1 a FLAT face has no diffuse
-  // term and shows only what it reflects — and a flat plate reflecting a dark
-  // quadrant of the room environment renders black however light its colour
-  // is. Only the curved cup escaped that. Backing the metalness off gives the
-  // large flat parts an albedo again.
-  const body = new THREE.MeshPhysicalMaterial({ color: 0xa2988a, metalness: 0.52, roughness: 0.44, roughnessMap: brushTex, clearcoat: 0.35, clearcoatRoughness: 0.3, envMapIntensity: 1.25 })
-  const bodyAlt = new THREE.MeshPhysicalMaterial({ color: 0x8a8170, metalness: 0.56, roughness: 0.46, roughnessMap: brushTex, envMapIntensity: 1.2 })
-  const charcoal = new THREE.MeshPhysicalMaterial({ color: 0x3a332b, metalness: 0.5, roughness: 0.42, clearcoat: 0.5, envMapIntensity: 1.1 })
-  const crevice = new THREE.MeshStandardMaterial({ color: 0x1a1712, metalness: 0.4, roughness: 0.86 })
-  const steel = new THREE.MeshPhysicalMaterial({ color: 0xbfb7a7, metalness: 0.74, roughness: 0.3, roughnessMap: brushTex, clearcoat: 0.35, envMapIntensity: 1.5 })
-  const brass = new THREE.MeshPhysicalMaterial({ color: 0xb0894a, metalness: 0.8, roughness: 0.32, clearcoat: 0.45, envMapIntensity: 1.5 })
+  const micro = microSurface(THREE)
+  // Back to the product's black. The earlier attempt at black failed for two
+  // reasons that have since been fixed — inverted normals and metalness 1 on
+  // flat faces — not because black cannot work here. It is held legible by
+  // metal, not by lightening the body: bright steel fasteners and brass pins
+  // break the mass up, and clearcoat gives the black a specular edge so form
+  // reads from highlights rather than from albedo.
+  const body = new THREE.MeshPhysicalMaterial({ color: 0x24201b, metalness: 0.55, roughness: 0.41, roughnessMap: micro, bumpMap: micro, bumpScale: 0.011, clearcoat: 0.7, clearcoatRoughness: 0.24, envMapIntensity: 1.5 })
+  const bodyAlt = new THREE.MeshPhysicalMaterial({ color: 0x2c2721, metalness: 0.5, roughness: 0.5, roughnessMap: micro, bumpMap: micro, bumpScale: 0.009, clearcoat: 0.55, envMapIntensity: 1.3 })
+  const charcoal = new THREE.MeshPhysicalMaterial({ color: 0x1d1a16, metalness: 0.42, roughness: 0.46, roughnessMap: micro, bumpMap: micro, bumpScale: 0.009, clearcoat: 0.6, envMapIntensity: 1.2 })
+  const crevice = new THREE.MeshStandardMaterial({ color: 0x0d0b09, metalness: 0.35, roughness: 0.9 })
+  const steel = new THREE.MeshPhysicalMaterial({ color: 0xcdc6b8, metalness: 0.82, roughness: 0.29, roughnessMap: micro, bumpMap: micro, bumpScale: 0.005, clearcoat: 0.35, envMapIntensity: 1.6 })
+  const brass = new THREE.MeshPhysicalMaterial({ color: 0xb0894a, metalness: 0.85, roughness: 0.3, roughnessMap: micro, bumpMap: micro, bumpScale: 0.005, clearcoat: 0.45, envMapIntensity: 1.6 })
 
   const root = new THREE.Group()
   /** Everything that stays with the arm. */
@@ -261,7 +315,7 @@ function buildScene(deps: HingeDeps) {
     pts: readonly (readonly [number, number])[],
     width: number,
     mat: InstanceType<ThreeModule['Material']>,
-    bevel = 0.05,
+    bevel = 0.028,
   ) => {
     // Winding matters: ExtrudeGeometry derives its normals from it, and a
     // clockwise outline is built inside-out — the faces then render unlit, i.e.
@@ -284,8 +338,8 @@ function buildScene(deps: HingeDeps) {
       bevelEnabled: true,
       bevelThickness: bevel,
       bevelSize: bevel,
-      bevelSegments: 2,
-      curveSegments: 10,
+      bevelSegments: 3,
+      curveSegments: 14,
     })
     g.rotateY(Math.PI / 2)
     g.translate(-width / 2, 0, 0)
@@ -314,7 +368,9 @@ function buildScene(deps: HingeDeps) {
   )
   plate.position.x = PLATE_X + 0.3
   fixed.add(flies(plate, -0.6, 0, -4.2))
-  const plateCap = extrudeSide([[-4.3, -0.34], [-2.5, -0.34], [-2.5, 0.34], [-4.3, 0.34]], 0.9, brass, 0.03)
+  // Chromed, as on the real part. A large flat brass panel here read as toy
+  // gold; brass stays as small pin/rivet accents only.
+  const plateCap = extrudeSide([[-4.3, -0.34], [-2.5, -0.34], [-2.5, 0.34], [-4.3, 0.34]], 0.9, steel, 0.03)
   plateCap.position.x = PLATE_X + 0.72
   fixed.add(flies(plateCap, -0.3, 0.9, -5.6))
   for (const z of [-2.5, -4.35]) {
@@ -364,7 +420,7 @@ function buildScene(deps: HingeDeps) {
   damperBody.rotation.x = Math.PI / 2
   damperBody.position.set(-1.05, -0.16, -1.75)
   fixed.add(flies(damperBody, 1.8, -2.0, 0))
-  const damperRod = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.75, 16), brass))
+  const damperRod = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.75, 16), steel))
   damperRod.rotation.x = Math.PI / 2
   damperRod.position.set(-1.05, -0.16, -0.72)
   fixed.add(flies(damperRod, 2.4, -2.0, 0.8))
@@ -461,7 +517,7 @@ function buildScene(deps: HingeDeps) {
     linkB,
     explode,
     materials: [body, bodyAlt, charcoal, crevice, steel, brass, capMat],
-    textures: [capTex, brushTex],
+    textures: [capTex, brushTex, micro],
   }
 }
 
@@ -493,7 +549,7 @@ function makeScene(canvas: HTMLCanvasElement, deps: HingeDeps) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.24
+  renderer.toneMappingExposure = 1.32
   renderer.outputColorSpace = THREE.SRGBColorSpace
   // Parts shading one another is most of what sells this as machined hardware.
   renderer.shadowMap.enabled = true
@@ -505,10 +561,11 @@ function makeScene(canvas: HTMLCanvasElement, deps: HingeDeps) {
 
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200)
 
-  const key = new THREE.DirectionalLight(0xfff3e2, 2.6)
+  const key = new THREE.DirectionalLight(0xfff3e2, 3.1)
   key.position.set(7, 9, 6)
   key.castShadow = true
-  key.shadow.mapSize.set(1024, 1024)
+  key.shadow.mapSize.set(2048, 2048)
+  key.shadow.radius = 3
   key.shadow.camera.near = 1
   key.shadow.camera.far = 46
   key.shadow.camera.left = -10
@@ -518,13 +575,18 @@ function makeScene(canvas: HTMLCanvasElement, deps: HingeDeps) {
   key.shadow.bias = -0.0012
   key.shadow.normalBias = 0.02
   scene.add(key)
-  const rim = new THREE.DirectionalLight(0xdfe6ff, 1.5)
+  const rim = new THREE.DirectionalLight(0xdfe6ff, 1.9)
   rim.position.set(-7, 3, -6)
   scene.add(rim)
   const fill = new THREE.DirectionalLight(0xffe6c8, 0.6)
   fill.position.set(2, -5, 4)
   scene.add(fill)
-  scene.add(new THREE.AmbientLight(0xfff6ea, 0.5))
+  scene.add(new THREE.AmbientLight(0xfff6ea, 0.34))
+  // A dim bounce from below, as a surface under the part would give. Without
+  // it a dark body loses its underside entirely and reads as a cut-out.
+  const bounce = new THREE.DirectionalLight(0xf3ead8, 0.5)
+  bounce.position.set(-1, -6, 2)
+  scene.add(bounce)
 
   const built = buildScene(deps)
   scene.add(built.root)
