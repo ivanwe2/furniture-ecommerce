@@ -1,10 +1,12 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Golos_Text, IBM_Plex_Mono, Montserrat } from 'next/font/google'
+import { Golos_Text, IBM_Plex_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
 import { Header } from '@/components/layout/Header'
 import { PromoBar } from '@/components/layout/PromoBar'
+import { SignBand } from '@/components/layout/SignBand'
 import Footer from '@/components/layout/Footer'
 import CookieNotice from '@/components/layout/CookieNotice'
 import { CartHydrator } from '@/components/cart/CartHydrator'
@@ -28,15 +30,19 @@ const mono = IBM_Plex_Mono({
   display: 'swap',
 })
 
-// The wordmark face. The storefront sign is set in Factor (Iconian), which is
-// licensed personal-use only — Montserrat ExtraLight is the closest match that
-// is free for commercial use (OFL). Latin subset only: the mark is „НАСТЕХ"
-// drawn with Latin look-alike capitals (H A C T E X), as on the sign itself.
-const wordmark = Montserrat({
-  subsets: ['latin'],
-  weight: ['200'],
-  variable: '--font-montserrat',
+// The wordmark face: Factor Expanded (Iconian Fonts) — the typeface the client's
+// storefront sign is set in — subsetted to the six letters of the mark and with
+// Factor's built-in dots stripped from each glyph (a stock "H" renders as "H·").
+// Derived by scripts/build-wordmark-font.py; see PROGRESS.md for the licence
+// position. Local, so it is self-hosted like the Google faces above.
+const wordmark = localFont({
+  src: '../../fonts/nasteh-wordmark.woff2',
+  variable: '--font-wordmark-face',
   display: 'swap',
+  weight: '400',
+  // The mark is a fixed six letters; if the face fails, a generic sans is far
+  // less wrong than a Cyrillic fallback trying to render Latin look-alikes.
+  fallback: ['ui-sans-serif', 'system-ui', 'sans-serif'],
 })
 
 export const metadata: Metadata = {
@@ -67,6 +73,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           </a>
 
           <PromoBar />
+          <SignBand />
           <Header categories={categories} />
 
           <Container id="main" className="flex-1">

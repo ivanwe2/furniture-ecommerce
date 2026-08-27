@@ -1,6 +1,12 @@
 // Real-time WebGL scene for the homepage hero backdrop: a SEVROLL 3D PRO
-// half-overlay concealed hinge (black, soft-close) swinging a cabinet door,
-// after which the camera settles on the hinge itself.
+// half-overlay concealed hinge (soft-close) that articulates open, separates
+// into its parts, reassembles and closes again, on a slow turntable.
+//
+// No cabinet boards. An earlier pass modelled the door and carcass, and they
+// read as an unidentifiable white slab behind the mark rather than as a
+// cabinet — the hinge alone, floating, is the technical-illustration language
+// the rest of the hero already speaks. The exploded view is carried over from
+// the butt-hinge scene this replaced; it was the part the client liked most.
 //
 // Replaces the earlier butt-hinge scene — the client sells cabinet hardware,
 // not door hinges ("сегашната анимация е супер, просто не предлагаме такъв
@@ -124,19 +130,39 @@ function buildInverseTable(samples = 160): { maxDoor: number; driveFor: (doorRot
  * Geometry
  * ------------------------------------------------------------------ */
 
-const PANEL_INNER_X = -2.0
-const PANEL_THICK = 1.8
-const DOOR_THICK = 1.8
-const DOOR_EDGE_X = PANEL_INNER_X - PANEL_THICK / 2 // half-overlay: covers half the panel
-const DOOR_LEN = 4.0 // only a stub of the door — this is a backdrop, not a cabinet
-const BOARD_H = 5.2
+/* ------------------------------------------------------------------ *
+ * Geometry
+ *
+ * Parts are extruded from real 2D profiles rather than assembled from boxes.
+ * The hinge is seen mostly side-on, so the silhouette in the depth/height
+ * plane is what actually reads — a stack of cuboids never looks machined.
+ * ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ *
+ * Geometry
+ *
+ * Parts are extruded from real 2D profiles rather than assembled from boxes:
+ * the hinge is seen side-on, so the silhouette in the depth/height plane is
+ * what reads, and a stack of cuboids never looks machined.
+ *
+ * Finish follows the page, not the catalogue photo. The real SKU is black,
+ * but pure black against cream reads as a hole; charcoal with warm steel and
+ * brass sits in the same palette as the fascia and the brass accents.
+ * ------------------------------------------------------------------ */
+
 const CUP_R = 1.75 // Ø35 cup
 const CUP_DEPTH = 1.15
+const ARM_W = 1.15 // the arm/links are ~12mm across
+const ARM_BACK_Z = -3.95
+const ARM_NOSE_Z = -0.2
+const PLATE_X = -2.0
 
-// The arm is drawn between anchors rather than hand-placed, so it always
-// reaches from the plate on the carcass to the two ground pivots it carries.
-const ARM_BACK: P2D = [PANEL_INNER_X + 0.3, -3.3]
-const ARM_NOSE: P2D = [(P1[0] + P2[0]) / 2, (P1[1] + P2[1]) / 2]
+/** A part that travels outward in the exploded view. */
+interface ExplodePart {
+  obj: InstanceType<ThreeModule['Object3D']>
+  base: InstanceType<ThreeModule['Vector3']>
+  offset: InstanceType<ThreeModule['Vector3']>
+}
 
 /** "SEVROLL" lettering for the arm cover cap, as a canvas texture. */
 function capLabel(THREE: ThreeModule) {
@@ -146,9 +172,9 @@ function capLabel(THREE: ThreeModule) {
   const g = c.getContext('2d')
   if (g) {
     // rgb(), not hex: CI greps src/components for '#rrggbb' (design-token guardrail)
-    g.fillStyle = 'rgb(27,29,33)'
+    g.fillStyle = 'rgb(34,30,25)'
     g.fillRect(0, 0, 256, 64)
-    g.fillStyle = 'rgb(113,116,122)'
+    g.fillStyle = 'rgb(169,128,63)'
     g.font = 'bold 27px system-ui, sans-serif'
     g.textAlign = 'center'
     g.textBaseline = 'middle'
@@ -160,158 +186,407 @@ function capLabel(THREE: ThreeModule) {
   return tex
 }
 
+/** Fine brushed streaks, so the steel catches light along its length. */
+function brushed(THREE: ThreeModule) {
+  const c = document.createElement('canvas')
+  c.width = c.height = 256
+  const g = c.getContext('2d')
+  if (g) {
+    g.fillStyle = 'rgb(128,128,128)'
+    g.fillRect(0, 0, 256, 256)
+    for (let i = 0; i < 2600; i++) {
+      const v = (96 + Math.random() * 96) | 0
+      g.strokeStyle = `rgba(${v},${v},${v},0.30)`
+      g.lineWidth = 0.4 + Math.random() * 0.7
+      const y = Math.random() * 256
+      g.beginPath()
+      g.moveTo(0, y)
+      g.lineTo(256, y + (Math.random() - 0.5) * 2)
+      g.stroke()
+    }
+  }
+  const tex = new THREE.CanvasTexture(c)
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+  tex.repeat.set(3, 1)
+  tex.anisotropy = 4
+  return tex
+}
+
+/**
+ * Micro-surface: fine speckle plus faint scratches. Uniform materials are most
+ * of what makes a render look like a game asset — real hardware has tooling
+ * marks and handling wear, and breaking the highlight up is what stops a
+ * surface reading as a perfect mathematical plane.
+ *
+ * Used as both a bump map (very small scale) and a roughness map, so the
+ * scratches both catch light and dull the reflection where they sit.
+ */
+function microSurface(THREE: ThreeModule) {
+  const c = document.createElement('canvas')
+  c.width = c.height = 512
+  const g = c.getContext('2d')
+  if (g) {
+    g.fillStyle = 'rgb(140,140,140)'
+    g.fillRect(0, 0, 512, 512)
+    // speckle — cast/blasted surface
+    const img = g.getImageData(0, 0, 512, 512)
+    for (let i = 0; i < img.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * 46
+      img.data[i] = Math.max(0, Math.min(255, (img.data[i] ?? 140) + n))
+      img.data[i + 1] = img.data[i] ?? 140
+      img.data[i + 2] = img.data[i] ?? 140
+    }
+    g.putImageData(img, 0, 0)
+    // directional tooling marks
+    for (let i = 0; i < 900; i++) {
+      const v = (110 + Math.random() * 90) | 0
+      g.strokeStyle = `rgba(${v},${v},${v},0.22)`
+      g.lineWidth = 0.35 + Math.random() * 0.8
+      const y = Math.random() * 512
+      g.beginPath()
+      g.moveTo(0, y)
+      g.lineTo(512, y + (Math.random() - 0.5) * 6)
+      g.stroke()
+    }
+    // occasional deeper scratch
+    for (let i = 0; i < 26; i++) {
+      g.strokeStyle = `rgba(210,210,210,${0.10 + Math.random() * 0.16})`
+      g.lineWidth = 0.5 + Math.random() * 0.7
+      const x = Math.random() * 512
+      const y = Math.random() * 512
+      g.beginPath()
+      g.moveTo(x, y)
+      g.lineTo(x + (Math.random() - 0.5) * 260, y + (Math.random() - 0.5) * 40)
+      g.stroke()
+    }
+  }
+  const tex = new THREE.CanvasTexture(c)
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+  tex.repeat.set(2.5, 2.5)
+  tex.anisotropy = 8
+  return tex
+}
+
 function buildScene(deps: HingeDeps) {
   const { THREE, RoundedBoxGeometry: RB } = deps
 
-  // Black anodised hardware with brighter machined steel for the linkage and
-  // the chromed plate cap — that two-tone is what still reads at 0.42 opacity.
-  const black = new THREE.MeshPhysicalMaterial({ color: 0x1c1e22, metalness: 0.88, roughness: 0.37, clearcoat: 0.55, clearcoatRoughness: 0.25, envMapIntensity: 1.5 })
-  const blackMatte = new THREE.MeshPhysicalMaterial({ color: 0x24262b, metalness: 0.7, roughness: 0.58, envMapIntensity: 1.15 })
-  const steel = new THREE.MeshPhysicalMaterial({ color: 0x9aa0a9, metalness: 1, roughness: 0.28, clearcoat: 0.4, envMapIntensity: 1.5 })
-  const chrome = new THREE.MeshPhysicalMaterial({ color: 0xc9ced6, metalness: 1, roughness: 0.14, envMapIntensity: 1.7 })
-  const board = new THREE.MeshPhysicalMaterial({ color: 0xe6e0d6, metalness: 0, roughness: 0.86, clearcoat: 0.12 })
-  const boardEdge = new THREE.MeshPhysicalMaterial({ color: 0xd2cabc, metalness: 0, roughness: 0.9 })
+  const brushTex = brushed(THREE)
+  // Warm charcoal body, warm machined steel, brass for the pins and rivets —
+  // the same brass the site uses for rules and buttons.
+  // Machined steel body, charcoal for the cover cap and recesses, brass for the
+  // pins and rivets — the accent the site already uses for rules and buttons.
+  // The catalogue SKU is black, but a black body against cream renders as a
+  // silhouette: the parts merge into one mass and no detail survives. Steel
+  // with charcoal and brass keeps it legible AND sits in the fascia palette.
+  const micro = microSurface(THREE)
+  // Back to the product's black. The earlier attempt at black failed for two
+  // reasons that have since been fixed — inverted normals and metalness 1 on
+  // flat faces — not because black cannot work here. It is held legible by
+  // metal, not by lightening the body: bright steel fasteners and brass pins
+  // break the mass up, and clearcoat gives the black a specular edge so form
+  // reads from highlights rather than from albedo.
+  const body = new THREE.MeshPhysicalMaterial({ color: 0x24201b, metalness: 0.55, roughness: 0.41, roughnessMap: micro, bumpMap: micro, bumpScale: 0.011, clearcoat: 0.7, clearcoatRoughness: 0.24, envMapIntensity: 1.5 })
+  const bodyAlt = new THREE.MeshPhysicalMaterial({ color: 0x2c2721, metalness: 0.5, roughness: 0.5, roughnessMap: micro, bumpMap: micro, bumpScale: 0.009, clearcoat: 0.55, envMapIntensity: 1.3 })
+  const charcoal = new THREE.MeshPhysicalMaterial({ color: 0x1d1a16, metalness: 0.42, roughness: 0.46, roughnessMap: micro, bumpMap: micro, bumpScale: 0.009, clearcoat: 0.6, envMapIntensity: 1.2 })
+  const crevice = new THREE.MeshStandardMaterial({ color: 0x0d0b09, metalness: 0.35, roughness: 0.9 })
+  const steel = new THREE.MeshPhysicalMaterial({ color: 0xcdc6b8, metalness: 0.82, roughness: 0.29, roughnessMap: micro, bumpMap: micro, bumpScale: 0.005, clearcoat: 0.35, envMapIntensity: 1.6 })
+  const brass = new THREE.MeshPhysicalMaterial({ color: 0xb0894a, metalness: 0.85, roughness: 0.3, roughnessMap: micro, bumpMap: micro, bumpScale: 0.005, clearcoat: 0.45, envMapIntensity: 1.6 })
 
   const root = new THREE.Group()
+  /** Everything that stays with the arm. */
+  const fixed = new THREE.Group()
+  /** The cup body — travels on the linkage. */
+  const cupGroup = new THREE.Group()
+  const explode: ExplodePart[] = []
 
-  const seg = (a: P2D, b: P2D) => {
-    const dx = b[0] - a[0]
-    const dz = b[1] - a[1]
-    return { len: Math.hypot(dx, dz), mid: [a[0] + dx / 2, a[1] + dz / 2] as P2D, rotY: -Math.atan2(dz, dx) }
+  const shadowed = (m: InstanceType<ThreeModule['Mesh']>) => {
+    m.castShadow = true
+    m.receiveShadow = true
+    return m
+  }
+  /** Register a part to fly out along `offset` in the exploded view. */
+  const flies = (obj: InstanceType<ThreeModule['Object3D']>, x: number, y: number, z: number) => {
+    explode.push({ obj, base: obj.position.clone(), offset: new THREE.Vector3(x, y, z) })
+    return obj
   }
 
-  // --- carcass side panel (fixed) ---------------------------------
-  const panel = new THREE.Mesh(new RB(PANEL_THICK, BOARD_H, 4.0, 3, 0.06), board)
-  panel.position.set(PANEL_INNER_X - PANEL_THICK / 2, 0, -2.0)
-  root.add(panel)
-
-  // --- mounting plate on the carcass inner face -------------------
-  const plateBody = new THREE.Mesh(new RB(0.5, 1.35, 3.4, 3, 0.05), black)
-  plateBody.position.set(PANEL_INNER_X + 0.25, 0, -3.3)
-  root.add(plateBody)
-  const plateCap = new THREE.Mesh(new RB(0.26, 1.0, 1.5, 3, 0.04), chrome)
-  plateCap.position.set(PANEL_INNER_X + 0.6, 0, -3.9)
-  root.add(plateCap)
-  for (const z of [-2.3, -4.3]) {
-    const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.22, 20), steel)
-    screw.rotation.z = Math.PI / 2
-    screw.position.set(PANEL_INNER_X + 0.52, 0, z)
-    root.add(screw)
+  /** Extrude a side profile given as (z, y) points, across `width` in x. */
+  const extrudeSide = (
+    pts: readonly (readonly [number, number])[],
+    width: number,
+    mat: InstanceType<ThreeModule['Material']>,
+    bevel = 0.028,
+  ) => {
+    // Winding matters: ExtrudeGeometry derives its normals from it, and a
+    // clockwise outline is built inside-out — the faces then render unlit, i.e.
+    // black, whatever colour the material is. Normalise to counter-clockwise by
+    // the polygon's signed area rather than trusting each call site to get the
+    // point order right.
+    const flat = pts.map(([z, y]) => [-z, y] as const)
+    let area2 = 0
+    for (let i = 0; i < flat.length; i += 1) {
+      const a = flat[i]
+      const b = flat[(i + 1) % flat.length]
+      if (a && b) area2 += a[0] * b[1] - b[0] * a[1]
+    }
+    const ordered = area2 < 0 ? [...flat].reverse() : flat
+    const shape = new THREE.Shape()
+    ordered.forEach(([x, y], i) => (i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y)))
+    shape.closePath()
+    const g = new THREE.ExtrudeGeometry(shape, {
+      depth: width,
+      bevelEnabled: true,
+      bevelThickness: bevel,
+      bevelSize: bevel,
+      bevelSegments: 3,
+      curveSegments: 14,
+    })
+    g.rotateY(Math.PI / 2)
+    g.translate(-width / 2, 0, 0)
+    return shadowed(new THREE.Mesh(g, mat))
   }
 
-  // --- hinge arm (fixed): the elbow that carries both ground pivots
-  const armSeg = seg(ARM_BACK, ARM_NOSE)
-  const armBody = new THREE.Mesh(new RB(armSeg.len, 1.15, 0.8, 3, 0.07), black)
-  armBody.position.set(armSeg.mid[0], 0, armSeg.mid[1])
-  armBody.rotation.y = armSeg.rotY
-  root.add(armBody)
-  const armNose = new THREE.Mesh(new RB(1.45, 1.25, 1.35, 3, 0.07), black)
-  armNose.position.set(ARM_NOSE[0], 0, ARM_NOSE[1])
-  root.add(armNose)
+  /** Countersunk screw with a cross recess — reads as a fastener, not a stud. */
+  const screw = (r: number) => {
+    const g = new THREE.Group()
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.74, r * 0.5, 22), steel)
+    g.add(shadowed(head))
+    for (const rot of [0, Math.PI / 2]) {
+      const slot = new THREE.Mesh(new THREE.BoxGeometry(r * 1.5, r * 0.16, r * 0.34), crevice)
+      slot.rotation.y = rot
+      slot.position.y = r * 0.22
+      g.add(slot)
+    }
+    return g
+  }
 
-  // cover cap + its label (a separate plane: a texture on a rounded box would
-  // repeat the wordmark on all six faces)
-  const capMesh = new THREE.Mesh(new RB(armSeg.len * 0.82, 0.26, 0.62, 3, 0.04), blackMatte)
-  capMesh.position.set(armSeg.mid[0], 0.63, armSeg.mid[1])
-  capMesh.rotation.y = armSeg.rotY
-  root.add(capMesh)
+  // --- mounting plate (the carcass end) -----------------------------
+  const plate = extrudeSide(
+    [[-4.75, -0.62], [-1.95, -0.62], [-1.75, -0.30], [-1.75, 0.30], [-1.95, 0.62], [-4.75, 0.62]],
+    1.35,
+    body,
+  )
+  plate.position.x = PLATE_X + 0.3
+  fixed.add(flies(plate, -0.6, 0, -4.2))
+  // Chromed, as on the real part. A large flat brass panel here read as toy
+  // gold; brass stays as small pin/rivet accents only.
+  const plateCap = extrudeSide([[-4.3, -0.34], [-2.5, -0.34], [-2.5, 0.34], [-4.3, 0.34]], 0.9, steel, 0.03)
+  plateCap.position.x = PLATE_X + 0.72
+  fixed.add(flies(plateCap, -0.3, 0.9, -5.6))
+  for (const z of [-2.5, -4.35]) {
+    const s = screw(0.24)
+    s.rotation.z = -Math.PI / 2
+    s.position.set(PLATE_X + 0.62, 0, z)
+    fixed.add(flies(s, 2.1, 0, -4.6))
+  }
+
+  // --- hinge arm: the tapering boomerang that carries both pivots ----
+  // The anchor of the exploded view; everything else moves relative to it.
+  const arm = extrudeSide(
+    [
+      [ARM_BACK_Z - 0.35, -0.60], [ARM_BACK_Z + 0.1, -0.66], [-2.4, -0.60],
+      [-1.2, -0.44], [ARM_NOSE_Z - 0.1, -0.36], [ARM_NOSE_Z, 0.36],
+      [-1.2, 0.46], [-2.4, 0.64], [ARM_BACK_Z + 0.1, 0.70], [ARM_BACK_Z - 0.35, 0.62],
+    ],
+    ARM_W,
+    body,
+  )
+  arm.position.x = -1.55
+  fixed.add(arm)
+
+  const channel = extrudeSide(
+    [[ARM_BACK_Z, -0.34], [-1.3, -0.22], [ARM_NOSE_Z - 0.15, -0.16],
+     [ARM_NOSE_Z - 0.15, 0.16], [-1.3, 0.24], [ARM_BACK_Z, 0.40]],
+    ARM_W * 0.52,
+    crevice,
+    0.02,
+  )
+  channel.position.set(-1.55, 0.02, 0)
+  fixed.add(channel)
+
   const capTex = capLabel(THREE)
   const capMat = new THREE.MeshBasicMaterial({ map: capTex, toneMapped: false })
-  const label = new THREE.Mesh(new THREE.PlaneGeometry(armSeg.len * 0.7, 0.42), capMat)
+  const cap = extrudeSide([[-3.5, 0.58], [-1.0, 0.40], [-1.0, 0.62], [-3.5, 0.80]], ARM_W * 0.72, charcoal, 0.03)
+  cap.position.x = -1.55
+  fixed.add(flies(cap, 0, 2.6, 0))
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.42), capMat)
   label.rotation.x = -Math.PI / 2
-  label.rotation.z = -armSeg.rotY
-  label.position.set(armSeg.mid[0], 0.77, armSeg.mid[1])
-  root.add(label)
+  label.rotation.z = Math.PI + 0.06 // viewed from the -z side, unflipped it reads mirrored
+  label.position.set(-1.55, 0.79, -2.25)
+  fixed.add(flies(label, 0, 2.6, 0))
 
-  // soft-close damper riding on the arm — the visual signature of "s tlmením"
-  const damper = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 1.35, 20), steel)
-  damper.rotation.z = Math.PI / 2
-  damper.rotation.y = armSeg.rotY
-  damper.position.set(armSeg.mid[0] + 0.45, -0.12, armSeg.mid[1] + 0.55)
-  root.add(damper)
+  // soft-close damper riding on the arm — the signature of "s tlmením"
+  const damperBody = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.29, 1.5, 24), steel))
+  damperBody.rotation.x = Math.PI / 2
+  damperBody.position.set(-1.05, -0.16, -1.75)
+  fixed.add(flies(damperBody, 1.8, -2.0, 0))
+  const damperRod = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.75, 16), steel))
+  damperRod.rotation.x = Math.PI / 2
+  damperRod.position.set(-1.05, -0.16, -0.72)
+  fixed.add(flies(damperRod, 2.4, -2.0, 0.8))
 
-  // --- the two links (rigid bars, ground pivot -> coupler pivot) ---
+  for (const z of [-3.1, -2.35]) {
+    const s = screw(0.21)
+    s.position.set(-1.55, 0.6, z)
+    fixed.add(flies(s, 0, 3.9, 0))
+  }
+
+  // --- the two links (rigid bars, ground pivot -> coupler pivot) -----
   const mkLink = (length: number, w: number, h: number, mat: InstanceType<ThreeModule['Material']>) => {
     const pivot = new THREE.Group()
-    const bar = new THREE.Mesh(new RB(length, h, w, 3, 0.045), mat)
-    bar.position.x = length / 2 // pivot sits at one end
+    const bar = extrudeSide(
+      [[-0.02, -h / 2], [-length * 0.55, -h / 2 - 0.06], [-length + 0.02, -h / 2],
+       [-length + 0.02, h / 2], [-length * 0.55, h / 2 + 0.06], [-0.02, h / 2]],
+      w,
+      mat,
+      0.035,
+    )
+    bar.geometry.rotateY(-Math.PI / 2)
+    bar.position.x = length / 2
     pivot.add(bar)
+    for (const dx of [-length / 2 + 0.04, length / 2 - 0.04]) {
+      const rivet = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(w * 0.28, w * 0.28, h + 0.12, 18), brass))
+      rivet.position.set(length / 2 + dx, 0, 0)
+      pivot.add(rivet)
+    }
     return pivot
   }
-  const linkA = mkLink(LINK_A, 0.36, 0.85, steel)
-  linkA.position.set(P1[0], 0, P1[1])
-  root.add(linkA)
-  const linkB = mkLink(LINK_B, 0.44, 0.95, black)
-  linkB.position.set(P2[0], 0, P2[1])
-  root.add(linkB)
+  const linkA = mkLink(LINK_A, 0.9, 0.4, steel)
+  linkA.position.set(P1[0], 0.22, P1[1])
+  root.add(flies(linkA, 0, 2.1, 1.4))
+  const linkB = mkLink(LINK_B, 1.0, 0.44, body)
+  linkB.position.set(P2[0], -0.24, P2[1])
+  root.add(flies(linkB, 0, -2.2, 1.4))
 
-  // --- door + cup (the moving assembly) ---------------------------
-  // Authored in the CLOSED pose, then rigidly transformed by the linkage
-  // solution so the cup stays glued to the door.
-  const door = new THREE.Group()
+  // --- cup assembly (travels on the linkage) ------------------------
+  const bore = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(CUP_R, CUP_R * 0.94, CUP_DEPTH, 48), bodyAlt))
+  bore.rotation.x = Math.PI / 2
+  bore.position.set(0, 0, CUP_DEPTH / 2 - 0.02)
+  cupGroup.add(flies(bore, 0, 0, 2.3))
+  const recess = new THREE.Mesh(new THREE.CylinderGeometry(CUP_R * 0.66, CUP_R * 0.66, CUP_DEPTH * 0.7, 40), crevice)
+  recess.rotation.x = Math.PI / 2
+  recess.position.set(0, 0, CUP_DEPTH * 0.62)
+  cupGroup.add(flies(recess, 0, 0, 2.3))
+  const rim = shadowed(new THREE.Mesh(new THREE.TorusGeometry(CUP_R, 0.085, 12, 48), body))
+  rim.position.z = 0.02
+  cupGroup.add(flies(rim, 0, 0, 2.3))
 
-  const doorPanel = new THREE.Mesh(new RB(DOOR_LEN, BOARD_H, DOOR_THICK, 3, 0.07), board)
-  doorPanel.position.set(DOOR_EDGE_X + DOOR_LEN / 2, 0, DOOR_THICK / 2)
-  door.add(doorPanel)
-  const doorLip = new THREE.Mesh(new RB(0.1, BOARD_H, DOOR_THICK, 3, 0.03), boardEdge)
-  doorLip.position.set(DOOR_EDGE_X, 0, DOOR_THICK / 2)
-  door.add(doorLip)
-
-  // 35mm cup, recessed into the door's back face
-  const cup = new THREE.Mesh(new THREE.CylinderGeometry(CUP_R, CUP_R * 0.96, CUP_DEPTH, 40), blackMatte)
-  cup.rotation.x = Math.PI / 2
-  cup.position.set(0, 0, CUP_DEPTH / 2 - 0.02)
-  door.add(cup)
-  // flange with the two screw wings
-  const flange = new THREE.Mesh(new RB(1.55, 3.8, 0.3, 3, 0.05), black)
-  flange.position.set(0, 0, -0.12)
-  door.add(flange)
-  for (const y of [1.45, -1.45]) {
-    const wing = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.18, 18), steel)
-    wing.rotation.x = Math.PI / 2
-    wing.position.set(0, y, -0.26)
-    door.add(wing)
+  // flange: a real plate with the screw holes punched through it
+  const fl = new THREE.Shape()
+  const fw = 0.78
+  const fh = 1.95
+  fl.moveTo(-fw, -fh + 0.5)
+  fl.quadraticCurveTo(-fw, -fh, -fw + 0.5, -fh)
+  fl.lineTo(fw - 0.5, -fh)
+  fl.quadraticCurveTo(fw, -fh, fw, -fh + 0.5)
+  fl.lineTo(fw, fh - 0.5)
+  fl.quadraticCurveTo(fw, fh, fw - 0.5, fh)
+  fl.lineTo(-fw + 0.5, fh)
+  fl.quadraticCurveTo(-fw, fh, -fw, fh - 0.5)
+  fl.closePath()
+  for (const y of [1.4, -1.4]) {
+    const hole = new THREE.Path()
+    hole.absarc(0, y, 0.26, 0, Math.PI * 2, true)
+    fl.holes.push(hole)
   }
-  // the boss the links pivot on, standing proud of the cup
-  const boss = new THREE.Mesh(new RB(1.35, 1.0, 1.15, 3, 0.06), blackMatte)
-  boss.position.set(0.4, 0, -0.42)
-  door.add(boss)
-  root.add(door)
+  const flange = shadowed(
+    new THREE.Mesh(
+      new THREE.ExtrudeGeometry(fl, { depth: 0.28, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2, curveSegments: 10 }),
+      body,
+    ),
+  )
+  flange.position.z = -0.3
+  cupGroup.add(flies(flange, 0, 0, 3.9))
+  for (const y of [1.4, -1.4]) {
+    const s = screw(0.25)
+    s.rotation.x = -Math.PI / 2
+    s.position.set(0, y, -0.28)
+    cupGroup.add(flies(s, 0, y * 0.85, 5.1))
+  }
 
-  root.rotation.x = -0.05
-  return { root, door, linkA, linkB, materials: [black, blackMatte, steel, chrome, board, boardEdge, capMat], capTex }
+  const boss = shadowed(new THREE.Mesh(new RB(1.25, 1.15, 1.1, 3, 0.06), charcoal))
+  boss.position.set(0.38, 0, -0.45)
+  cupGroup.add(flies(boss, 0, 0, 1.4))
+
+  root.add(fixed)
+  root.add(cupGroup)
+  return {
+    root,
+    cupGroup,
+    linkA,
+    linkB,
+    explode,
+    materials: [body, bodyAlt, charcoal, crevice, steel, brass, capMat],
+    textures: [capTex, brushTex, micro],
+  }
 }
 
 /* ------------------------------------------------------------------ *
- * Scene / camera
+ * Scene, framing and camera
  * ------------------------------------------------------------------ */
+
+type Built = ReturnType<typeof buildScene>
+
+/** Place the cup on the linkage, orient both links, and spread the parts. */
+function applyState(built: Built, pose: Pose, ex: number) {
+  // 2D maths is right-handed about +Y, three.js rotation.y is the other way
+  // round, hence the negated angles.
+  const cs = Math.cos(pose.rot)
+  const sn = Math.sin(pose.rot)
+  built.cupGroup.position.set(
+    pose.q1[0] - (Q1_0[0] * cs - Q1_0[1] * sn),
+    0,
+    pose.q1[1] - (Q1_0[0] * sn + Q1_0[1] * cs),
+  )
+  built.cupGroup.rotation.y = -pose.rot
+  built.linkA.rotation.y = -pose.theta
+  built.linkB.rotation.y = -Math.atan2(pose.q2[1] - P2[1], pose.q2[0] - P2[0])
+  for (const p of built.explode) p.obj.position.copy(p.base).addScaledVector(p.offset, ex)
+}
 
 function makeScene(canvas: HTMLCanvasElement, deps: HingeDeps) {
   const { THREE, RoomEnvironment } = deps
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.2
+  renderer.toneMappingExposure = 1.32
   renderer.outputColorSpace = THREE.SRGBColorSpace
+  // Parts shading one another is most of what sells this as machined hardware.
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   const scene = new THREE.Scene()
   const pmrem = new THREE.PMREMGenerator(renderer)
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.02).texture
 
-  // Framed on WIDTH, not height: the stage is 0.88 aspect on desktop and ~1.03
-  // on mobile, so a fixed vertical fov would crop the arm off on one of them.
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200)
 
-  const key = new THREE.DirectionalLight(0xfff2df, 2.4)
-  key.position.set(5, 7, -6)
+  const key = new THREE.DirectionalLight(0xfff3e2, 3.1)
+  key.position.set(7, 9, 6)
+  key.castShadow = true
+  key.shadow.mapSize.set(2048, 2048)
+  key.shadow.radius = 3
+  key.shadow.camera.near = 1
+  key.shadow.camera.far = 46
+  key.shadow.camera.left = -10
+  key.shadow.camera.right = 10
+  key.shadow.camera.top = 10
+  key.shadow.camera.bottom = -10
+  key.shadow.bias = -0.0012
+  key.shadow.normalBias = 0.02
   scene.add(key)
-  const rim = new THREE.DirectionalLight(0xd8e2ff, 1.5)
-  rim.position.set(-6, 2.5, 4)
+  const rim = new THREE.DirectionalLight(0xdfe6ff, 1.9)
+  rim.position.set(-7, 3, -6)
   scene.add(rim)
-  const fill = new THREE.DirectionalLight(0xffe4c4, 0.65)
-  fill.position.set(2, -4, -3)
+  const fill = new THREE.DirectionalLight(0xffe6c8, 0.6)
+  fill.position.set(2, -5, 4)
   scene.add(fill)
-  scene.add(new THREE.AmbientLight(0xffffff, 0.22))
+  scene.add(new THREE.AmbientLight(0xfff6ea, 0.34))
+  // A dim bounce from below, as a surface under the part would give. Without
+  // it a dark body loses its underside entirely and reads as a cut-out.
+  const bounce = new THREE.DirectionalLight(0xf3ead8, 0.5)
+  bounce.position.set(-1, -6, 2)
+  scene.add(bounce)
 
   const built = buildScene(deps)
   scene.add(built.root)
@@ -329,30 +604,91 @@ const softClose = (x: number) => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3
 
 /** Horizontal field of view; vertical is derived per-aspect in `resize`. */
 const HFOV_DEG = 30
+/** Turntable sweep, in radians either side of the presentation angle. */
+const SPIN = 0.2
+const BASE_SPIN = -0.5
+const TILT = -0.16
 
-/**
- * Start the hinge animation on `canvas`. `stage`, when present, is the element
- * whose pointer position drives the parallax sway (the hero container).
- * Returns a cleanup function; call it on unmount.
- */
 export function startHinge(
   canvas: HTMLCanvasElement,
   deps: HingeDeps,
   stage: HTMLElement | null,
 ): () => void {
+  const { THREE } = deps
   const inst = makeScene(canvas, deps)
   const table = buildInverseTable()
   const state = { px: 0, py: 0, tpx: 0, tpy: 0 }
-  const { THREE } = deps
 
-  // Wide framing shows the door swinging; the close framing is the payoff the
-  // client asked for — „после кадъра да се измести на пантата".
-  const WIDE_POS = new THREE.Vector3(19.0, 6.6, -14.1)
-  const WIDE_AT = new THREE.Vector3(-1.3, 0, -1.2)
-  const NEAR_POS = new THREE.Vector3(7.7, 2.5, -7.2)
-  const NEAR_AT = new THREE.Vector3(-1.1, 0, -1.1)
+  // --- framing -------------------------------------------------------
+  // Measured, not hand-tuned. The subject swings ~104°, separates into parts
+  // and turns on a turntable, so the bounds are unioned across all three
+  // before fitting — otherwise it crops at one extreme or sits small at the
+  // other. Two framings: tight on the assembled hinge, wider once it opens up.
+  const boxFor = (ex: number, openness: number) => {
+    const box = new THREE.Box3()
+    for (const spin of [-SPIN, 0, SPIN]) {
+      inst.root.rotation.set(TILT, BASE_SPIN + spin, 0)
+      const p = solve(table.driveFor(openness * table.maxDoor))
+      if (!p) continue
+      applyState(inst, p, ex)
+      inst.root.updateMatrixWorld(true)
+      box.union(new THREE.Box3().setFromObject(inst.root))
+    }
+    return box
+  }
+  const cornersOf = (box: InstanceType<ThreeModule['Box3']>) => {
+    const out: InstanceType<ThreeModule['Vector3']>[] = []
+    for (const x of [box.min.x, box.max.x])
+      for (const y of [box.min.y, box.max.y])
+        for (const z of [box.min.z, box.max.z]) out.push(new THREE.Vector3(x, y, z))
+    return out
+  }
+  // Three framings, not one. A single box spanning the whole cycle is the
+  // union of the widest moment, so every other moment sits small inside it —
+  // which is what "not well centred" looked like. Fitting each state and
+  // interpolating keeps the subject filling the frame throughout.
+  const states = [boxFor(0, 0), boxFor(0, 1), boxFor(1, 1)]
+  const corners = states.map(cornersOf)
+  const centres = states.map((b) => b.getCenter(new THREE.Vector3()))
+
+  const VIEW_DIR = new THREE.Vector3(0.94, 0.30, 0.17).normalize()
   const camPos = new THREE.Vector3()
   const camAt = new THREE.Vector3()
+  const probe = new THREE.Vector3()
+  const fitCam = new THREE.PerspectiveCamera(34, 1, 0.1, 400)
+
+  /**
+   * Distance at which every corner still projects inside the frustum, found by
+   * projecting and correcting rather than in closed form — the analytic version
+   * is easy to get subtly wrong, and did crop an earlier build. Fits the
+   * projected BOX: a sphere around a long thin hinge is far larger than the
+   * shape inside it, which leaves the subject small and adrift.
+   */
+  const computeFit = (
+    pts: InstanceType<ThreeModule['Vector3']>[],
+    centre: InstanceType<ThreeModule['Vector3']>,
+    margin: number,
+  ) => {
+    fitCam.fov = inst.camera.fov
+    fitCam.aspect = inst.camera.aspect
+    let d = 20
+    for (let i = 0; i < 8; i++) {
+      fitCam.position.copy(centre).addScaledVector(VIEW_DIR, d)
+      fitCam.lookAt(centre)
+      fitCam.updateMatrixWorld(true)
+      fitCam.updateProjectionMatrix()
+      let m = 0
+      for (const pt of pts) {
+        probe.copy(pt).project(fitCam)
+        m = Math.max(m, Math.abs(probe.x), Math.abs(probe.y))
+      }
+      if (!(m > 0) || !Number.isFinite(m)) break
+      d *= m * margin
+    }
+    return d
+  }
+
+  const dists = [20, 22, 26]
 
   const resize = () => {
     const r = canvas.getBoundingClientRect()
@@ -361,9 +697,17 @@ export function startHinge(
     inst.renderer.setSize(w, h, false)
     const aspect = w / h
     inst.camera.aspect = aspect
-    // keep the horizontal field constant across breakpoints
+    // Keep the HORIZONTAL field constant: the stage is ~0.88 aspect on desktop
+    // and ~1.03 on mobile, so a fixed vertical fov crops differently on each.
     inst.camera.fov = (2 * Math.atan(Math.tan((HFOV_DEG * Math.PI) / 360) / aspect) * 180) / Math.PI
     inst.camera.updateProjectionMatrix()
+    const margins = [1.05, 1.05, 1.02]
+    for (let i = 0; i < states.length; i += 1) {
+      const c = corners[i]
+      const centre = centres[i]
+      const m = margins[i]
+      if (c && centre && m) dists[i] = computeFit(c, centre, m)
+    }
   }
   resize()
   const ro = new ResizeObserver(resize)
@@ -389,58 +733,54 @@ export function startHinge(
     }
   }
 
-  const CYCLE = 17 // seconds
+  const CYCLE = 20 // seconds
   const start = performance.now()
   let raf = 0
   let alive = true
 
   const loop = (now: number) => {
     if (!alive) return
-    const c = (((now - start) / 1000) / CYCLE) % 1
+    const t = (now - start) / 1000
+    const c = (t / CYCLE) % 1
 
-    // Door: hold shut → open (soft) → hold → close (soft, long settle).
+    // Articulate open, hold, then close with the long damped settle.
     let openness: number
-    if (c < 0.06) openness = 0
-    else if (c < 0.3) openness = softClose((c - 0.06) / 0.24)
-    else if (c < 0.78) openness = 1
-    else if (c < 0.96) openness = 1 - softClose((c - 0.78) / 0.18)
+    if (c < 0.05) openness = 0
+    else if (c < 0.20) openness = softClose((c - 0.05) / 0.15)
+    else if (c < 0.80) openness = 1
+    else if (c < 0.94) openness = 1 - softClose((c - 0.80) / 0.14)
     else openness = 0
 
-    // Camera: wide while it swings, then push in on the hinge and hold.
-    let near: number
-    if (c < 0.34) near = 0
-    else if (c < 0.46) near = smooth((c - 0.34) / 0.12)
-    else if (c < 0.68) near = 1
-    else if (c < 0.8) near = 1 - smooth((c - 0.68) / 0.12)
-    else near = 0
+    // Separate into parts while it is held open, then draw back together.
+    let ex: number
+    if (c < 0.30) ex = 0
+    else if (c < 0.42) ex = smooth((c - 0.30) / 0.12)
+    else if (c < 0.58) ex = 1
+    else if (c < 0.70) ex = 1 - smooth((c - 0.58) / 0.12)
+    else ex = 0
 
     const pose = solve(table.driveFor(openness * table.maxDoor))
-    if (pose) {
-      // Rigid transform of the door/cup assembly from the closed pose.
-      // 2D maths is right-handed about +Y, three.js rotation.y is the other
-      // way round, hence the negated angle.
-      const cs = Math.cos(pose.rot)
-      const sn = Math.sin(pose.rot)
-      const ox = pose.q1[0] - (Q1_0[0] * cs - Q1_0[1] * sn)
-      const oz = pose.q1[1] - (Q1_0[0] * sn + Q1_0[1] * cs)
-      inst.door.position.set(ox, 0, oz)
-      inst.door.rotation.y = -pose.rot
-
-      inst.linkA.rotation.y = -pose.theta
-      inst.linkB.rotation.y = -Math.atan2(pose.q2[1] - P2[1], pose.q2[0] - P2[0])
-    }
+    if (pose) applyState(inst, pose, ex)
 
     state.px += (state.tpx - state.px) * 0.06
     state.py += (state.tpy - state.py) * 0.06
 
-    camPos.lerpVectors(WIDE_POS, NEAR_POS, near)
-    camAt.lerpVectors(WIDE_AT, NEAR_AT, near)
-    const sway = 1 - 0.55 * near // less parallax when we are in close
-    inst.camera.position.set(
-      camPos.x + state.px * 1.5 * sway,
-      camPos.y - state.py * 1.1 * sway,
-      camPos.z,
-    )
+    inst.root.rotation.y = BASE_SPIN + SPIN * Math.sin(t * 0.17) + state.px * 0.28
+    inst.root.rotation.x = TILT - state.py * 0.16
+
+    // closed -> open -> exploded, interpolated in the same order the cycle runs
+    const c0 = centres[0]
+    const c1 = centres[1]
+    const c2 = centres[2]
+    const d0 = dists[0] ?? 20
+    const d1 = dists[1] ?? 22
+    const d2 = dists[2] ?? 26
+    if (c0 && c1 && c2) {
+      camAt.copy(c0).lerp(c1, openness).lerp(c2, ex)
+      const d = (d0 + (d1 - d0) * openness) * (1 - ex) + d2 * ex
+      camPos.copy(camAt).addScaledVector(VIEW_DIR, d)
+    }
+    inst.camera.position.copy(camPos)
     inst.camera.lookAt(camAt)
 
     inst.renderer.render(inst.scene, inst.camera)
@@ -460,7 +800,7 @@ export function startHinge(
       if (Array.isArray(m)) m.forEach((mm) => mm.dispose())
       else m?.dispose()
     })
-    inst.capTex.dispose()
+    for (const tex of inst.textures) tex.dispose()
     inst.renderer.dispose()
     inst.pmrem.dispose()
   }

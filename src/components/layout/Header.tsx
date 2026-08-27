@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import clsx from 'clsx'
 import { MegaMenu } from './MegaMenu'
 import { MobileNav } from './MobileNav'
@@ -16,35 +16,56 @@ interface HeaderProps {
   categories: CategoryNode[]
 }
 
-/** How far down the homepage the bar waits before sliding in. */
-const REVEAL_AT = 140
-
 export function Header({ categories }: HeaderProps) {
+  // Re-run per route: the band only exists on the landing page, so navigating
+  // away leaves the observer watching a detached node and the bar would stay
+  // hidden on a page that has no band at all.
   const pathname = usePathname()
-  // Client feedback: „да се махне отгоре" — the mark should not sit over the
-  // hero. Only the homepage hides the bar; every other page is entered by
-  // navigation and must offer its nav immediately. (And only from lg up — see
-  // the class list below.)
-  const hidesAtTop = pathname === '/'
-  const [scrolledPast, setScrolledPast] = useState(false)
+  // The bar is hidden while the sign band is on screen and slides into its place
+  // once it scrolls away. The trigger is a sentinel at the band's base rather
+  // than a pixel threshold, so it stays correct whatever height the band takes
+  // at a given breakpoint — and it costs no scroll handler.
+  const [revealed, setRevealed] = useState(false)
   const [tabbedInto, setTabbedInto] = useState(false)
-  // Derived, not synced: the bar persists across navigations, so a state copy
-  // of "is the homepage" would need an effect to correct itself on every route
-  // change (and setting state straight from an effect cascades renders).
-  const revealed = !hidesAtTop || scrolledPast || tabbedInto
 
   useEffect(() => {
-    if (!hidesAtTop) return
-    const read = () => setScrolledPast(window.scrollY > REVEAL_AT)
-    // rAF rather than a direct call: a reload part-way down the page must not
-    // start hidden, but reading it synchronously here would be a render cascade.
-    const id = requestAnimationFrame(read)
-    window.addEventListener('scroll', read, { passive: true })
-    return () => {
-      cancelAnimationFrame(id)
-      window.removeEventListener('scroll', read)
+    const sentinel = document.querySelector('[data-banner-end]')
+    // Fail open: no band on the page means the bar must simply be visible.
+    // Deferred a frame because setting state straight from an effect body
+    // cascades renders (and lint rejects it).
+    if (!sentinel) {
+      const id = requestAnimationFrame(() => setRevealed(true))
+      return () => cancelAnimationFrame(id)
     }
-  }, [hidesAtTop])
+
+    const evaluate = () => {
+      const rect = sentinel.getBoundingClientRect()
+      // A page shorter than the viewport can never scroll the band away, so
+      // waiting for it would leave that page with NO navigation at all — an
+      // empty cart is exactly that. Show the bar when the band is out of
+      // reach, as well as when it has actually been scrolled past.
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+      const sentinelTop = rect.top + window.scrollY
+      setRevealed(sentinelTop > maxScroll || rect.top < 0)
+    }
+
+    // `top < 0` is what distinguishes "scrolled up past it" from "still below
+    // the fold", which both report isIntersecting === false.
+    const io = new IntersectionObserver(evaluate, { threshold: 0 })
+    io.observe(sentinel)
+    // Page height is not fixed — a cart gains rows, an accordion opens — and
+    // that changes whether the band is reachable at all.
+    const ro = new ResizeObserver(evaluate)
+    ro.observe(document.body)
+    const id = requestAnimationFrame(evaluate)
+    return () => {
+      io.disconnect()
+      ro.disconnect()
+      cancelAnimationFrame(id)
+    }
+  }, [pathname])
+
+  const showBar = revealed || tabbedInto
 
   return (
     <header
@@ -55,22 +76,34 @@ export function Header({ categories }: HeaderProps) {
       // who may never scroll. It stays reachable, and `onFocusCapture` brings
       // it back into view the moment it is tabbed into; `pointer-events-none`
       // stops a mouse from hitting links it cannot see.
-      onFocusCapture={() => setTabbedInto(true)}
+      onFocusCapture={(e) => {
+        // Only a KEYBOARD focus pins the bar open. A mouse click on a link in
+        // the bar focuses it too, so without the :focus-visible test, clicking
+        // the logo to go home left the bar pinned open for the rest of the
+        // session — visible at the top of the landing page alongside the band.
+        const el = e.target
+        if (el instanceof HTMLElement && el.matches(':focus-visible')) setTabbedInto(true)
+      }}
+      onBlurCapture={(e) => {
+        // Moving between links inside the bar keeps it open; focus leaving it
+        // releases the pin, so it can hide again on scroll.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setTabbedInto(false)
+      }}
       className={clsx(
         'sticky top-0 z-40 border-b border-ink/12 bg-cream',
         'transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none',
-        // Desktop only. Below lg the bar always stays put: on a phone hiding it
-        // would also take the burger menu and the cart off the landing screen,
-        // and there is no room up there for the brand statement anyway. Gated in
-        // CSS rather than by matchMedia so there is no viewport guess to hydrate.
-        !revealed && 'lg:-translate-y-full lg:opacity-0 lg:pointer-events-none',
+        // Every width, not just desktop: the band is the top of the landing page
+        // on phones too, and the bar slides in behind it. This only ever applies
+        // where a band exists — inner pages have none, so the bar is present the
+        // moment they load.
+        !showBar && '-translate-y-full opacity-0 pointer-events-none',
       )}
     >
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center gap-6 lg:h-[84px]">
           {/* Logo */}
           <Link href="/" className="shrink-0" aria-label={t('logo.name')}>
-            <Wordmark className="text-ink text-[13px] lg:text-[15px]" tracking="0.14em" />
+            <Wordmark className="text-ink text-[13px] lg:text-[15px]" tracking="0.14em" stroke="0.35px" />
           </Link>
 
           {/* Desktop nav */}
