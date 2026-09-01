@@ -119,6 +119,11 @@ export default async function HomePage() {
               className="mb-7 block text-ink text-[7.4vw] sm:text-[38px] lg:text-[46px]"
               tracking="0.2em"
             />
+            {/* Marks where the hero wordmark ends. The header watches this to
+                decide when to fade its own small mark in, so the two are never
+                on screen together. Its ABSENCE is meaningful: every other page
+                has no hero mark, so the header shows its own immediately. */}
+            <div data-hero-mark-end aria-hidden="true" />
             <div className="mb-6 font-mono text-[11px] uppercase tracking-[0.2em] text-brass-dark sm:text-xs">
               {t('home.heroSlogan')}
             </div>
