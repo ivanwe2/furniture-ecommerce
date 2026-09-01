@@ -23,14 +23,17 @@ describe('middleware matcher', () => {
     }
   })
 
-  it('does not match build assets', () => {
-    for (const p of ['/_next/static/chunk.js', '/_next/image', '/favicon.ico']) {
+  it('does not match framework plumbing under /_next', () => {
+    // webpack-hmr is the one that bit: matching the Fast Refresh websocket
+    // broke its handshake, and the dev client bootstraps HMR before it
+    // hydrates — so nothing on the site was interactive under `pnpm dev`.
+    for (const p of ['/_next/static/chunk.js', '/_next/image', '/_next/webpack-hmr', '/_next', '/favicon.ico']) {
       expect(pattern.test(p), p).toBe(false)
     }
   })
 
   it('does not exclude storefront paths that merely start with the same letters', () => {
-    for (const p of ['/apixyz', '/api-docs']) {
+    for (const p of ['/apixyz', '/api-docs', '/_nextdoor']) {
       expect(pattern.test(p), p).toBe(true)
     }
   })

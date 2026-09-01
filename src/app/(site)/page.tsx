@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
+import { Wordmark } from '@/components/layout/Wordmark'
 import { HingeBackdrop } from '@/components/home/HingeBackdrop'
 import { getSettings, getCategoryTree, getCompany, getBrandsWithCounts, type CategoryNode } from '@/lib/payload/queries'
 import { BrandCard } from '@/components/catalog/BrandCard'
@@ -106,6 +107,23 @@ export default async function HomePage() {
           </div>
 
           <div className="relative z-[1] max-w-xl py-16 sm:py-24 lg:py-28">
+            {/* The shopfront mark, landing page only — the client wants the
+                company name here, at the head of the hero, rather than in the
+                full-width band that sat above the navbar and read as
+                obtrusive. The navbar carries it everywhere else. */}
+            <Wordmark
+              // Factor Expanded is very wide and the tracking adds ~10.6x the
+              // font size in total width, so these are sized to the container
+              // (343px of usable width at 375px, 576px at max-w-xl), not picked
+              // by eye — at 10.5vw the final X fell off the right edge.
+              className="mb-7 block text-ink text-[7.4vw] sm:text-[38px] lg:text-[46px]"
+              tracking="0.2em"
+            />
+            {/* Marks where the hero wordmark ends. The header watches this to
+                decide when to fade its own small mark in, so the two are never
+                on screen together. Its ABSENCE is meaningful: every other page
+                has no hero mark, so the header shows its own immediately. */}
+            <div data-hero-mark-end aria-hidden="true" />
             <div className="mb-6 font-mono text-[11px] uppercase tracking-[0.2em] text-brass-dark sm:text-xs">
               {t('home.heroSlogan')}
             </div>

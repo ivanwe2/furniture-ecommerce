@@ -134,5 +134,15 @@ export const config = {
   // /api from the lock, so skipping it here changes no behaviour.
   // The `(?:/|$)` boundary matters: a bare `api` alternative would also exclude
   // look-alikes such as /apixyz, quietly leaving them outside the lock.
-  matcher: ['/((?!api(?:/|$)|_next/static|_next/image|favicon.ico).*)'],
+  //
+  // `_next` is excluded WHOLESALE rather than as `_next/static` + `_next/image`.
+  // Everything under it is framework plumbing — build assets in production, and
+  // in dev also `/_next/webpack-hmr`, the Fast Refresh websocket. Matching that
+  // websocket broke its handshake (ERR_INVALID_HTTP_RESPONSE), and because the
+  // dev client bootstraps HMR before it hydrates, the whole page silently
+  // stopped hydrating: no client component anywhere on the site was
+  // interactive under `pnpm dev`. Nothing under `_next` needs the site lock —
+  // App Router sends RSC requests to the page's own URL with `?_rsc=`, not to
+  // a `_next` path, so those are still gated.
+  matcher: ['/((?!api(?:/|$)|_next(?:/|$)|favicon.ico).*)'],
 }
