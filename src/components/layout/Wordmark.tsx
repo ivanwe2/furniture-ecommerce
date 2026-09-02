@@ -14,8 +14,16 @@ import { t } from '@/lib/i18n/bg'
  * element carries the real name instead.
  *
  * Size it from the caller with a text-* class; `tracking` is em-based so it
- * scales with whatever size is set. The trailing indent balances the final
- * interpunct's trailing space so the mark stays optically centred.
+ * scales with whatever size is set.
+ *
+ * There is deliberately NO text-indent. CSS letter-spacing adds its space
+ * AFTER every character including the last, so a CENTRED mark sits one
+ * tracking-unit left of true centre, and an indent of the same size used to
+ * cancel that out for the sign band. Every remaining caller — hero, header,
+ * footer — is left-aligned, where that indent is not a correction but a bug:
+ * it pushed the first glyph right by 0.2em, which is why the hero mark did not
+ * line up with the headline beneath it. Reintroduce it only for a centred use,
+ * and only there.
  */
 export function Wordmark({
   className,
@@ -39,7 +47,7 @@ export function Wordmark({
       // Tracking as an inline style, not a Tailwind arbitrary value: two
       // `tracking-[…]` classes have equal specificity, so which one wins would
       // depend on stylesheet order rather than on the caller.
-      style={{ letterSpacing: tracking, textIndent: tracking, WebkitTextStroke: stroke }}
+      style={{ letterSpacing: tracking, WebkitTextStroke: stroke }}
       className={clsx('font-wordmark whitespace-nowrap leading-none', className)}
     >
       <span aria-hidden="true">{t('logo.wordmark')}</span>
