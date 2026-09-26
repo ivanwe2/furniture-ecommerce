@@ -18,7 +18,6 @@
     "typecheck": "cross-env NODE_OPTIONS=--no-deprecation tsc --noEmit",
     "migrate:local": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
     "gen:redirects": "tsx scripts/gen-redirects.ts",
-    "import-products": "cross-env NODE_OPTIONS=--no-deprecation SKIP_REVALIDATE=1 tsx scripts/import-products.ts",
     "seed:dev": "cross-env NODE_OPTIONS=--no-deprecation SKIP_REVALIDATE=1 tsx scripts/seed-dev.ts",
     "test": "pnpm run test:int",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",

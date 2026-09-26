@@ -62,6 +62,10 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
 }
 ```
 
+- **Exception — admin tooling:** the product importer uses Payload
+  collection endpoints (`/api/products/import/*`, fetched from its admin
+  view) instead of server actions: its image upload exceeds the 1 MB action
+  cap, and Payload authenticates the admin session there (DATA-MODEL §9).
 - Every step's failure message is a bg.ts key, resolved at the edge of the
   UI (the form component), not inside the action (action returns keys, the
   component translates — keeps actions testable).
@@ -157,5 +161,5 @@ in UI-SPEC §Copy) + helper `t(key)` with dot-path typing. Rules:
 - Commit bodies: reference the phase task ID (e.g., "Implements 5.3").
 - Generated files (payload-types.ts, migrations) are committed; build
   output (`.open-next/`, `.wrangler/`) is gitignored.
-- `data/redirects.csv` and `data/import-template.csv` changes are `docs`
+- `data/redirects.csv` changes are `docs`
   commits with a one-line why.
