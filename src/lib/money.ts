@@ -39,6 +39,40 @@ export function eurCentsFromBgnCents(bgnCents: number): number {
   return rem * 2 >= 195583 ? q + 1 : q
 }
 
+/**
+ * A decimal euro amount as it appears in an import file (3.15, "17.49",
+ * "3,15") → integer cents. Parsed from the decimal STRING, never by float
+ * multiplication: 17.49 * 100 is 1748.9999999999998 in JS, and 1.005 * 100 is
+ * 100.49999999999999, so Math.round over floats is not half-up.
+ *
+ * More than two decimals are rounded HALF-UP at the cent and flagged via
+ * `rounded`, so an importer can show the owner exactly which prices it
+ * changed. Returns null for anything that is not a plain non-negative decimal
+ * (negative, exponent notation, NaN/Infinity, stray characters), or above
+ * 9 999 999,99 €.
+ */
+export function eurCentsFromDecimal(
+  value: number | string,
+): { cents: number; rounded: boolean } | null {
+  let text: string
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) return null
+    // String() of a JSON number is its shortest round-trip form: 17.49 → "17.49".
+    text = String(value)
+  } else {
+    // A Bulgarian decimal comma is accepted in text values ("3,15").
+    text = value.trim().replace(',', '.')
+  }
+  const match = /^(\d{1,7})(?:\.(\d+))?$/.exec(text)
+  if (!match) return null
+  const whole = Number(match[1])
+  const fraction = match[2] ?? ''
+  const cents = whole * 100 + Number(fraction.slice(0, 2).padEnd(2, '0'))
+  const rest = fraction.slice(2)
+  const roundUp = rest !== '' && rest.charCodeAt(0) >= 53 // first dropped digit ≥ '5'
+  return { cents: roundUp ? cents + 1 : cents, rounded: /[1-9]/.test(rest) }
+}
+
 export function formatBgn(bgnCents: number): string {
   assertCents(bgnCents)
   return `${formatAmount(bgnCents)} лв.`

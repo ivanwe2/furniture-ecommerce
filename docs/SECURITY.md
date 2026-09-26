@@ -121,6 +121,25 @@ curl -s 'https://nasteh.bg/api/pages?limit=50' | grep -c '"status":"draft"'  # 0
 
 ---
 
+### T6 — Product importer (admin, 2026-09-24)
+
+`POST /api/products/import/{preview,apply,image/:id}` (`src/lib/import/endpoints.ts`).
+- **Who:** logged-in `users` only (401 otherwise); `Origin` must match Host /
+  X-Forwarded-Host / `NEXT_PUBLIC_SITE_URL` (403); exact content type
+  `application/json` or `application/octet-stream` (415) — with the Lax
+  cookie and no CORS config, a cross-site page cannot drive it.
+- **Size:** `Content-Length` required and capped before the body is read
+  (file 5 MB, one row 256 KB, image 15 MB).
+- **SSRF (the one new outbound path):** `image_url` fetches connect only to
+  globally routable unicast addresses — DNS is resolved in a guarded
+  `lookup` and the socket uses the checked address (no rebinding), IP
+  literals are checked up front, ports 80/443 only, ≤ 4 redirects each
+  re-checked, 20 s deadline, 15 MB streamed cap; bytes are decoded by sharp
+  (pixel cap) before storage, SVG refused. Bot protection is never bypassed.
+- Re-verify: `src/lib/import/public-address.test.ts`; the 2026-09-24 e2e run
+  refused loopback, `localhost`, 169.254.169.254, decimal-IP, `[::1]`,
+  DNS-to-loopback (nip.io), odd port and redirect-to-loopback links.
+
 ## 3. Audit record — 2026-07-28
 
 Full-codebase review: every server action, collection access rule, the auth

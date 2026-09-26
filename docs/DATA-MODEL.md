@@ -198,40 +198,51 @@ getAllSlugsForSitemap(): { products; categories; brands; pages } // tags: all
 
 `src/lib/payload/revalidate.ts` exports `revalidateTags(...tags)` used by
 all collection hooks (single import point; also no-ops safely during
-`pnpm seed:dev` / import scripts via env guard `SKIP_REVALIDATE=1`).
+`pnpm seed:dev` via env guard `SKIP_REVALIDATE=1`).
 
-## 9. CSV import contract (Phase 9 — `scripts/import-products.ts`)
+## 9. JSON product import (admin → Продукти → „Импорт от JSON")
 
-Header (exact, UTF-8, comma-separated; template file
-`data/import-template.csv` ships 3 example rows):
+Replaces the Phase-9 CSV script, which never ran (see PROGRESS Decisions log
+2026-09-24). Owner-facing: no shell, no sysadmin. Code: `src/lib/import/`
+(contract, run, endpoints, fetch-image, public-address) +
+`src/components/admin/import/`.
 
-```
-category_slug,brand,product_name,item_name,sku,unit,length_mm,color,price_bgn,price_eur
-```
+File: UTF-8 JSON **array** of records, ≤ 2000 rows, ≤ 5 MB.
 
-Rules:
-- Consecutive rows sharing `product_name` (after trim) merge into ONE
-  product with multiple item rows. Non-consecutive same names → validation
-  error (forces clean source files).
-- Price: exactly one of `price_bgn` / `price_eur` per row. BGN → EUR at
-  ÷1.95583, **round half-up to cents** (uses lib/money helpers — единствен
-  източник на истина). Column exists because supplier lists and the old
-  site are still лв-denominated.
-- `unit` must be one of the select values; empty → `бр.`.
-- `category_slug` must exist (import does NOT create categories — the tree
-  is owner-curated); `brand` created on the fly if missing.
-- Upsert key: `sku`. Existing SKU → update its row fields + parent product
-  price data; new SKU under existing `product_name` → append item row.
-  Products created as `status: draft` (owner reviews prices, then
-  publishes — launch-gate item).
-- Media: import does NOT handle images (owner/Ivan attach via admin).
-- Idempotent: re-running the same file yields zero changes.
-- Report → `scripts/import-report.txt`: created/updated/skipped counts +
-  row-numbered errors; bad rows never abort the run.
-- Run LOCAL first, review report, then against remote per CLOUDFLARE §6
-  rules (with `SKIP_REVALIDATE=1`, then one manual revalidate pass — the
-  script calls `revalidateTags('products','categories','brands')` once at
-  the end when run in-app context, or Ivan touches any product in admin).
+| Key | Required | Rule |
+|---|---|---|
+| `sku` | yes | text (a number is accepted with a leading-zeros warning); trimmed; ≤ 64 chars; unique within the file |
+| `name` | yes | product name AND its single item-row name |
+| `category` | yes | name path `"Root > Child > Leaf"`, 1–3 levels. Matched case/whitespace-insensitively from the root; **missing levels are created** |
+| `price` | yes | final, VAT-inclusive EUR (number, or text with `.`/`,`). Parsed from the decimal string (`eurCentsFromDecimal`); > 2 decimals rounded half-up with a warning |
+| `currency` | no | if present must be `EUR` |
+| `stock` | no | whole number; negative → 0 with a warning; missing → 0 on create, untouched on update |
+| `brand` | no | matched by name, created if missing |
+| `description` | no | plain text → full Lexical state, one paragraph per line |
+| `image_url` | no | http(s); a bad link only skips the picture |
+| `unit` / `color` | no | unit must be `бр.`/`м`/`компл.`/`чифт` (never coerced) |
+
+Unknown keys are listed in the preview and ignored.
+
+Semantics (Ivan, 2026-09-24):
+- **One record = one product with one item row.** No family grouping.
+- **Upsert key: `sku`.** New SKU → complete product, `status: draft`.
+  Existing SKU → **only that item row's price and stock** change, plus a
+  picture if the product has none. Name, description, category, brand,
+  gallery and status belong to the owner once the product exists.
+- Flow: preview (server-side, read-only) → the browser applies ONE row per
+  request (no request outlives the proxy timeout; a closed tab leaves a
+  clean prefix and re-running the same file finishes it — idempotent).
+  Writes happen inside Next route handlers, so the normal afterChange
+  revalidation keeps storefront + checkout prices current.
+- Images: downloaded server-side through an SSRF guard (public unicast IPs
+  only, DNS checked at connect, ports 80/443, ≤ 4 re-checked redirects, 20 s,
+  15 MB, decoded by sharp before storing; AVIF/GIF/TIFF → WebP). **Bot
+  protection is never bypassed** — a blocked download is reported on the row
+  with a manual „Качи снимка" upload. Rows sharing one `image_url` share one
+  media doc within a run.
+- New categories are visible in the storefront menu immediately (categories
+  have no draft state) — the preview says so.
 
 ## 10. Seed script (`pnpm seed:dev`, Phase 2)
 

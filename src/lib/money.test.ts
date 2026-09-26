@@ -3,6 +3,7 @@ import {
   BGN_PER_EUR,
   bgnCentsFromEurCents,
   eurCentsFromBgnCents,
+  eurCentsFromDecimal,
   formatBgn,
   formatEur,
   formatPrice,
@@ -141,6 +142,47 @@ describe('formatPrice', () => {
     }
     else {
       delete process.env.NEXT_PUBLIC_SHOW_BGN
+    }
+  })
+})
+
+describe('eurCentsFromDecimal', () => {
+  it('converts the float values that break naive multiplication', () => {
+    // 17.49 * 100 = 1748.9999999999998 and 4.07 * 100 = 407.00000000000006
+    expect(eurCentsFromDecimal(17.49)).toEqual({ cents: 1749, rounded: false })
+    expect(eurCentsFromDecimal(4.07)).toEqual({ cents: 407, rounded: false })
+    expect(eurCentsFromDecimal(0.61)).toEqual({ cents: 61, rounded: false })
+  })
+
+  it('handles whole numbers, one decimal and trailing zeros', () => {
+    expect(eurCentsFromDecimal(12)).toEqual({ cents: 1200, rounded: false })
+    expect(eurCentsFromDecimal(12.5)).toEqual({ cents: 1250, rounded: false })
+    expect(eurCentsFromDecimal('1.50')).toEqual({ cents: 150, rounded: false })
+    expect(eurCentsFromDecimal('1.500')).toEqual({ cents: 150, rounded: false })
+    expect(eurCentsFromDecimal(0)).toEqual({ cents: 0, rounded: false })
+  })
+
+  it('accepts text with a decimal comma and surrounding spaces', () => {
+    expect(eurCentsFromDecimal('3,15')).toEqual({ cents: 315, rounded: false })
+    expect(eurCentsFromDecimal(' 3.15 ')).toEqual({ cents: 315, rounded: false })
+  })
+
+  it('rounds half-up at the cent boundary .004 / .005 / .006', () => {
+    expect(eurCentsFromDecimal(1.004)).toEqual({ cents: 100, rounded: true })
+    expect(eurCentsFromDecimal(1.005)).toEqual({ cents: 101, rounded: true })
+    expect(eurCentsFromDecimal(1.006)).toEqual({ cents: 101, rounded: true })
+    expect(eurCentsFromDecimal(0.285)).toEqual({ cents: 29, rounded: true })
+    expect(eurCentsFromDecimal(2.675)).toEqual({ cents: 268, rounded: true })
+    expect(eurCentsFromDecimal(0.995)).toEqual({ cents: 100, rounded: true })
+    expect(eurCentsFromDecimal('0.6125')).toEqual({ cents: 61, rounded: true })
+  })
+
+  it('rejects anything that is not a plain non-negative decimal', () => {
+    for (const bad of [-1, Number.NaN, Number.POSITIVE_INFINITY, 1e21, 1e-7]) {
+      expect(eurCentsFromDecimal(bad)).toBeNull()
+    }
+    for (const bad of ['', 'abc', '-3.15', '1e3', '1.2.3', '3.15 €', '.5', '5.', '1 000', '12345678']) {
+      expect(eurCentsFromDecimal(bad)).toBeNull()
     }
   })
 })
