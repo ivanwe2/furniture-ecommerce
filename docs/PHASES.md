@@ -306,6 +306,9 @@ Commit: `feat(phase-8): complete — SEO & performance`
 ## PHASE 9 — Import & seeding (~5–8h + content work)
 
 Tasks:
+> **Superseded 2026-09-24:** the CSV script below was replaced by the admin
+> JSON importer (DATA-MODEL §9); kept here as history.
+
 9.1 `scripts/import-products.ts` per DATA-MODEL §9 (validation, merge,
     BGN→EUR via money.ts, draft creation, SKU upsert, report,
     idempotence); `data/import-template.csv` with 3 documented rows.

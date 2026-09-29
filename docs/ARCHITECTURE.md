@@ -357,10 +357,8 @@ RELAYHOST_PASSWORD=
 ├── CLAUDE.md  PROGRESS.md
 ├── docs/                      # this documentation set
 ├── data/
-│   ├── import-template.csv    # 3 example rows, header contract
 │   └── redirects.csv          # old PrestaShop → new paths
 ├── scripts/
-│   ├── import-products.ts     # Phase 9
 │   └── seed-dev.ts            # Phase 2
 ├── src/
 │   ├── app/

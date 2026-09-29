@@ -217,7 +217,11 @@ directly; a proxy on another host needs the port mapping adjusted (see the
   hop, which is client-supplied. Without either header, every visitor shares one
   rate-limit bucket.
 - **`client_max_body_size` ~12M** — product image uploads in the admin
-  (~10 MB cap) must not be truncated by the proxy.
+  (~10 MB cap) must not be truncated by the proxy. The importer's manual
+  image upload allows up to 15 MB; raise to ~16M if owners hit 413s.
+- **Outbound HTTP(S) from `app`** — the admin product importer downloads
+  `image_url` links itself, so the app container needs egress on 80/443
+  (SECURITY.md T6). Without it every image falls back to manual upload.
 
 - **HTTPS only, with HSTS.** The admin session cookie is issued `Secure`,
   `HttpOnly`, `SameSite=Lax`. Redirect :80 → :443 and send HSTS so a bookmarked

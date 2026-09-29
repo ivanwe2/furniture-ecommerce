@@ -1,6 +1,8 @@
 import type { CollectionConfig, Where } from 'payload'
 import { slugify } from '@/lib/slug'
 import { revalidateTags } from '@/lib/payload/revalidate'
+import { importEndpoints } from '@/lib/import/endpoints'
+import { bg } from '@/lib/i18n/bg'
 
 export const Products: CollectionConfig = {
   slug: 'products',
@@ -8,7 +10,23 @@ export const Products: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'category', 'brand', 'status'],
+    components: {
+      views: {
+        // Bulk import from a JSON file (DATA-MODEL §9) at
+        // /admin/collections/products/import. A COLLECTION view on purpose:
+        // Payload applies its normal login gate to these, whereas root custom
+        // views skip it.
+        import: {
+          Component: '/components/admin/import/ProductImportView#ProductImportView',
+          path: '/import',
+          exact: true,
+          meta: { title: bg.adminImport.title },
+        },
+        list: { actions: ['/components/admin/import/ImportLink#ImportLink'] },
+      },
+    },
   },
+  endpoints: importEndpoints,
   access: {
     read: ({ req }) => Boolean(req.user) || { status: { equals: 'published' } },
   },
@@ -151,7 +169,7 @@ export const Products: CollectionConfig = {
   ],
   hooks: {
     beforeValidate: [
-      async ({ data, req }) => {
+      async ({ data, req, originalDoc }) => {
         if (!data) return data
         if (!data.slug && data.name) {
           data.slug = slugify(data.name)
@@ -162,35 +180,47 @@ export const Products: CollectionConfig = {
             if (typeof it?.sku === 'string') it.sku = it.sku.trim()
           }
         }
+        // The derived columns below describe the document as it WILL be saved.
+        // On update, `data` holds only the fields being changed: the admin form
+        // happens to send the whole document, but the local API and REST PATCH
+        // send partial data (the product importer updates just `items`, or just
+        // `gallery`). Building from `data` alone would drop the name from
+        // searchText and null minPriceEurCents on every such save.
+        const name: string = data.name ?? originalDoc?.name ?? ''
+        const items: { name?: string; sku?: string; priceEurCents?: number }[] = Array.isArray(data.items)
+          ? data.items
+          : Array.isArray(originalDoc?.items)
+            ? originalDoc.items
+            : []
+        const brand = 'brand' in data ? data.brand : originalDoc?.brand
+
         // Build searchText — resolve brand name if only ID is available
         let brandName = ''
-        if (data.brand && typeof data.brand === 'object' && !Array.isArray(data.brand)) {
-          if (typeof data.brand.name === 'string') {
-            brandName = data.brand.name
-          } else if (typeof data.brand.id !== 'undefined') {
+        if (brand && typeof brand === 'object' && !Array.isArray(brand)) {
+          if (typeof brand.name === 'string') {
+            brandName = brand.name
+          } else if (typeof brand.id !== 'undefined') {
             const brandDoc = await req.payload.findByID({
               collection: 'brands',
-              id: data.brand.id,
+              id: brand.id,
               depth: 0,
               overrideAccess: true,
             })
             if (brandDoc?.name) brandName = brandDoc.name
           }
-        } else if (typeof data.brand === 'string' || typeof data.brand === 'number') {
+        } else if (typeof brand === 'string' || typeof brand === 'number') {
           const brandDoc = await req.payload.findByID({
             collection: 'brands',
-            id: data.brand,
+            id: brand,
             depth: 0,
             overrideAccess: true,
           })
           if (brandDoc?.name) brandName = brandDoc.name
         }
-        const parts = [data.name ?? '']
-        if (Array.isArray(data.items)) {
-          for (const it of data.items) {
-            if (it?.name) parts.push(it.name)
-            if (it?.sku) parts.push(it.sku)
-          }
+        const parts = [name]
+        for (const it of items) {
+          if (it?.name) parts.push(it.name)
+          if (it?.sku) parts.push(it.sku)
         }
         if (brandName) parts.push(brandName)
         data.searchText = parts.join(' ').toLowerCase()
@@ -199,14 +229,8 @@ export const Products: CollectionConfig = {
         // Prices live in the `items` array and Payload cannot sort on an array
         // subfield, so without this column "най-евтини" is impossible. Kept in
         // step with `items` on every save, exactly like searchText above.
-        if (Array.isArray(data.items) && data.items.length > 0) {
-          const prices = data.items
-            .map((it) => Number(it?.priceEurCents))
-            .filter((n) => Number.isFinite(n))
-          data.minPriceEurCents = prices.length > 0 ? Math.min(...prices) : null
-        } else {
-          data.minPriceEurCents = null
-        }
+        const prices = items.map((it) => Number(it?.priceEurCents)).filter((n) => Number.isFinite(n))
+        data.minPriceEurCents = prices.length > 0 ? Math.min(...prices) : null
 
         return data
       },
