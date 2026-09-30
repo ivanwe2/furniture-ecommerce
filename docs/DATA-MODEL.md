@@ -241,6 +241,10 @@ Semantics (Ivan, 2026-09-24):
   protection is never bypassed** — a blocked download is reported on the row
   with a manual „Качи снимка" upload. Rows sharing one `image_url` share one
   media doc within a run.
+- Every preview (and every image save) first probes that the media folder is
+  writable (`media-storage.ts`); if not, the screen names the OS error
+  (EACCES/ENOSPC…) and the folder, and a failed save is reported as
+  `storeFailed` — never as „not an image" (DEPLOY §9).
 - New categories are visible in the storefront menu immediately (categories
   have no draft state) — the preview says so.
 

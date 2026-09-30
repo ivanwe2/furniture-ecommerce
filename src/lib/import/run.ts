@@ -23,6 +23,7 @@ import {
   type Issue,
 } from '@/lib/import/contract'
 import { downloadImage, toStoredImage, type StoredImage } from '@/lib/import/fetch-image'
+import { checkMediaStorage } from '@/lib/import/media-storage'
 import { slugify } from '@/lib/slug'
 import type { Media, Product } from '@/payload-types'
 
@@ -40,6 +41,12 @@ import type { Media, Product } from '@/payload-types'
  * publish status belong to the owner once the product exists, so re-running a
  * file never undoes their edits.
  */
+
+/** Where Payload writes uploads (Media.ts `upload.staticDir`, i.e. MEDIA_DIR). */
+function mediaDir(payload: Payload): string {
+  const { upload } = payload.collections.media.config
+  return (upload && upload.staticDir) || 'media'
+}
 
 type CategoryRow = { id: number; name: string; slug: string | null; parentId: number | null }
 
@@ -123,10 +130,11 @@ export async function previewImport(payload: Payload, input: unknown): Promise<P
   if (!file.ok) return file
 
   const valid = file.rows.flatMap((row) => (row.ok ? [row.record] : []))
-  const [categories, brands, hits] = await Promise.all([
+  const [categories, brands, hits, mediaStorage] = await Promise.all([
     loadCategories(payload),
     loadBrands(payload),
     findBySkus(payload, valid.map((r) => r.sku)),
+    checkMediaStorage(mediaDir(payload)),
   ])
 
   const newCategoryPaths = new Set<string>()
@@ -179,7 +187,14 @@ export async function previewImport(payload: Payload, input: unknown): Promise<P
     }
   })
 
-  return { ok: true, rows, unknownKeys: file.unknownKeys, newCategories: newCategoryPaths.size, newBrands: newBrands.size }
+  return {
+    ok: true,
+    rows,
+    unknownKeys: file.unknownKeys,
+    newCategories: newCategoryPaths.size,
+    newBrands: newBrands.size,
+    mediaStorage,
+  }
 }
 
 // ── Apply (one row) ──────────────────────────────────────────────────
@@ -298,14 +313,21 @@ async function attachImage(
       }
     }
 
+    // No point downloading what cannot be saved: report the storage problem.
+    const storage = await checkMediaStorage(mediaDir(payload))
+    if (!storage.ok) return { kind: 'failed', reason: 'storeFailed' }
+
     const downloaded = await downloadImage(record.imageUrl)
     if (!downloaded.ok) return { kind: 'failed', reason: downloaded.reason }
     const media = await storeMedia(payload, downloaded.image, record.name, record.sku)
     await appendToGallery(payload, product.id, media.id)
     return { kind: 'attached', mediaId: media.id }
   } catch (err) {
+    // Not the link's fault: the bytes were a valid image (sharp decoded them
+    // in downloadImage) — saving failed. Reporting this as „not an image"
+    // once hid a production media-folder permission problem.
     console.error('[import] storing image failed', record.sku, err instanceof Error ? err.message : err)
-    return { kind: 'failed', reason: 'notImage' }
+    return { kind: 'failed', reason: 'storeFailed' }
   }
 }
 
@@ -395,6 +417,8 @@ export async function attachUploadedImage(
 ): Promise<ImageUploadResponse> {
   const product = await payload.findByID({ collection: 'products', id: productId, depth: 0, disableErrors: true })
   if (!product) return { ok: false, error: { key: 'generic' } }
+  const storage = await checkMediaStorage(mediaDir(payload))
+  if (!storage.ok) return { ok: false, error: { key: 'mediaNotWritable', params: { code: storage.code } } }
   const stored = await toStoredImage(data)
   if (!stored.ok) return stored
   const sku = product.items?.[0]?.sku ?? String(product.id)
