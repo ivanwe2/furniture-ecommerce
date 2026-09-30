@@ -70,6 +70,7 @@ export type IssueKey =
   | 'unitInvalid'
   | 'imageUrlInvalid'
   | 'skuConflict'
+  | 'mediaNotWritable'
   | 'saveFailed'
   | 'network'
   | 'unauthorized'

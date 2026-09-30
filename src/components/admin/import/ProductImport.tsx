@@ -274,6 +274,18 @@ export function ProductImport({ apiRoute, adminRoute }: Props) {
             </div>
           )}
 
+          {!preview.mediaStorage.ok && (
+            <div className="nasteh-import__warning" role="alert">
+              <strong>{t('adminImport.mediaStorageTitle')}</strong>
+              <p>
+                {fill(t('adminImport.mediaStorageBody'), {
+                  dir: preview.mediaStorage.dir,
+                  code: preview.mediaStorage.code,
+                })}
+              </p>
+            </div>
+          )}
+
           <div className="nasteh-import__actions">
             {run === 'running' ? (
               <Button

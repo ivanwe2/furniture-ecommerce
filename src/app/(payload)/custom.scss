@@ -195,6 +195,19 @@ html[data-theme='light'] {
   }
 }
 
+.nasteh-import__warning {
+  max-width: 70ch;
+  margin: var(--base) 0;
+  padding: calc(var(--base) * 0.75) var(--base);
+  border-left: 3px solid var(--theme-error-500);
+  background: var(--theme-error-100);
+  color: var(--theme-error-800, var(--theme-text));
+
+  p {
+    margin: 0.25rem 0 0;
+  }
+}
+
 .nasteh-import__actions {
   margin: var(--base) 0;
 }

@@ -431,6 +431,19 @@ Notes:
   `docker compose exec -u root app chown -R 1001:1001 /app/media` (or, for a
   bind-mount, `chown -R 1001:1001 <hostpath>` on the host). Ownership persists,
   so this is a one-time fix per volume.
+  **Docker inside an unprivileged Proxmox LXC:** uids are shifted (container
+  uid 1001 is host uid `101001` with the default idmap), so a bind-mount from
+  the Proxmox host may refuse the in-container chown (`Operation not
+  permitted`) — chown the host path to `101001:101001` on the Proxmox host
+  instead. Check: `docker compose exec app sh -c 'touch /app/media/.w && rm
+  /app/media/.w && echo WRITABLE'`.
+  **How it shows up:** admin uploads fail with Payload's generic „Имаше
+  проблем при качването на файла." (the `EACCES` is only in `docker compose
+  logs app`); the product importer (Продукти → Импорт) checks the folder on
+  every preview and shows a red „Сървърът в момента не може да записва снимки"
+  with the error code. After fixing, re-run the same import file — it only
+  adds the missing pictures (2026-09-30: this was the cause of the first
+  production import's image failures).
 - **Uploads have two size ceilings, and both bite before sharp runs.** The
   proxy's `client_max_body_size` (§6, set it to `12m`) is the outer one — below
   it, nginx answers `413` and the app never sees the request. The inner one is

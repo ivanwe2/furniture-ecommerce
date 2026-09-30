@@ -15,10 +15,16 @@ export const IMAGE_FAILURES = [
   'network',
   'forbiddenHost',
   'httpError',
+  // Downloaded fine, but the server could not save it (media folder not
+  // writable, disk full…) — see MediaStorage.
+  'storeFailed',
 ] as const
 export type ImageFailure = (typeof IMAGE_FAILURES)[number]
 
 export type CategoryStep = { name: string; exists: boolean }
+
+/** Whether the server can write into the media folder (checked on preview). */
+export type MediaStorage = { ok: true } | { ok: false; code: string; dir: string }
 
 export type RowChanges = {
   price?: { from: number; to: number }
@@ -51,7 +57,14 @@ export type PreviewRow =
     })
 
 export type PreviewResponse =
-  | { ok: true; rows: PreviewRow[]; unknownKeys: string[]; newCategories: number; newBrands: number }
+  | {
+      ok: true
+      rows: PreviewRow[]
+      unknownKeys: string[]
+      newCategories: number
+      newBrands: number
+      mediaStorage: MediaStorage
+    }
   | { ok: false; error: Issue }
 
 export type ApplyRequest = {
