@@ -323,6 +323,39 @@ html[data-theme='light'] {
   color: var(--theme-elevation-700);
 }
 
+/* Copy → paste target for a failed picture. Empty on purpose (no React
+   children): the label is drawn here, so text can never end up inside it. */
+.nasteh-import__paste {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px dashed var(--theme-elevation-400);
+  background: var(--theme-elevation-50);
+  color: var(--theme-elevation-700);
+  font-size: 0.8125rem;
+  cursor: text;
+  caret-color: transparent;
+  overflow: hidden;
+  white-space: nowrap;
+
+  &::before {
+    content: attr(data-label);
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: 2px solid var(--nasteh-brass);
+    outline-offset: 1px;
+    border-color: var(--nasteh-brass);
+    background: var(--theme-elevation-0);
+  }
+
+  &--busy {
+    cursor: progress;
+    opacity: 0.7;
+  }
+}
+
 .nasteh-import__manual {
   display: flex;
   flex-direction: column;

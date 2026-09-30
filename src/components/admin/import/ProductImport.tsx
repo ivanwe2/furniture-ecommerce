@@ -184,6 +184,11 @@ export function ProductImport({ apiRoute, adminRoute }: Props) {
     setResult(index, { ...current, manual: outcome })
   }
 
+  function manualError(index: number, message: string) {
+    const current = results[index]
+    if (current?.state === 'done') setResult(index, { ...current, manual: { state: 'error', message } })
+  }
+
   const preview = loaded?.preview
   const counts = preview
     ? {
@@ -360,6 +365,7 @@ export function ProductImport({ apiRoute, adminRoute }: Props) {
                     result={results[row.index]}
                     adminRoute={adminRoute}
                     onUpload={(productId, file) => void uploadImage(row.index, productId, file)}
+                    onManualError={(message) => manualError(row.index, message)}
                   />
                 ))}
               </tbody>
@@ -376,9 +382,10 @@ type RowProps = {
   result: RowResult | undefined
   adminRoute: string
   onUpload: (productId: number, file: File) => void
+  onManualError: (message: string) => void
 }
 
-function PreviewTableRow({ row, result, adminRoute, onUpload }: RowProps) {
+function PreviewTableRow({ row, result, adminRoute, onUpload, onManualError }: RowProps) {
   const issues = row.status === 'error' ? row.errors : []
   const imageUrl = row.status === 'error' ? null : row.imageUrl
 
@@ -446,13 +453,13 @@ function PreviewTableRow({ row, result, adminRoute, onUpload }: RowProps) {
         )}
       </td>
       <td>
-        <RowStatus row={row} result={result} adminRoute={adminRoute} onUpload={onUpload} />
+        <RowStatus row={row} result={result} adminRoute={adminRoute} onUpload={onUpload} onManualError={onManualError} />
       </td>
     </tr>
   )
 }
 
-function RowStatus({ row, result, adminRoute, onUpload }: RowProps) {
+function RowStatus({ row, result, adminRoute, onUpload, onManualError }: RowProps) {
   if (!result) {
     const planned = {
       create: t('adminImport.statusCreate'),
@@ -493,7 +500,7 @@ function RowStatus({ row, result, adminRoute, onUpload }: RowProps) {
     unchanged: t('adminImport.resultUnchanged'),
   }[response.status]
   const { image } = response
-  const inputId = `nasteh-import-image-${row.index}`
+  const imageUrl = row.status === 'error' ? null : row.imageUrl
 
   return (
     <>
@@ -507,27 +514,119 @@ function RowStatus({ row, result, adminRoute, onUpload }: RowProps) {
         (manual?.state === 'done' ? (
           <span className="nasteh-import__detail">{t('adminImport.imageAttached')}</span>
         ) : (
-          <div className="nasteh-import__manual">
-            <span className="nasteh-import__issue--warning">{failureText(image.reason)}</span>
-            <span className="nasteh-import__detail">{t('adminImport.manualHint')}</span>
-            <input
-              id={inputId}
-              className="nasteh-import__file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
-              disabled={manual?.state === 'uploading'}
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                event.target.value = ''
-                if (file) onUpload(response.productId, file)
-              }}
-            />
-            <label htmlFor={inputId} className="nasteh-import__pick nasteh-import__pick--small">
-              {manual?.state === 'uploading' ? t('adminImport.uploading') : t('adminImport.uploadImage')}
-            </label>
-            {manual?.state === 'error' && <span className="nasteh-import__issue--error">{manual.message}</span>}
-          </div>
+          <ManualImage
+            index={row.index}
+            productId={response.productId}
+            imageUrl={imageUrl}
+            reason={image.reason}
+            manual={manual}
+            onUpload={onUpload}
+            onManualError={onManualError}
+          />
         ))}
     </>
+  )
+}
+
+/** The picture from a paste or drop, if there is one (any image type — the server re-encodes). */
+function imageFrom(data: DataTransfer | null): File | null {
+  if (!data) return null
+  for (const item of Array.from(data.items)) {
+    if (item.kind === 'file' && item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) return file
+    }
+  }
+  return Array.from(data.files).find((file) => file.type.startsWith('image/')) ?? null
+}
+
+type ManualImageProps = {
+  index: number
+  productId: number
+  imageUrl: string | null
+  reason: ImageFailure
+  manual: ManualState | undefined
+  onUpload: (productId: number, file: File) => void
+  onManualError: (message: string) => void
+}
+
+/**
+ * The fallback for a picture the server could not download. The fast path is
+ * copy → paste: „Отвори линка" opens the picture in a new tab AND puts the
+ * cursor in this row's paste box, so after "Copy image" there the owner comes
+ * back and presses Ctrl+V. The box is contentEditable (not a page-wide
+ * listener) because Safari only fires paste events into editable elements; it
+ * holds no React children (its label is CSS ::before), so nothing typed into
+ * it can desync the tree. Dropping a file on it and the file picker also work.
+ */
+function ManualImage({ index, productId, imageUrl, reason, manual, onUpload, onManualError }: ManualImageProps) {
+  const pasteBox = useRef<HTMLDivElement>(null)
+  const uploading = manual?.state === 'uploading'
+  const inputId = `nasteh-import-image-${index}`
+
+  function take(data: DataTransfer | null) {
+    if (uploading) return
+    const file = imageFrom(data)
+    if (file) onUpload(productId, file)
+    else onManualError(t('adminImport.clipboardNoImage'))
+  }
+
+  return (
+    <div className="nasteh-import__manual">
+      <span className="nasteh-import__issue--warning">{failureText(reason)}</span>
+      <span className="nasteh-import__detail">{t('adminImport.manualHint')}</span>
+      {imageUrl && (
+        <a
+          className="nasteh-import__detail"
+          href={imageUrl}
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+          onClick={() => pasteBox.current?.focus()}
+        >
+          {t('adminImport.imageLink')}
+        </a>
+      )}
+      <div
+        ref={pasteBox}
+        className={clsx('nasteh-import__paste', uploading && 'nasteh-import__paste--busy')}
+        contentEditable={!uploading}
+        role="textbox"
+        aria-label={t('adminImport.pasteLabel')}
+        aria-disabled={uploading}
+        data-label={uploading ? t('adminImport.uploading') : t('adminImport.pasteZone')}
+        onPaste={(event) => {
+          event.preventDefault()
+          take(event.clipboardData)
+        }}
+        onDrop={(event) => {
+          event.preventDefault()
+          take(event.dataTransfer)
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onCut={(event) => event.preventDefault()}
+        onKeyDown={(event) => {
+          // A paste box, not a text field: only Tab (to move on) and the
+          // paste shortcut get through.
+          const paste = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v'
+          if (event.key !== 'Tab' && !paste) event.preventDefault()
+        }}
+      />
+      <input
+        id={inputId}
+        className="nasteh-import__file"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+        disabled={uploading}
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ''
+          if (file) onUpload(productId, file)
+        }}
+      />
+      <label htmlFor={inputId} className="nasteh-import__pick nasteh-import__pick--small">
+        {t('adminImport.uploadImage')}
+      </label>
+      {manual?.state === 'error' && <span className="nasteh-import__issue--error">{manual.message}</span>}
+    </div>
   )
 }
