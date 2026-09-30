@@ -133,7 +133,7 @@ products) into the running stack. Opt-in (`SEED_ALLOW_PROD=1`) so nothing seeds
 by accident; edit or replace it via the admin afterwards:
 
 ```bash
-docker compose exec -e SEED_ALLOW_PROD=1 -e SKIP_REVALIDATE=1 \
+docker compose exec -u nasteh -e SEED_ALLOW_PROD=1 -e SKIP_REVALIDATE=1 \
   app node_modules/.bin/tsx scripts/seed-dev.ts
 docker compose up -d --force-recreate app   # clear the cache so seeded data shows
 ```
@@ -421,29 +421,30 @@ Notes:
   `/var/lib/postgresql` (PG 18+ convention — data lands in a version subdir),
   NOT `/var/lib/postgresql/data`. A major Postgres upgrade needs `pg_upgrade`
   (or dump/restore via §5) — don't just bump the image tag.
-- **Media volume must be writable by uid 1001.** The app runs as the non-root
-  `nasteh` user (uid 1001) and writes uploads (+ their WebP variants) to
-  `/app/media`. A *fresh* named `media` volume inherits the image dir's 1001
-  ownership, so the default compose setup just works. But a volume created
-  root-owned by an earlier image, or a **host bind-mount** in place of the named
-  volume, will be root-owned → uploads fail in the admin with `EACCES` and a
-  **400 Bad Request**. Fix by chowning the mount to the app user:
-  `docker compose exec -u root app chown -R 1001:1001 /app/media` (or, for a
-  bind-mount, `chown -R 1001:1001 <hostpath>` on the host). Ownership persists,
-  so this is a one-time fix per volume.
-  **Docker inside an unprivileged Proxmox LXC:** uids are shifted (container
-  uid 1001 is host uid `101001` with the default idmap), so a bind-mount from
-  the Proxmox host may refuse the in-container chown (`Operation not
-  permitted`) — chown the host path to `101001:101001` on the Proxmox host
-  instead. Check: `docker compose exec app sh -c 'touch /app/media/.w && rm
-  /app/media/.w && echo WRITABLE'`.
-  **How it shows up:** admin uploads fail with Payload's generic „Имаше
-  проблем при качването на файла." (the `EACCES` is only in `docker compose
-  logs app`); the product importer (Продукти → Импорт) checks the folder on
-  every preview and shows a red „Сървърът в момента не може да записва снимки"
-  with the error code. After fixing, re-run the same import file — it only
-  adds the missing pictures (2026-09-30: this was the cause of the first
-  production import's image failures).
+- **Media volume must be writable by uid 1001 — the container now fixes this
+  itself.** The app runs as the non-root `nasteh` user (uid 1001) and writes
+  uploads (+ their WebP variants) to `MEDIA_DIR` (`/app/media`). A root-owned
+  volume (created by an older image) or a **host bind-mount** used to break
+  every upload with `EACCES` (2026-09-30: the cause of the first production
+  import's image failures). Since then `docker-entrypoint.sh` starts as root
+  only to re-own that folder when anything in it is not uid 1001's, logs
+  `[entrypoint] fixed ownership of /app/media…`, and then drops to `nasteh`
+  before `payload migrate` / `next start` — so a plain redeploy/restart fixes
+  it, no manual chown. Because the image no longer ends in `USER nasteh`,
+  `docker compose exec app …` runs as root by default: pass `-u nasteh` for
+  anything that runs app code (e.g. the §3 seed).
+  **The one case it cannot fix — Docker inside an unprivileged Proxmox LXC
+  with a folder bind-mounted from the Proxmox host:** uids are shifted
+  (container uid 1001 = host uid `101001` with the default idmap), so even
+  container root may not chown it. The app still starts, logs `[entrypoint]
+  WARNING: … could not be re-owned`, and the admin import screen shows a red
+  „Сървърът в момента не може да записва снимки"; fix it on the Proxmox host:
+  `chown -R 101001:101001 <hostpath>`. Check from inside:
+  `docker compose exec -u nasteh app sh -c 'touch /app/media/.w && rm /app/media/.w && echo WRITABLE'`.
+  **Symptoms if it ever recurs:** admin uploads fail with Payload's generic
+  „Имаше проблем при качването на файла." (the `EACCES` is only in
+  `docker compose logs app`); the importer names it. After fixing, re-run the
+  same import file — it only adds the missing pictures.
 - **Uploads have two size ceilings, and both bite before sharp runs.** The
   proxy's `client_max_body_size` (§6, set it to `12m`) is the outer one — below
   it, nginx answers `413` and the app never sees the request. The inner one is

@@ -219,6 +219,11 @@ Security properties this app cannot enforce on its own. All detailed in
 - **Off-host backups** (§5) — the `backup` sidecar writes to a volume on the same
   box; copy them off it.
 - **Mail SPF/DKIM/DMARC + PTR** (§7) — so order mail is not spoofable or binned.
+- **The app container starts as root, briefly** (`docker-entrypoint.sh`, DEPLOY
+  §9): only to re-own `MEDIA_DIR` for uid 1001 when needed, then `setpriv`
+  drops to `nasteh` before `payload migrate` / `next start` — no app code runs
+  as root (verify: `docker top <app>` shows uid 1001 only). Side effect:
+  `docker compose exec app …` defaults to root; use `-u nasteh` for app code.
 
 ---
 

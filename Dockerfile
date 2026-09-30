@@ -53,13 +53,19 @@ COPY --chown=nasteh:nasteh package.json pnpm-lock.yaml pnpm-workspace.yaml tscon
 COPY --chown=nasteh:nasteh src ./src
 # scripts/ ships too so the owner can seed sample content in the running stack
 # (SKIP_REVALIDATE=1 required, then recreate app to clear the cache — DEPLOY §3):
-#   docker compose exec -e SEED_ALLOW_PROD=1 -e SKIP_REVALIDATE=1 app node_modules/.bin/tsx scripts/seed-dev.ts
+#   docker compose exec -u nasteh -e SEED_ALLOW_PROD=1 -e SKIP_REVALIDATE=1 app node_modules/.bin/tsx scripts/seed-dev.ts
 COPY --chown=nasteh:nasteh scripts ./scripts
 # Writable dir for uploads. Own /app + the media dir as the runtime user so the
 # first-run `media` named volume inherits non-root ownership.
 RUN mkdir -p /app/media && chown nasteh:nasteh /app /app/media
-USER nasteh
+# No `USER nasteh` here on purpose: the entrypoint starts as root only to
+# re-own the media folder if a root-owned volume / bind-mount is mounted there,
+# then drops to nasteh (uid 1001) before anything else runs (DEPLOY §9).
+# Side effect: `docker compose exec app …` defaults to root — pass `-u nasteh`
+# for anything that runs app code.
+COPY --chmod=0755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 EXPOSE 3000
+ENTRYPOINT ["docker-entrypoint.sh"]
 # Apply pending migrations, then serve. `&&` stops startup if a migration
 # fails (never serve against an unmigrated DB). Direct bin calls — no pnpm at
 # runtime (avoids the cross-env dev dep and any corepack download on start).
