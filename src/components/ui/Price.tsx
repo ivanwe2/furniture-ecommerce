@@ -1,6 +1,6 @@
 'use client'
 
-import { formatPrice } from '@/lib/money'
+import { formatEur } from '@/lib/money'
 import clsx from 'clsx'
 import React from 'react'
 
@@ -14,7 +14,7 @@ export function Price({ eurCents, className, ...props }: PriceProps) {
       className={clsx('tabular-nums font-medium', className)}
       {...props}
     >
-      {formatPrice(eurCents)}
+      {formatEur(eurCents)}
     </span>
   )
 }

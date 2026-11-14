@@ -31,9 +31,7 @@ COPY . .
 # present now (not just at runtime). Passed as build args by docker-compose from
 # .env; defaults are the production values. Change one → rebuild the image.
 ARG NEXT_PUBLIC_SITE_URL=https://nasteh.bg
-ARG NEXT_PUBLIC_SHOW_BGN=true
-ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
-    NEXT_PUBLIC_SHOW_BGN=$NEXT_PUBLIC_SHOW_BGN
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 # PAYLOAD_SECRET only needs a value so config validation passes at build; the
 # real one is injected at runtime. Inline (not ENV) so it isn't baked into a layer.
 RUN PAYLOAD_SECRET=build-time-placeholder pnpm build

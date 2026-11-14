@@ -10,58 +10,13 @@ and note in PROGRESS if non-obvious. Snippets omit imports where obvious.
 
 ## 1. `src/lib/money.ts`
 
-```ts
-import 'server-only'; // ← NO. money.ts is shared client/server — keep it pure, no env reads at module top for the flag (read lazily, see formatPrice).
-
-export const BGN_PER_EUR = 1.95583; // fixed by law (BGN pegged, then €-adoption conversion rate)
-
-const eurFmt = new Intl.NumberFormat('bg-BG', {
-  style: 'currency', currency: 'EUR', minimumFractionDigits: 2,
-});
-// Intl for BGN post-euro may localize oddly; format manually for "лв.":
-const numFmt = new Intl.NumberFormat('bg-BG', {
-  minimumFractionDigits: 2, maximumFractionDigits: 2,
-});
-
-export function formatEur(cents: number): string {
-  assertCents(cents);
-  return eurFmt.format(cents / 100); // "31,14 €"
-}
-
-/** EUR cents → BGN cents, HALF-UP at the cent. Integer in, integer out. */
-export function bgnCentsFromEurCents(eurCents: number): number {
-  assertCents(eurCents);
-  // Work in integer space to dodge float traps:
-  // bgnCents = round(eurCents * 1.95583) = round(eurCents * 195583 / 100000)
-  const num = eurCents * 195583;
-  const q = Math.floor(num / 100000);
-  const rem = num % 100000;
-  return rem * 2 >= 100000 ? q + 1 : q; // half-up
-}
-
-export function formatBgn(bgnCents: number): string {
-  return `${numFmt.format(bgnCents / 100)} лв.`;
-}
-
-export function showBgn(): boolean {
-  return process.env.NEXT_PUBLIC_SHOW_BGN === 'true'; // NEXT_PUBLIC_ ⇒ inlined client-side too
-}
-
-export function formatPrice(eurCents: number): string {
-  return showBgn()
-    ? `${formatEur(eurCents)} (${formatBgn(bgnCentsFromEurCents(eurCents))})`
-    : formatEur(eurCents);
-}
-
-function assertCents(v: number): void {
-  if (!Number.isInteger(v) || v < 0) throw new Error(`Invalid cents value: ${v}`);
-}
-```
-
-Test anchors (money.test.ts): `bgnCentsFromEurCents(3114) === 6091` ·
-`bgnCentsFromEurCents(100) === 196` (195.583 → half-up) ·
-`bgnCentsFromEurCents(0) === 0` · property: monotonic non-decreasing ·
-throws on 12.5 and -1.
+Pure, shared client/server (no `server-only`, no env reads). Integer euro
+cents in, strings out; hand-rolled formatting (no `Intl`) so server and client
+render byte-identical text. **Euro only** — the dual EUR/BGN display and its
+`NEXT_PUBLIC_SHOW_BGN` flag were retired 2026-11-14 (ARCHITECTURE §6). The file
+itself is the reference: `formatEur`, `netEurCents` (ex-VAT, display only),
+`eurDecimalString` (JSON-LD), `eurCentsFromDecimal` (importer), all covered
+by `money.test.ts` (half-up boundaries included).
 
 ---
 
@@ -423,7 +378,11 @@ runs in the build pipeline) so middleware stays dependency-free and edge-cheap.
 
 ---
 
-## 10. Items table mobile collapse (CSS technique, Phase 5.4)
+## 10. Table → cards on phones (CSS technique)
+
+Used by the product page's variant table (`.variant-table` in
+`app/(site)/globals.css`, <640px since Phase 12; the original `.items-table`
+it replaced used the same idea).
 
 Same DOM, two renderings — no element swap, semantics preserved:
 

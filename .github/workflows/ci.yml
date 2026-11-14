@@ -8,9 +8,9 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -49,7 +49,6 @@ jobs:
           PAYLOAD_SECRET: ci-build-only-not-a-secret
           DATABASE_URI: postgres://ci:ci@127.0.0.1:5432/ci
           NEXT_PUBLIC_SITE_URL: https://nasteh.bg
-          NEXT_PUBLIC_SHOW_BGN: 'true'
 
       - name: Env key-drift check
         run: |
