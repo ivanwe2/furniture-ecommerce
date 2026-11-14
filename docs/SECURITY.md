@@ -186,8 +186,9 @@ alerts were off on the repository.
 | 7 | **No dependency gate**: CI had no audit and no build step | Process | CI runs `pnpm audit --prod --audit-level high` and `pnpm build`; `.github/dependabot.yml` (weekly, majors ignored per rule 2) |
 | 8 | `ProductJsonLd` formatted prices with `(cents / 100).toFixed(2)` (rule 4 defect) | Minor | `eurDecimalString()` in `money.ts` |
 | 9 | **Altcha proof-of-work could be skipped.** `altcha-lib` < 2.3.2 re-derived the key from the submitted counter but never checked it against the challenge's signed `keyPrefix`; our `verify()` passes no key-signature secret, which is exactly that path. A forged payload (counter 0 + its derived key, no work) verified — reproduced against our own call. Effect: the anti-bot layer on checkout/contact was decorative (honeypot, rate limits, server-side prices still held). Not in `pnpm audit` (no advisory published); found in the release notes of Dependabot's widget PR | High (anti-abuse) | `altcha-lib` 2.2.0 → **2.8.0**, widget `altcha` → 3.5.0; regression test `src/lib/altcha.test.ts` (forged counter-0 rejected, honest solve accepted once, replay refused) |
+| 10 | **zod 3** memory exhaustion on oversized constrained collections (GHSA-mrhx-c7xc-m3w5), first parked as an accepted risk (fix only in the zod 4 major) | High | Dependabot security PR → **zod 4.6.6** (Ivan delegated security merges); `error.errors` → `error.issues`, `errorMap` → `error`; new tests pin every field's bg.ts error key; browser-checked checkout + contact errors and a valid order. Ignore entry removed |
 
-Result: **145 → 6 advisories, 0 unignored in production** (`pnpm audit --prod
+Result: **145 → 6 advisories (5 after #10), 0 unignored in production** (`pnpm audit --prod
 --audit-level high` exits 0). The 6 are listed below and in
 `pnpm-workspace.yaml → auditConfig.ignoreGhsas`, each with its reason.
 
@@ -197,11 +198,6 @@ security-relevant package (auth, anti-bot, mail), read its release notes.
 
 ### Accepted risks (dependencies, 2026-11-14)
 
-- **zod 3 — GHSA-mrhx-c7xc-m3w5** (high): memory exhaustion while validating
-  oversized constrained collections; fixed only in zod 4 (a major with a broad
-  API change). Our zod schemas (`src/lib/validation/*`) run behind server
-  actions, whose request body Next caps at 1 MB. Planned: zod 4 migration as
-  its own task.
 - **happy-dom 20 — GHSA-834v-8h66-3h79, GHSA-c8p4-j97h-3vg8** (high): only hit
   when parsing HTML server-side (`@lexical/headless`) or in vitest. This app
   never converts HTML to Lexical. Fixed only in happy-dom 21.

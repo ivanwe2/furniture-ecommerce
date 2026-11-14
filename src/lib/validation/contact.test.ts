@@ -51,3 +51,18 @@ describe('contactSchema', () => {
     expect(result.success).toBe(false)
   })
 })
+
+describe('contactSchema error keys', () => {
+  it('maps every failure to its bg.ts key (pinned across zod upgrades)', () => {
+    const result = contactSchema.safeParse({ name: 'И', email: 'nope', message: 'кратко', altcha: '', phone: 'abc' })
+    expect(result.success).toBe(false)
+    if (result.success) return
+    expect(Object.fromEntries(result.error.issues.map((i) => [String(i.path[0]), i.message]))).toEqual({
+      name: 'errors.required',
+      email: 'errors.invalidEmail',
+      message: 'errors.required',
+      altcha: 'errors.captcha',
+      phone: 'errors.invalidPhone',
+    })
+  })
+})

@@ -65,3 +65,42 @@ describe('checkoutSchema', () => {
     expect(result.success).toBe(false)
   })
 })
+
+// The order action maps each issue's message straight to a bg.ts key
+// (fieldErrors), so the MESSAGE per field is part of the contract — pinned
+// here so a zod upgrade cannot silently turn them into English defaults
+// (zod 3 → 4, 2026-11-14: `errorMap` became `error`).
+describe('checkoutSchema error keys', () => {
+  const valid = {
+    name: 'Иван Петров',
+    phone: '+359 88 1234567',
+    email: 'ivan@example.com',
+    method: 'address',
+    city: 'Пловдив',
+    addressOrOffice: 'бул. Васил Левски 10',
+    altcha: 'payload',
+    consent: true,
+  }
+  const messages = (input: Record<string, unknown>) => {
+    const result = checkoutSchema.safeParse(input)
+    if (result.success) return {}
+    return Object.fromEntries(result.error.issues.map((i) => [String(i.path[0]), i.message]))
+  }
+
+  it('maps every failure to its bg.ts key', () => {
+    expect(
+      messages({ ...valid, name: 'И', email: 'nope', method: 'pigeon', consent: false, altcha: '', city: 'x'.repeat(121) }),
+    ).toEqual({
+      name: 'errors.required',
+      email: 'errors.invalidEmail',
+      method: 'errors.required',
+      consent: 'errors.consentRequired',
+      altcha: 'errors.captcha',
+      city: 'errors.tooLong',
+    })
+  })
+
+  it('keys a bad phone as invalid', () => {
+    expect(messages({ ...valid, phone: '0888-ABC-123' }).phone).toBe('errors.invalidPhone')
+  })
+})

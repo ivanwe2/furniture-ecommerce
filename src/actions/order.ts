@@ -47,7 +47,7 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
   const parsed = checkoutSchema.safeParse(input)
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {}
-    for (const err of parsed.error.errors) {
+    for (const err of parsed.error.issues) {
       for (const path of err.path) {
         fieldErrors[String(path)] = err.message
       }

@@ -18,13 +18,13 @@ export const checkoutSchema = z.object({
     .min(9, 'errors.required')
     .max(MAX_SHORT, 'errors.tooLong'),
   email: z.string().trim().email('errors.invalidEmail').max(MAX_SHORT, 'errors.tooLong'),
-  method: z.enum(['address', 'econt', 'speedy'], { errorMap: () => ({ message: 'errors.required' }) }),
+  method: z.enum(['address', 'econt', 'speedy'], { error: 'errors.required' }),
   city: z.string().trim().min(2, 'errors.required').max(MAX_SHORT, 'errors.tooLong'),
   addressOrOffice: z.string().trim().min(2, 'errors.required').max(MAX_ADDRESS, 'errors.tooLong'),
   note: z.string().max(MAX_NOTE, 'errors.tooLong').optional(),
   // The Altcha payload is a base64 blob; 4 KB is far above a real solution.
   altcha: z.string().trim().min(1, 'errors.captcha').max(4096, 'errors.captcha'),
-  consent: z.literal(true, { errorMap: () => ({ message: 'errors.consentRequired' }) }),
+  consent: z.literal(true, { error: 'errors.consentRequired' }),
 })
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>

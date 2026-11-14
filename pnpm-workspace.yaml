@@ -38,10 +38,6 @@ overrides:
 # Re-check every audit; remove an entry as soon as a fix ships.
 auditConfig:
   ignoreGhsas:
-    # zod 3: memory exhaustion on oversized constrained collections; fixed only
-    # in zod 4 (major). Our zod schemas sit behind server actions whose body
-    # Next caps at 1 MB.
-    - GHSA-mrhx-c7xc-m3w5
     # happy-dom (via @lexical/headless and vitest): only reached when parsing
     # HTML server-side, which this app never does; fixed only in happy-dom 21.
     - GHSA-834v-8h66-3h79
