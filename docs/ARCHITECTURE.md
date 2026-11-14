@@ -68,7 +68,7 @@ import host-specific APIs (Cloudflare or otherwise).
 | Anti-bot | **Altcha** (self-hosted proof-of-work) | `altcha-lib` + `altcha` widget | replaces Turnstile — server issues an HMAC challenge, the browser solves a PoW, the server verifies locally. No external calls, no keys/account. Checkout + contact forms |
 | Styling | Tailwind CSS | 4.x | tokens in §8 |
 | Cart state | zustand + persist(localStorage) | 5.x | client-only; SSR-safe hydration per CONVENTIONS |
-| Validation | zod | 3.x | every boundary |
+| Validation | zod | 4.x | every boundary (zod 4 since 2026-11-14 — security fix) |
 | Email | **SMTP** (nodemailer 10) → in-stack **mail** relay | `nodemailer` + Postfix `mail` container | app talks SMTP to the `mail` service on the internal network (`SMTP_HOST=mail`, no auth); Postfix signs DKIM and delivers directly (or via `RELAYHOST`). Sends as `orders@nasteh.bg`. No transactional SaaS. Templates in `src/emails/` |
 | Tests | vitest | 4.x | `src/lib/**` pure logic |
 | CI / CD | GitHub Actions + server timer | — | CI: prod dependency audit (high+) + typecheck + lint + test + build on push/PR; Dependabot weekly (majors ignored). CD: „Deploy" workflow (Ivan's approval) moves the protected `production` branch; a systemd timer on the server pulls and ships it with backup + health-checked rollback (DEPLOY §3a). No inbound access to the server |

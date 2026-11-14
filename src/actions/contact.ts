@@ -30,7 +30,7 @@ export async function submitContact(input: unknown): Promise<ActionResult<unknow
   const parsed = contactSchema.safeParse(input)
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {}
-    for (const err of parsed.error.errors) {
+    for (const err of parsed.error.issues) {
       for (const path of err.path) {
         fieldErrors[String(path)] = err.message
       }
