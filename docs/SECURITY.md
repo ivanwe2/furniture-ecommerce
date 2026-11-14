@@ -141,6 +141,30 @@ curl -s 'https://nasteh.bg/api/pages?limit=50' | grep -c '"status":"draft"'  # 0
   refused loopback, `localhost`, 169.254.169.254, decimal-IP, `[::1]`,
   DNS-to-loopback (nip.io), odd port and redirect-to-loopback links.
 
+### T7 — Deploy pipeline (2026-11-14, DEPLOY §3a)
+
+Whoever can move the `production` branch runs code on the server within two
+minutes, so moving it is the guarded step.
+- **Ruleset** on `refs/heads/production`: creation, update, deletion and
+  non-fast-forward are blocked for everyone except the repository admin (Ivan)
+  and the deploy key. (GitHub refuses to exempt the Actions token on a
+  personal repository, which is why a deploy key exists at all.)
+- **Deploy key** (write, this repo only): its private half lives only in the
+  `production` environment secret `DEPLOY_SSH_KEY`. The environment requires
+  Ivan's approval and allows runs from `main` only, so a workflow on another
+  branch, or an unapproved run, never receives it. The key was generated on
+  Ivan's machine, uploaded with `gh`, never printed, and deleted locally.
+- The workflow promotes only commits that are on `main` **and** have a
+  successful CI run there.
+- The server only *pulls* (public repo, plain `git fetch`): no inbound port,
+  no token on the box. It refuses to deploy over locally edited tracked files,
+  takes a database dump first, and rolls back an unhealthy release.
+- Re-verify: `gh api repos/ivanwe2/furniture-ecommerce/rulesets`;
+  `gh api repos/ivanwe2/furniture-ecommerce/environments/production`;
+  repo Settings → Deploy keys shows exactly one key. Revoke = delete the key.
+
+---
+
 ## 3. Audit record — 2026-11-14
 
 Re-audit after about two months without active development. The code had not

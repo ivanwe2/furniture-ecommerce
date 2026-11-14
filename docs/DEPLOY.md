@@ -142,7 +142,8 @@ appears. It's idempotent (re-running updates by slug) and also seeds an admin
 user (`admin@nasteh.bg` / `password123` — **change it**, or set
 `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`).
 
-Update to a new version:
+Update to a new version (by hand — or install §3a once and let the Deploy
+button do exactly this):
 
 ```bash
 git pull
@@ -162,6 +163,70 @@ up security patches — but only when they are pulled. A plain
 `up -d --build` keeps whatever was cached on the host, possibly for months
 (SECURITY §3, audit 2026-11-14). The pre-update dump is the rollback point if a
 migration ever misbehaves (§5 Restore).
+
+---
+
+## 3a. Automatic deploys (the „Deploy" button)
+
+After a one-time install, updates no longer need the sysadmin: Ivan presses
+**Deploy** on GitHub, approves it, and the server ships it within ~2 minutes —
+with a backup first and an automatic rollback if the new version is unhealthy.
+(ArgoCD was considered: it needs Kubernetes; this stack is docker compose.)
+
+```
+GitHub: Actions → Deploy → Run workflow (ref: main) → Ivan approves
+   └─ checks: commit is on main AND CI passed on it
+   └─ moves the `production` branch to that commit (deploy key)
+Server: nasteh-deploy.timer, every 2 min → scripts/deploy/auto-deploy.sh
+   └─ production moved? → pg_dump → tag image :previous → checkout →
+      build --pull → pull --ignore-buildable → up -d → wait for healthy
+   └─ unhealthy → previous commit + image back, that target never retried
+```
+
+**One-time install (sysadmin).** In the production checkout, after the
+normal update in §3:
+
+```bash
+sudo scripts/deploy/install.sh          # systemd service + 2-minute timer
+systemctl list-timers nasteh-deploy.timer
+journalctl -u nasteh-deploy -f          # deploy log (also .deploy/deploy.log)
+```
+
+Optional: `DEPLOY_NOTIFY_EMAIL=you@example.com` in `.env` mails every deploy
+result (OK / FAILED / ROLLED BACK / DOWN) through the stack's own mail relay.
+No cron/systemd? `*/2 * * * * cd <checkout> && scripts/deploy/auto-deploy.sh
+>> .deploy/cron.log 2>&1` does the same.
+
+**Deploying (Ivan).** GitHub → Actions → **Deploy** → Run workflow → `main`
+→ approve the pending `production` deployment. The job summary says what was
+promoted; the server picks it up within ~2 minutes.
+
+**Rolling back.** Run **Deploy** with the SHA of an older main commit. Each
+deploy is a new commit on `production` holding exactly the chosen code, so the
+branch only fast-forwards and `git log --first-parent production` is the
+deploy history. Database changes from migrations are **not** undone by a
+rollback — every deploy writes `db_pre-deploy_<time>_<sha>.sql.gz` to the
+backups volume first (§5 Restore).
+
+**Who can deploy.** The `production` environment requires Ivan's approval and
+only runs from main. A ruleset on `production` blocks creating, moving,
+force-pushing and deleting it for everyone except the repository admin and the
+**deploy key** („Deploy workflow — pushes the production branch", write
+access). The key's private half is the environment secret `DEPLOY_SSH_KEY`,
+released to the job only after approval. To revoke: delete the deploy key in
+repo Settings → Deploy keys (then generate a new pair and secret).
+
+**Rules on the server once it is installed:**
+- Don't `git pull` there any more — the checkout sits on the deployed commit
+  (detached). To ship, press Deploy; to re-run a deploy by hand,
+  `scripts/deploy/auto-deploy.sh`.
+- Don't edit tracked files on the server: the script refuses to deploy over
+  local edits (and says so). `.env` is untracked and safe to edit.
+- A failed target is skipped until the next Deploy. `.deploy/failed` holds it;
+  delete that file to retry the same commit.
+- Extra compose files (e.g. observability, Phase 13): set
+  `COMPOSE_FILE=docker-compose.yml:docker-compose.observability.yml` in `.env`
+  and the deploy script uses them too.
 
 ---
 
