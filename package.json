@@ -29,7 +29,7 @@
     "@payloadcms/richtext-lexical": "3.93.0",
     "@payloadcms/translations": "3.93.0",
     "@payloadcms/ui": "3.93.0",
-    "altcha": "3.2.1",
+    "altcha": "3.5.0",
     "altcha-lib": "2.2.0",
     "clsx": "^2.1.1",
     "cross-env": "10.1.0",
