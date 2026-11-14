@@ -4,6 +4,7 @@ import {
   bgnCentsFromEurCents,
   eurCentsFromBgnCents,
   eurCentsFromDecimal,
+  eurDecimalString,
   formatBgn,
   formatEur,
   formatPrice,
@@ -184,5 +185,20 @@ describe('eurCentsFromDecimal', () => {
     for (const bad of ['', 'abc', '-3.15', '1e3', '1.2.3', '3.15 €', '.5', '5.', '1 000', '12345678']) {
       expect(eurCentsFromDecimal(bad)).toBeNull()
     }
+  })
+})
+
+describe('eurDecimalString', () => {
+  it('renders cents as a dot-decimal string with two places', () => {
+    expect(eurDecimalString(3114)).toBe('31.14')
+    expect(eurDecimalString(505)).toBe('5.05')
+    expect(eurDecimalString(14)).toBe('0.14')
+    expect(eurDecimalString(0)).toBe('0.00')
+    expect(eurDecimalString(123456789)).toBe('1234567.89')
+  })
+
+  it('rejects non-integer and negative cents', () => {
+    expect(() => eurDecimalString(1.5)).toThrow()
+    expect(() => eurDecimalString(-1)).toThrow()
   })
 })

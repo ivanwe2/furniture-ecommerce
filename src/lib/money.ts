@@ -73,6 +73,16 @@ export function eurCentsFromDecimal(
   return { cents: roundUp ? cents + 1 : cents, rounded: /[1-9]/.test(rest) }
 }
 
+/**
+ * Machine-readable euro amount for structured data (schema.org `price`):
+ * integer cents → "12.34", dot decimal, no grouping, no symbol. Integer maths
+ * only — never `(cents / 100).toFixed(2)` (CLAUDE rule 4).
+ */
+export function eurDecimalString(cents: number): string {
+  assertCents(cents)
+  return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`
+}
+
 export function formatBgn(bgnCents: number): string {
   assertCents(bgnCents)
   return `${formatAmount(bgnCents)} лв.`

@@ -18,8 +18,9 @@ The sysadmin owns TLS, DNS, and mail-DNS (SPF/DKIM/DMARC + PTR). Only
 internal-only. Persistent state = volumes `pgdata`, `media`, `maildata`,
 `backups`.
 
-**Stack versions (current):** Next.js 16.2.11 · Payload 3.86.0 · React 19.2.8 ·
-Node 24 · Postgres 18 · Redis 7 · pnpm 11.10. No cutover/data import (§4) —
+**Stack versions (current):** Next.js 16.4.6 · Payload 3.93.0 · React 19.2.8 ·
+nodemailer 10 · Node 24 (≥ 24.22.1, required by Payload 3.93) · Postgres 18 ·
+Redis 7 · pnpm 11.10. No cutover/data import (§4) —
 go-live starts on an empty DB.
 
 ---
@@ -148,8 +149,20 @@ Update to a new version:
 
 ```bash
 git pull
-docker compose up -d --build      # rebuild + restart; migrations run on boot
+docker compose exec backup sh -c 'pg_dump | gzip > /backups/db_pre-update_$(date +%F).sql.gz'
+docker compose build --pull       # --pull: fresh node base image (OS + Node patches)
+docker compose pull               # fresh postgres / redis / mail images
+docker compose up -d              # restart; migrations run on boot
+docker compose logs -f app        # watch: "Migrating: …" then the server starts
+docker compose images             # confirm what is actually running
 ```
+
+**Always use `--pull` and `pull`.** The base images are pinned to a major
+(`node:24-bookworm-slim`, `postgres:18-alpine`, `redis:7-alpine`) so they pick
+up security patches — but only when they are pulled. A plain
+`up -d --build` keeps whatever was cached on the host, possibly for months
+(SECURITY §3, audit 2026-11-14). The pre-update dump is the rollback point if a
+migration ever misbehaves (§5 Restore).
 
 ---
 

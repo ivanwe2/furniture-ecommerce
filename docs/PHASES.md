@@ -367,6 +367,90 @@ Commit: `chore(phase-10): complete — launch`
 
 ---
 
+## PHASE 11 — Security patch release (Nov 2026 round)
+
+Ivan, 2026-11-14: audit after ~2 months without active development. Plan:
+security first, then the product page (12), then observability (13).
+
+Tasks:
+11.1 Dependency refresh: payload + @payloadcms/* 3.93, next 16.4.6, sharp
+     0.35.5, nodemailer 10 (major — Ivan approved with the plan), Node ≥24.22.1;
+     same-major transitive `overrides`; documented `auditConfig.ignoreGhsas`.
+11.2 Migration for Payload 3.90+ (`users.reset_password_requested_at`).
+11.3 Hardening: GraphQL off; `eurDecimalString` replaces `.toFixed` in JSON-LD.
+11.4 CI: prod audit (high+) + build; Dependabot (weekly, majors ignored).
+11.5 Docs: SECURITY §3 audit record, ARCHITECTURE §2 pins, DEPLOY update
+     procedure (`build --pull` + `pull` + pre-update dump).
+
+AC:
+- [x] `pnpm audit --prod --audit-level high` exits 0; every ignore has a reason.
+- [x] Production image boots on existing data; migration applies on boot.
+- [x] Pre-upgrade (legacy PBKDF2) password still logs in and is re-hashed.
+- [x] Admin (list, edit + Lexical, import, orders, settings), storefront and a
+      full order with both emails verified on the image; no console errors.
+- [x] SECURITY §2 control checks re-run (403s, lockout, importer guards).
+
+Commit: `fix(phase-11): security release — Payload 3.93, Next 16.4.6, deps`
+
+---
+
+## PHASE 12 — Product page v2 + import grouping (client CR, Nov 2026)
+
+Mockup `cr1.png` (client). Ivan's decisions 2026-11-14: variants come from an
+import grouping key; price on request, ex-VAT price, restock lead time and
+per-variant characteristics are all real features.
+
+Tasks:
+12.1 Schema + migration: `items[].image`, nullable `items[].priceEurCents`
+     (= „по запитване"), `items[].specs`, product `specs`, `related`,
+     hidden `importGroup`; SiteSettings `restockLeadTime`.
+12.2 `money.netEurCents`, `lib/availability.ts`; cart / checkout / order
+     action refuse null-price lines; listing „по запитване"; JSON-LD per-item
+     offers.
+12.3 Importer: optional `group` + `variant` keys (rows → one product, N items;
+     row image → item image; first image → gallery cover); preview grouped.
+12.4 Product page per the mockup: `ProductView` (selected SKU, `?sku=`),
+     gallery follows the variant, info column (SKU, price ±VAT, stock badge,
+     lead time, actions), variant radio table, characteristics, related
+     products, full breadcrumb; `/contact?about=<sku>` prefill.
+12.5 Docs: UI-SPEC §4/§8, DATA-MODEL §3/§9, ADMIN-GUIDE.
+
+AC:
+- [ ] Selecting a variant swaps image, SKU, price, stock and actions; `?sku=`
+      deep-links; 375/1280; keyboard; no console errors.
+- [ ] Stepper quantity reaches the cart; price-on-request items cannot be
+      ordered (UI and server).
+- [ ] Grouped JSON imports as one product with variant images; re-run is a
+      no-op.
+
+---
+
+## PHASE 13 — Observability & usage telemetry (Nov 2026)
+
+Ivan, 2026-11-14: self-hosted Grafana on a subdomain; hybrid tracking
+(cookieless for everyone + opt-in persistent anonymous ID). Amends CLAUDE.md's
+"analytics" exclusion to third-party/SaaS trackers only.
+
+Tasks:
+13.1 App foundation: `lib/log.ts` (JSON lines, no personal data), fixed Payload
+     logger, `instrumentation.ts` (onRequestError), request ids, `/api/health`,
+     client error beacon, independent owner/customer emails.
+13.2 `docker-compose.observability.yml`: Grafana, Loki, Prometheus, Tempo,
+     Alloy (socket-free log tailing + redaction, OTLP, exporters, health
+     probe); OTel in the app; provisioning as code; DEPLOY §11; host 4 GB.
+13.3 Usage events: `telemetry.events` (schema + migration), `track()`,
+     `/api/t` beacon, consent banner, event catalogue, admin hooks, retention,
+     read-only Grafana role, six dashboards, privacy texts for the client.
+13.4 Alerts by email via the in-stack relay.
+
+AC:
+- [ ] Dashboards fill from a scripted browse/search/cart/checkout session.
+- [ ] Declined consent → no persistent id; accepted → with it.
+- [ ] A forced server error is visible in Loki with a trace link to Tempo.
+- [ ] Test alert email delivered; Grafana's DB role cannot read `orders`.
+
+---
+
 ## Hour tracking table (fill actuals in PROGRESS.md)
 
 | Phase | Est. | Actual |

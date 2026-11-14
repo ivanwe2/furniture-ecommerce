@@ -59,8 +59,8 @@ import host-specific APIs (Cloudflare or otherwise).
 | Layer | Choice | Pin | Notes |
 |---|---|---|---|
 | Hosting | **Docker container** — Next.js production server (`next start`) | base `node:24-bookworm-slim` | one image embeds Payload admin + storefront; sysadmin's reverse proxy terminates TLS → proxies to `:3000`. Runtime image keeps prod node_modules + source so `payload migrate` runs on start; `output:'standalone'` deferred (it complicates the in-image migrate step) |
-| Framework | Next.js App Router | 15.4.x | Next 16 = deliberate post-launch decision via Decisions log. |
-| CMS | Payload | 3.82.x (v3 line) | **Payload 4 beta forbidden** (no GA, no migration guide; revisit post-launch after v4 GA). 3.85.2 upgrade attempted then reverted — broke `/admin` (RSC serialization). |
+| Framework | Next.js App Router | 16.4.x | Next 16 adopted 2026-07-22 (Decisions log); 16.4.6 = security release 2026-11-14 |
+| CMS | Payload | 3.93.x (v3 line) | **Payload 4 beta forbidden** (no GA, no migration guide; revisit post-launch after v4 GA). 3.85.2 once broke `/admin` (RSC serialization) — every Payload bump is Docker-verified in the admin before merge. GraphQL disabled (unused) |
 | Database | **PostgreSQL 18** in the `db` container | `postgres:18-alpine` · `@payloadcms/db-postgres` | `DATABASE_URI=postgres://…@db:5432/nasteh`. Own container + `pgdata` volume. Migrations are Postgres-dialect (the old SQLite/D1 migration was regenerated). Backups = `pg_dump` (§ backups). Swapped from SQLite 2026-07-17 |
 | Media storage | **Local disk** on a mounted volume | Payload default disk adapter | originals + sized variants on the `media` volume; no object store. See §5 |
 | Image sizing | **Payload + sharp** (native, at upload) | `sharp` | sharp runs on Node → Payload generates responsive sized variants **as WebP** at upload; served via the app's media route. No `/cdn-cgi/image/`, no image CDN |
@@ -69,9 +69,9 @@ import host-specific APIs (Cloudflare or otherwise).
 | Styling | Tailwind CSS | 4.x | tokens in §8 |
 | Cart state | zustand + persist(localStorage) | 5.x | client-only; SSR-safe hydration per CONVENTIONS |
 | Validation | zod | 3.x | every boundary |
-| Email | **SMTP** (nodemailer) → in-stack **mail** relay | `nodemailer` + Postfix `mail` container | app talks SMTP to the `mail` service on the internal network (`SMTP_HOST=mail`, no auth); Postfix signs DKIM and delivers directly (or via `RELAYHOST`). Sends as `orders@nasteh.bg`. No transactional SaaS. Templates in `src/emails/` |
+| Email | **SMTP** (nodemailer 10) → in-stack **mail** relay | `nodemailer` + Postfix `mail` container | app talks SMTP to the `mail` service on the internal network (`SMTP_HOST=mail`, no auth); Postfix signs DKIM and delivers directly (or via `RELAYHOST`). Sends as `orders@nasteh.bg`. No transactional SaaS. Templates in `src/emails/` |
 | Tests | vitest | 4.x | `src/lib/**` pure logic |
-| CI | GitHub Actions | — | typecheck+lint+test on push/PR |
+| CI | GitHub Actions | — | prod dependency audit (high+) + typecheck + lint + test + build on push/PR; Dependabot weekly (majors ignored) |
 | Language | TypeScript strict | 6.x | |
 | Package manager | pnpm | 11.x | |
 
