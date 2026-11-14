@@ -105,6 +105,8 @@ Layout desktop: breadcrumb (full category path, `›`) → two equal columns
 (gallery | info) → „Изберете вариант" table (full width, only with 2+
 items) → „Характеристики" (left half) → „Подходящи артикули" (4 cards).
 Mobile: the same order, stacked; no horizontal page scroll.
+No `loading.tsx` here (or on category pages): a loading boundary above the
+page makes `notFound()` answer 200 — a soft 404 (PROGRESS 2026-11-14).
 
 - **Selected variant** (item row, by SKU): `?sku=` if valid, else the first
   orderable item, else the first. Changing it uses `history.replaceState`
