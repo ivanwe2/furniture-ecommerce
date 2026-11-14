@@ -64,3 +64,5 @@ node_modules/
 # Local screenshot helper (redesign visual checks) — dev-only, never commit
 # (frame capture + canvas measurement helpers land here too, hence the glob)
 /_*.mjs
+# Auto-deploy state on the server (scripts/deploy/auto-deploy.sh)
+.deploy/

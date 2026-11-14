@@ -71,7 +71,7 @@ import host-specific APIs (Cloudflare or otherwise).
 | Validation | zod | 3.x | every boundary |
 | Email | **SMTP** (nodemailer 10) → in-stack **mail** relay | `nodemailer` + Postfix `mail` container | app talks SMTP to the `mail` service on the internal network (`SMTP_HOST=mail`, no auth); Postfix signs DKIM and delivers directly (or via `RELAYHOST`). Sends as `orders@nasteh.bg`. No transactional SaaS. Templates in `src/emails/` |
 | Tests | vitest | 4.x | `src/lib/**` pure logic |
-| CI | GitHub Actions | — | prod dependency audit (high+) + typecheck + lint + test + build on push/PR; Dependabot weekly (majors ignored) |
+| CI / CD | GitHub Actions + server timer | — | CI: prod dependency audit (high+) + typecheck + lint + test + build on push/PR; Dependabot weekly (majors ignored). CD: „Deploy" workflow (Ivan's approval) moves the protected `production` branch; a systemd timer on the server pulls and ships it with backup + health-checked rollback (DEPLOY §3a). No inbound access to the server |
 | Language | TypeScript strict | 6.x | |
 | Package manager | pnpm | 11.x | |
 

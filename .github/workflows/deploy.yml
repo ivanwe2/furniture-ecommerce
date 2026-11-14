@@ -1,0 +1,97 @@
+# „Deploy" button (docs/DEPLOY.md §3a). Actions → Deploy → Run workflow.
+#
+# Moves the `production` branch to the chosen commit; the server's timer
+# (scripts/deploy/auto-deploy.sh) notices within ~2 minutes and ships it.
+#
+# Guard rails:
+# - environment `production` requires Ivan's approval before this job runs
+#   (and only from main);
+# - only commits that are on main AND passed CI there can be promoted;
+# - the `production` branch ruleset blocks creating, moving, force-pushing and
+#   deleting it for everyone except the repository admin (Ivan) and the deploy
+#   key. That key's private half is the `DEPLOY_SSH_KEY` secret of the
+#   `production` environment, so GitHub releases it to this job only after
+#   Ivan's approval. (GitHub does not allow exempting the workflow's own token
+#   on a personal repository — hence the key.)
+#
+# Each deploy is a NEW commit on `production` whose content is exactly the
+# chosen commit (its parents: the previous deploy and the chosen commit). So
+# the branch only ever fast-forwards — rolling back is simply deploying an
+# older commit — and `git log production` is the deploy history.
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'What to deploy: main (latest), or a commit SHA from main to roll back to'
+        required: true
+        default: main
+
+permissions:
+  contents: read # the push goes through the deploy key, not this token
+  actions: read # check that CI passed for the commit
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          # Fetch AND push over SSH with the deploy key (ruleset bypass).
+          ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Resolve the commit and check it may ship
+        id: target
+        env:
+          REF: ${{ inputs.ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          SHA=$(git rev-parse --verify --quiet "origin/${REF}^{commit}" || git rev-parse --verify "${REF}^{commit}")
+          if ! git merge-base --is-ancestor "$SHA" origin/main; then
+            echo "::error::$SHA is not on main — only merged code can be deployed."
+            exit 1
+          fi
+          PASSED=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${SHA}&event=push&status=success&per_page=1" --jq '.total_count')
+          if [ "$PASSED" -lt 1 ]; then
+            echo "::error::CI has not passed for $SHA on main (still running, or failed)."
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Promote to production
+        env:
+          SHA: ${{ steps.target.outputs.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          SUBJECT=$(git log -1 --format=%s "$SHA")
+          if git fetch --quiet origin production 2>/dev/null; then
+            CURRENT=$(git rev-parse FETCH_HEAD)
+            if [ "$(git rev-parse "${CURRENT}^{tree}")" = "$(git rev-parse "${SHA}^{tree}")" ]; then
+              echo "Production already runs exactly this code — nothing to do."
+              echo "Production already runs \`${SHA:0:7}\`." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            NEW=$(git commit-tree "${SHA}^{tree}" -p "$CURRENT" -p "$SHA" \
+              -m "Deploy ${SHA:0:7}: ${SUBJECT}" -m "Requested by ${ACTOR}.")
+          else
+            NEW="$SHA"
+          fi
+          git push origin "${NEW}:refs/heads/production"
+          {
+            echo "### Promoted \`${SHA:0:7}\` to production"
+            echo "${SUBJECT}"
+            echo
+            echo "The server deploys it within ~2 minutes (backup → build → restart → healthcheck, automatic rollback if unhealthy)."
+          } >> "$GITHUB_STEP_SUMMARY"
