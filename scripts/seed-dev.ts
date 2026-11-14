@@ -174,7 +174,7 @@ const catalog: SeedProduct[] = [
 
   // --- Панти ---
   {
-    slug: 'pant-clip-on-amortisьor', name: 'Пант Clip-on с амортисьор 110°', cat: 'panti', brand: 'blum', featured: true,
+    slug: 'pant-clip-on-amortisyor', name: 'Пант Clip-on с амортисьор 110°', cat: 'panti', brand: 'blum', featured: true,
     description: 'Панта с вградено плавно затваряне (Soft-close), ъгъл на отваряне 110°.',
     items: [
       { name: 'Пант Clip-on прав 110° - чифт', sku: 'CLIP-110-P', unit: 'чифт', priceEurCents: 640, stockQty: 25 },
@@ -226,7 +226,7 @@ const catalog: SeedProduct[] = [
     ],
   },
   {
-    slug: 'gazov-amortisьor-100n', name: 'Газов амортисьор 100N', cat: 'povdigachi',
+    slug: 'gazov-amortisyor-100n', name: 'Газов амортисьор 100N', cat: 'povdigachi',
     items: [
       { name: 'Газов амортисьор 100N', sku: 'GAS-100', unit: 'бр.', priceEurCents: 320, stockQty: 25 },
       { name: 'Газов амортисьор 150N', sku: 'GAS-150', unit: 'бр.', priceEurCents: 350, stockQty: 25 },
@@ -235,7 +235,7 @@ const catalog: SeedProduct[] = [
 
   // --- Шарнири за врати ---
   {
-    slug: 'panta-vratna-regulируема', name: 'Панта вратна регулируема', cat: 'sharniri-za-vrati',
+    slug: 'panta-vratna-reguliruema', name: 'Панта вратна регулируема', cat: 'sharniri-za-vrati',
     items: [
       { name: 'Панта вратна 3D регулируема - Инокс', sku: 'DOOR-3D-IX', unit: 'чифт', color: 'Инокс', priceEurCents: 1250, stockQty: 25 },
       { name: 'Панта вратна 3D регулируема - Бял', sku: 'DOOR-3D-WH', unit: 'чифт', color: 'Бял', priceEurCents: 1180, stockQty: 25 },

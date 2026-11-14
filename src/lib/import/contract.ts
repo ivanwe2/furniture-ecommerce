@@ -31,6 +31,8 @@ export const KNOWN_KEYS = [
   'image_url',
   'unit',
   'color',
+  'group',
+  'variant',
 ] as const
 
 const MAX_LEN = {
@@ -41,6 +43,8 @@ const MAX_LEN = {
   description: 10_000,
   imageUrl: 2048,
   color: 100,
+  group: 100,
+  variant: 300,
 } as const
 
 export type IssueKey =
@@ -69,6 +73,7 @@ export type IssueKey =
   | 'stockMissingNew'
   | 'unitInvalid'
   | 'imageUrlInvalid'
+  | 'groupMismatch'
   | 'skuConflict'
   | 'mediaNotWritable'
   | 'saveFailed'
@@ -91,6 +96,13 @@ export type ImportRecord = {
   imageUrl: string | null
   unit: Unit
   color: string | null
+  /**
+   * Rows sharing a `group` become ONE product with one item row each (Ivan,
+   * 2026-11-14). null = the row is its own product, as before.
+   */
+  group: string | null
+  /** The item row's label within its group; falls back to `name`. */
+  variant: string | null
 }
 
 export type ValidatedRow =
@@ -278,6 +290,8 @@ function validateRecord(raw: unknown, index: number): ValidatedRow {
   }
 
   const color = optionalText(raw, 'color', MAX_LEN.color, errors)
+  const group = optionalText(raw, 'group', MAX_LEN.group, errors)
+  const variant = optionalText(raw, 'variant', MAX_LEN.variant, errors)
 
   if (errors.length > 0 || sku === null || name === null) {
     return { ok: false, index, sku, name, errors, warnings }
@@ -285,7 +299,7 @@ function validateRecord(raw: unknown, index: number): ValidatedRow {
   return {
     ok: true,
     index,
-    record: { sku, name, categoryPath, brand, priceEurCents, stockQty, description, imageUrl, unit, color },
+    record: { sku, name, categoryPath, brand, priceEurCents, stockQty, description, imageUrl, unit, color, group, variant },
     warnings,
   }
 }
@@ -305,12 +319,26 @@ export function validateImportFile(input: unknown): ValidatedFile {
   const known = new Set<string>(KNOWN_KEYS)
   const unknownKeys = new Set<string>()
   const firstRowBySku = new Map<string, number>()
+  // The product of a group is created from its FIRST row (name, category,
+  // brand, description); later rows only add their item. A later row that
+  // disagrees on category or brand is flagged, not silently ignored.
+  const firstRowByGroup = new Map<string, { index: number; category: string; brand: string }>()
 
   const rows = input.map((raw, index) => {
     if (isPlainObject(raw)) {
       for (const key of Object.keys(raw)) if (!known.has(key)) unknownKeys.add(key)
     }
     const row = validateRecord(raw, index)
+    if (row.ok && row.record.group !== null) {
+      const groupKey = normalizeName(row.record.group)
+      const category = row.record.categoryPath.map(normalizeName).join('>')
+      const brand = row.record.brand ? normalizeName(row.record.brand) : ''
+      const lead = firstRowByGroup.get(groupKey)
+      if (!lead) firstRowByGroup.set(groupKey, { index, category, brand })
+      else if (lead.category !== category || lead.brand !== brand) {
+        row.warnings.push(issue('groupMismatch', { row: String(lead.index + 1) }))
+      }
+    }
     const sku = row.ok ? row.record.sku : row.sku
     if (sku === null) return row
     const first = firstRowBySku.get(sku)

@@ -73,6 +73,22 @@ export function eurCentsFromDecimal(
   return { cents: roundUp ? cents + 1 : cents, rounded: /[1-9]/.test(rest) }
 }
 
+/** Bulgarian standard VAT rate, percent. Catalogue prices include it. */
+export const VAT_PERCENT = 20
+
+/**
+ * VAT-inclusive cents → the same price without VAT, HALF-UP at the cent:
+ * 505 (5,05 € с ДДС) → 421 (4,21 € без ДДС). Integer maths only. Display-only —
+ * orders and totals always use the stored VAT-inclusive price.
+ */
+export function netEurCents(grossCents: number, vatPercent: number = VAT_PERCENT): number {
+  assertCents(grossCents)
+  const num = grossCents * 100
+  const den = 100 + vatPercent
+  const q = Math.floor(num / den)
+  return (num % den) * 2 >= den ? q + 1 : q
+}
+
 /**
  * Machine-readable euro amount for structured data (schema.org `price`):
  * integer cents → "12.34", dot decimal, no grouping, no symbol. Integer maths

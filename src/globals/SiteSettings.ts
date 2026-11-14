@@ -63,6 +63,15 @@ export const SiteSettings: GlobalConfig = {
       defaultValue: 'Пон-Пет: 08:30-17:30\nСъб: 09:00-14:00',
       label: 'Работно време',
     },
+    {
+      name: 'restockLeadTime',
+      type: 'text',
+      label: 'Срок за доставка на изчерпани артикули',
+      admin: {
+        description:
+          'Показва се до „Изчерпан" на страницата на продукта като „Очаквана доставка при поръчка: …". Пример: 5–10 работни дни. Празно = не се показва.',
+      },
+    },
     { name: 'heroTitle', type: 'text', label: 'Начална страница - заглавие' },
     {
       name: 'heroSubtitle',

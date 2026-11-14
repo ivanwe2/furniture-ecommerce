@@ -7,7 +7,14 @@ import { Container, Input, Textarea, Button, Alert, Altcha } from '@/components/
 import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import { submitContact } from '@/actions/contact'
 
-export default function ContactPageClient({ company }: { company: CompanyInfo }) {
+export default function ContactPageClient({
+  company,
+  initialMessage,
+}: {
+  company: CompanyInfo
+  /** Prefill from `/contact?about=<sku>` (product page inquiry buttons). */
+  initialMessage: string
+}) {
   const [isPending, startTransition] = useTransition()
   const [altcha, setAltcha] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -127,6 +134,8 @@ export default function ContactPageClient({ company }: { company: CompanyInfo })
             name="message"
             required
             rows={5}
+            defaultValue={initialMessage}
+            autoFocus={initialMessage !== ''}
             error={fieldErrors['message'] ? tSafe(fieldErrors['message']) : null}
           />
 

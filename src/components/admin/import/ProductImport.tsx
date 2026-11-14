@@ -168,7 +168,10 @@ export function ProductImport({ apiRoute, adminRoute }: Props) {
     setResult(index, { ...current, manual: { state: 'uploading' } })
     let outcome: ManualState
     try {
-      const res = await fetch(`${apiRoute}/products/import/image/${productId}`, {
+      // A grouped row's picture belongs to its variant (item), not the gallery.
+      const planned = loaded?.preview.rows.find((r) => r.index === index)
+      const query = planned && planned.status !== 'error' && planned.group ? `?sku=${encodeURIComponent(planned.sku)}` : ''
+      const res = await fetch(`${apiRoute}/products/import/image/${productId}${query}`, {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/octet-stream' },
@@ -214,6 +217,7 @@ export function ProductImport({ apiRoute, adminRoute }: Props) {
           <li>{t('adminImport.ruleCreate')}</li>
           <li>{t('adminImport.ruleUpdate')}</li>
           <li>{t('adminImport.ruleCategories')}</li>
+          <li>{t('adminImport.ruleGroups')}</li>
           <li>{t('adminImport.ruleImages')}</li>
         </ul>
       </section>
@@ -395,7 +399,10 @@ function PreviewTableRow({ row, result, adminRoute, onUpload, onManualError }: R
     price = formatEur(row.priceEurCents)
     stock = String(row.stockQty)
   } else if (row.status === 'update' || row.status === 'unchanged') {
-    if (row.changes.price) price = `${formatEur(row.changes.price.from)} → ${formatEur(row.changes.price.to)}`
+    if (row.changes.price) {
+      const from = row.changes.price.from === null ? t('common.priceOnRequest') : formatEur(row.changes.price.from)
+      price = `${from} → ${formatEur(row.changes.price.to)}`
+    }
     if (row.changes.stock) stock = `${row.changes.stock.from} → ${row.changes.stock.to}`
   }
 
@@ -405,6 +412,18 @@ function PreviewTableRow({ row, result, adminRoute, onUpload, onManualError }: R
       <td className="nasteh-import__mono">{row.sku ?? '—'}</td>
       <td>
         {row.name ?? '—'}
+        {row.status !== 'error' && row.group && (
+          <span className="nasteh-import__detail">
+            {fill(t('adminImport.groupLine'), {
+              variant: row.status === 'create' ? row.variant : row.name,
+              group: row.group.key,
+              count: String(row.group.size),
+            })}
+            {row.status === 'create' && row.group.product
+              ? ` · ${fill(t('adminImport.groupJoins'), { name: row.group.product.name })}`
+              : ''}
+          </span>
+        )}
         {(issues.length > 0 || row.warnings.length > 0) && (
           <ul className="nasteh-import__issues">
             {issues.map((issue, i) => (

@@ -10,7 +10,9 @@ Evidence: the old site's SEVROLL pages embed price tables as images — rows
 like `Дръжка Comfort 16 II · бр. · 2700 · Сребро · 02718 · 31.14 лв.` A
 simple product = family with one item row. The cart and orders reference
 `(product, sku)`, never a bare product. This one decision removes any need
-for a separate "variants" system.
+for a separate "variants" system: on the product page the item rows ARE the
+variants (Phase 12 — the „Изберете вариант" table selects one; a row may
+carry its own picture and characteristics).
 
 ## 1. `categories`
 
@@ -53,11 +55,14 @@ slug + `revalidateTag('brands')` + `revalidateTag('products')`.
 | `brand` | relationship→brands | optional, label "Марка" | |
 | `shortSpec` | array of `{ text: text }` | label "Кратки характеристики" | the bullets ("Максимално натоварване до 50 кг…") |
 | `description` | richText (Lexical, template default features) | label "Описание" | |
+| `specs` | array of `{ label, value }` (both text, required) | label "Характеристики" | the product page's „Характеристики" table (Phase 12). Марка and Каталожен № are added automatically; a variant's `items[].specs` line with the same label overrides it (`lib/catalog/specs.ts`) |
 | `gallery` | array of `{ image: upload→media }` | min 0, label "Галерия" | first = cover; empty gallery renders placeholder (UI-SPEC) |
 | `items` | array, **minRows 1**, label "Артикули (SKU)" | see below | THE central field |
+| `related` | relationship→products, hasMany, maxRows 8, **maxDepth 0** | label "Подходящи артикули"; excludes itself | „Подходящи артикули" on the page (`getRelatedProducts`). Empty → up to 4 other published products of the same category |
+| `importGroup` | text | indexed, `admin.hidden` | set by the JSON importer for grouped rows (§9): the normalised `group` key a re-run finds the product by |
 | `featured` | checkbox | default false, label "Показвай на началната страница" | |
 | `searchText` | text | `admin.hidden: true` | derived — see §Search |
-| `minPriceEurCents` | number | `admin.hidden: true`, indexed | derived in `beforeValidate` as `MIN(items[].priceEurCents)`. Payload cannot sort on an array subfield, so this is the sort key for price ordering. NULL when a product has no items. |
+| `minPriceEurCents` | number | `admin.hidden: true`, indexed | derived in `beforeValidate` as `MIN(items[].priceEurCents)` over **priced** items only. Payload cannot sort on an array subfield, so this is the sort key for price ordering. NULL when no item has a price. |
 | `seo` | group `{ title, description }` | optional overrides | |
 
 `items` row:
@@ -69,11 +74,20 @@ slug + `revalidateTag('brands')` + `revalidateTag('products')`.
 | `unit` | select `бр.`/`м`/`компл.`/`чифт` | default `бр.`, label "Мярка" |
 | `lengthMm` | number | optional, label "Дължина (мм)" |
 | `color` | text | optional, label "Цвят" |
-| `priceEurCents` | number | required, integer, min 1, label "Цена (евроцентове)"; `admin.description`: "Пример: 31,14 € → 3114" |
-| `stockQty` | number | default 0, min 0, label "Наличност (брой)"; availability is derived (`stockQty > 0`), 0 = «Изчерпан» (not orderable) |
+| `priceEurCents` | number | **optional** (Phase 12), integer, min 1, label "Цена (евроцентове)". Empty = **„по запитване"**: shown, never orderable |
+| `stockQty` | number | default 0, min 0, label "Наличност (брой)"; 0 = «Изчерпан» |
+| `image` | upload→media | optional, label "Снимка на варианта" — the main picture while this variant is selected; empty = gallery cover |
+| `specs` | array of `{ label, value }` | optional, label "Характеристики на варианта" — overrides/extends the product's `specs` |
+
+**Availability** is one rule in `src/lib/availability.ts`, used by the
+product page, cart, checkout and the order path (`resolveCartLines`):
+no price → `onRequest`; priced + stock > 0 → `inStock` (the only orderable
+state); priced + stock 0 → `soldOut`. A tampered cart naming a
+price-on-request or sold-out SKU gets `errors.cartStale` — no order.
 
 Hooks:
-- `beforeValidate`: slug; normalize SKUs (trim; preserve leading zeros —
+- `beforeValidate`: slug — always passed through `normalizeSlug` (lib/slug.ts),
+  so a typed slug is lowercase ASCII (a pasted Cyrillic slug used to 404); normalize SKUs (trim; preserve leading zeros —
   SKU is TEXT, never number); build `searchText` (§7).
 - `beforeChange` (**SKU global uniqueness**): collect this doc's SKUs;
   reject duplicates within the doc; query
@@ -221,14 +235,27 @@ File: UTF-8 JSON **array** of records, ≤ 2000 rows, ≤ 5 MB.
 | `description` | no | plain text → full Lexical state, one paragraph per line |
 | `image_url` | no | http(s); a bad link only skips the picture |
 | `unit` / `color` | no | unit must be `бр.`/`м`/`компл.`/`чифт` (never coerced) |
+| `group` | no | ≤ 100 chars. Rows with the same value (case/whitespace-insensitive) become **one product with one item row each** (Ivan, 2026-11-14) |
+| `variant` | no | ≤ 300 chars. The item row's label within its group; missing → `name` |
 
 Unknown keys are listed in the preview and ignored.
 
-Semantics (Ivan, 2026-09-24):
-- **One record = one product with one item row.** No family grouping.
+Semantics (Ivan, 2026-09-24; grouping 2026-11-14):
+- **Without `group`: one record = one product with one item row.**
+- **With `group`:** the group's first new row creates the product (its name,
+  category, brand, description) and stamps `importGroup` = the normalised
+  key; every later new SKU of that group is appended to it as one more item
+  row. A later row whose category or brand differs from the first row gets
+  a `groupMismatch` warning (the first row wins). An existing SKU is always
+  updated where it is — items are never moved between products.
+- **Grouped pictures** go on the row's item (`items[].image`, the variant's
+  picture on the product page); the first also becomes the gallery cover.
+  The manual upload passes `?sku=` so it lands on the same item.
 - **Upsert key: `sku`.** New SKU → complete product, `status: draft`.
   Existing SKU → **only that item row's price and stock** change, plus a
-  picture if the product has none. Name, description, category, brand,
+  picture if it has none (the gallery for ungrouped rows, the item for
+  grouped ones). The file always carries a price; „по запитване" is set in
+  the admin only, so a price can never go missing by accident. Name, description, category, brand,
   gallery and status belong to the owner once the product exists.
 - Flow: preview (server-side, read-only) → the browser applies ONE row per
   request (no request outlives the proxy timeout; a closed tab leaves a

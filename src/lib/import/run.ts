@@ -9,6 +9,7 @@ import type {
   ApplyRequest,
   ApplyResponse,
   CategoryStep,
+  GroupInfo,
   ImageOutcome,
   ImageUploadResponse,
   PreviewResponse,
@@ -40,6 +41,14 @@ import type { Media, Product } from '@/payload-types'
  * picture if it has none — the name, description, category, photos and
  * publish status belong to the owner once the product exists, so re-running a
  * file never undoes their edits.
+ *
+ * Groups (Ivan, 2026-11-14): rows sharing a `group` become one product. The
+ * group's first new row creates it (stamping `importGroup` with the
+ * normalised key); every later new SKU of the group is appended to it as one
+ * more item row. A grouped row's picture belongs to ITS item (`items[].image`,
+ * what the product page shows for that variant); the first one also becomes
+ * the gallery cover so listings have a picture. Ungrouped rows behave exactly
+ * as before (one product, picture in the gallery).
  */
 
 /** Where Payload writes uploads (Media.ts `upload.staticDir`, i.e. MEDIA_DIR). */
@@ -110,16 +119,46 @@ async function findBySkus(payload: Payload, skus: string[]): Promise<Map<string,
   return hits
 }
 
+/** The stored key for a group: case- and whitespace-insensitive, like category names. */
+function groupKey(record: ImportRecord): string | null {
+  return record.group === null ? null : normalizeName(record.group)
+}
+
+/** The item label: the row's `variant`, else its name. */
+function itemName(record: ImportRecord): string {
+  return record.variant ?? record.name
+}
+
+async function findByGroups(payload: Payload, keys: string[]): Promise<Map<string, Product>> {
+  const found = new Map<string, Product>()
+  if (keys.length === 0) return found
+  const { docs } = await payload.find({
+    collection: 'products',
+    depth: 0,
+    pagination: false,
+    where: { importGroup: { in: keys } },
+  })
+  for (const product of docs) if (product.importGroup) found.set(product.importGroup, product)
+  return found
+}
+
+/** Does this row still have to supply a picture? Grouped → its item; else → the gallery. */
+function needsImage(record: ImportRecord, product: Product): boolean {
+  if (groupKey(record) === null) return (product.gallery ?? []).length === 0
+  const item = product.items?.find((i) => i.sku === record.sku)
+  return item ? item.image == null : true
+}
+
 function changesFor(record: ImportRecord, hit: SkuHit): RowChanges {
   const changes: RowChanges = {}
   if (hit.item.priceEurCents !== record.priceEurCents) {
-    changes.price = { from: hit.item.priceEurCents, to: record.priceEurCents }
+    changes.price = { from: hit.item.priceEurCents ?? null, to: record.priceEurCents }
   }
   const currentStock = hit.item.stockQty ?? 0
   if (record.stockQty !== null && currentStock !== record.stockQty) {
     changes.stock = { from: currentStock, to: record.stockQty }
   }
-  if (record.imageUrl && (hit.product.gallery ?? []).length === 0) changes.image = true
+  if (record.imageUrl && needsImage(record, hit.product)) changes.image = true
   return changes
 }
 
@@ -130,12 +169,24 @@ export async function previewImport(payload: Payload, input: unknown): Promise<P
   if (!file.ok) return file
 
   const valid = file.rows.flatMap((row) => (row.ok ? [row.record] : []))
-  const [categories, brands, hits, mediaStorage] = await Promise.all([
+  const groupSizes = new Map<string, number>()
+  for (const record of valid) {
+    const key = groupKey(record)
+    if (key !== null) groupSizes.set(key, (groupSizes.get(key) ?? 0) + 1)
+  }
+  const [categories, brands, hits, groups, mediaStorage] = await Promise.all([
     loadCategories(payload),
     loadBrands(payload),
     findBySkus(payload, valid.map((r) => r.sku)),
+    findByGroups(payload, [...groupSizes.keys()]),
     checkMediaStorage(mediaDir(payload)),
   ])
+  const groupInfo = (record: ImportRecord): GroupInfo | null => {
+    const key = groupKey(record)
+    if (key === null) return null
+    const product = groups.get(key)
+    return { key, size: groupSizes.get(key) ?? 1, product: product ? { id: product.id, name: product.name } : null }
+  }
 
   const newCategoryPaths = new Set<string>()
   const newBrands = new Set<string>()
@@ -161,6 +212,7 @@ export async function previewImport(payload: Payload, input: unknown): Promise<P
         productName: hit.product.name,
         changes,
         imageUrl: record.imageUrl,
+        group: groupInfo(record),
         warnings: row.warnings,
       }
     }
@@ -183,6 +235,8 @@ export async function previewImport(payload: Payload, input: unknown): Promise<P
       priceEurCents: record.priceEurCents,
       stockQty: record.stockQty ?? 0,
       imageUrl: record.imageUrl,
+      variant: itemName(record),
+      group: groupInfo(record),
       warnings,
     }
   })
@@ -291,7 +345,28 @@ async function appendToGallery(payload: Payload, productId: number, mediaId: num
   await payload.update({ collection: 'products', id: productId, data: { gallery: [...gallery, { image: mediaId }] } })
 }
 
-/** Give the product a picture if it has none: reuse, download, or report why not. */
+/** Put `mediaId` on item `sku`; the first variant picture also becomes the gallery cover. */
+async function setItemImage(payload: Payload, productId: number, sku: string, mediaId: number) {
+  const product = await payload.findByID({ collection: 'products', id: productId, depth: 0 })
+  const items = (product.items ?? []).map((item) => (item.sku === sku ? { ...item, image: mediaId } : item))
+  const gallery =
+    (product.gallery ?? []).length > 0
+      ? undefined
+      : [{ image: mediaId }]
+  await payload.update({
+    collection: 'products',
+    id: productId,
+    data: { items, ...(gallery ? { gallery } : {}) },
+  })
+}
+
+/** Where a row's picture goes: its item (grouped rows) or the product gallery. */
+async function placeImage(payload: Payload, product: Product, record: ImportRecord, mediaId: number) {
+  if (groupKey(record) === null) await appendToGallery(payload, product.id, mediaId)
+  else await setItemImage(payload, product.id, record.sku, mediaId)
+}
+
+/** Give the row its picture if it has none: reuse, download, or report why not. */
 async function attachImage(
   payload: Payload,
   product: Product,
@@ -299,7 +374,7 @@ async function attachImage(
   request: ApplyRequest,
 ): Promise<ImageOutcome> {
   if (!record.imageUrl) return { kind: 'none' }
-  if ((product.gallery ?? []).length > 0) return { kind: 'kept' }
+  if (!needsImage(record, product)) return { kind: 'kept' }
   if (request.previousFailure) return { kind: 'failed', reason: request.previousFailure }
 
   // The product is already saved at this point, so nothing below may throw:
@@ -308,7 +383,7 @@ async function attachImage(
     if (typeof request.reuseMediaId === 'number') {
       const media = await payload.findByID({ collection: 'media', id: request.reuseMediaId, depth: 0, disableErrors: true })
       if (media) {
-        await appendToGallery(payload, product.id, media.id)
+        await placeImage(payload, product, record, media.id)
         return { kind: 'attached', mediaId: media.id }
       }
     }
@@ -319,8 +394,9 @@ async function attachImage(
 
     const downloaded = await downloadImage(record.imageUrl)
     if (!downloaded.ok) return { kind: 'failed', reason: downloaded.reason }
-    const media = await storeMedia(payload, downloaded.image, record.name, record.sku)
-    await appendToGallery(payload, product.id, media.id)
+    const alt = groupKey(record) === null ? record.name : `${record.name} — ${itemName(record)}`
+    const media = await storeMedia(payload, downloaded.image, alt, record.sku)
+    await placeImage(payload, product, record, media.id)
     return { kind: 'attached', mediaId: media.id }
   } catch (err) {
     // Not the link's fault: the bytes were a valid image (sharp decoded them
@@ -370,6 +446,33 @@ export async function applyImportRecord(payload: Payload, request: ApplyRequest)
     return { ok: true, status: changed ? 'updated' : 'unchanged', productId: product.id, image }
   }
 
+  const newItem = {
+    name: itemName(record),
+    sku: record.sku,
+    unit: record.unit,
+    color: record.color,
+    priceEurCents: record.priceEurCents,
+    stockQty: record.stockQty ?? 0,
+  }
+
+  // New SKU in a group that already has its product: one more item row on it.
+  const key = groupKey(record)
+  const groupProduct = key === null ? undefined : (await findByGroups(payload, [key])).get(key)
+  if (groupProduct) {
+    let product: Product
+    try {
+      product = await payload.update({
+        collection: 'products',
+        id: groupProduct.id,
+        data: { items: [...(groupProduct.items ?? []), newItem] },
+      })
+    } catch (err) {
+      return saveFailed(err)
+    }
+    const image = await attachImage(payload, product, record, request)
+    return { ok: true, status: 'created', productId: product.id, image }
+  }
+
   // New SKU: a complete draft product, then (best effort) its picture.
   let product: Product
   try {
@@ -389,16 +492,8 @@ export async function applyImportRecord(payload: Payload, request: ApplyRequest)
         category: categoryId,
         ...(brandId !== null ? { brand: brandId } : {}),
         description: record.description ? descriptionState(record.description) : null,
-        items: [
-          {
-            name: record.name,
-            sku: record.sku,
-            unit: record.unit,
-            color: record.color,
-            priceEurCents: record.priceEurCents,
-            stockQty: record.stockQty ?? 0,
-          },
-        ],
+        ...(key !== null ? { importGroup: key } : {}),
+        items: [newItem],
       },
     })
   } catch (err) {
@@ -414,6 +509,8 @@ export async function attachUploadedImage(
   payload: Payload,
   productId: number,
   data: Buffer,
+  /** A grouped row's SKU: the picture goes on that item instead of the gallery. */
+  sku?: string,
 ): Promise<ImageUploadResponse> {
   const product = await payload.findByID({ collection: 'products', id: productId, depth: 0, disableErrors: true })
   if (!product) return { ok: false, error: { key: 'generic' } }
@@ -421,10 +518,12 @@ export async function attachUploadedImage(
   if (!storage.ok) return { ok: false, error: { key: 'mediaNotWritable', params: { code: storage.code } } }
   const stored = await toStoredImage(data)
   if (!stored.ok) return stored
-  const sku = product.items?.[0]?.sku ?? String(product.id)
+  const item = sku ? product.items?.find((i) => i.sku === sku) : undefined
   try {
-    const media = await storeMedia(payload, stored.image, product.name, sku)
-    await appendToGallery(payload, product.id, media.id)
+    const alt = item ? `${product.name} — ${item.name}` : product.name
+    const media = await storeMedia(payload, stored.image, alt, item?.sku ?? product.items?.[0]?.sku ?? String(product.id))
+    if (item) await setItemImage(payload, product.id, item.sku, media.id)
+    else await appendToGallery(payload, product.id, media.id)
     return { ok: true, mediaId: media.id }
   } catch (err) {
     return { ok: false, error: { key: 'saveFailed', params: { message: err instanceof Error ? err.message : String(err) } } }

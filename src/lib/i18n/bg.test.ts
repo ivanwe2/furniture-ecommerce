@@ -22,7 +22,7 @@ describe('bg.ts i18n', () => {
   it('resolves deep keys', () => {
     expect(t('checkout.successTitle')).toBe('Благодарим за поръчката!');
     expect(t('errors.rateLimited')).toContain('Твърде много опити');
-    expect(t('product.colSku')).toBe('Код');
+    expect(t('product.catalogNo')).toBe('Каталожен №');
   });
 
   it('throws on non-string leaf', () => {

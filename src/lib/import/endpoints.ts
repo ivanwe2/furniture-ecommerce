@@ -130,7 +130,10 @@ const image: Endpoint = {
       if (!Number.isSafeInteger(id) || id <= 0) return fail({ key: 'generic' }, 400)
       const body = req.arrayBuffer ? await req.arrayBuffer() : null
       if (!body || body.byteLength === 0) return fail({ key: 'generic' }, 400)
-      return Response.json(await attachUploadedImage(req.payload, id, Buffer.from(body)))
+      // `?sku=` — a grouped row: the picture belongs to that variant.
+      const skuParam = req.searchParams?.get('sku')?.trim()
+      const sku = skuParam && skuParam.length <= 64 ? skuParam : undefined
+      return Response.json(await attachUploadedImage(req.payload, id, Buffer.from(body), sku))
     }),
 }
 

@@ -1,24 +1,56 @@
 'use client'
 
-import { useState } from 'react'
-import { imageUrl } from '@/lib/images'
+import clsx from 'clsx'
+import { useEffect, useRef, useState } from 'react'
 import { t } from '@/lib/i18n/bg'
-import type { Media } from '@/payload-types'
+
+/** One picture, already resolved to URLs on the server (lib/images.ts). */
+export type GalleryImage = {
+  /** Stable identity (the media id) — used to de-duplicate. */
+  key: string
+  detail: string
+  thumb: string
+  zoom: string
+  alt: string
+}
 
 interface GalleryProps {
-  images: (Media | null)[]
+  images: GalleryImage[]
   productName: string
 }
 
+/**
+ * Product pictures: main image, thumbnails, and a lightbox (Esc closes, ←/→
+ * page, body scroll locked while open). The product page re-mounts it (React
+ * `key`) whenever the selected variant changes, so the view starts again at
+ * the first picture — that variant's own picture when it has one.
+ */
 export function Gallery({ images, productName }: GalleryProps) {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [current, setCurrent] = useState(0)
+  const [open, setOpen] = useState(false)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const count = images.length
 
-  const validImages = images.filter((img): img is Media => img !== null && typeof img === 'object' && 'filename' in img)
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+      else if (e.key === 'ArrowLeft') setCurrent((i) => (i - 1 + count) % count)
+      else if (e.key === 'ArrowRight') setCurrent((i) => (i + 1) % count)
+    }
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', onKey)
+    closeRef.current?.focus()
+    return () => {
+      document.body.style.overflow = overflow
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open, count])
 
-  if (validImages.length === 0) {
+  if (count === 0) {
     return (
-      <div className="hatch relative aspect-[4/3] w-full border border-ink/12">
+      <div className="hatch relative aspect-[5/4] w-full border border-ink/12">
         <span className="absolute bottom-4 left-5 font-mono text-[11px] uppercase tracking-[0.12em] text-steel">
           {t('home.productShot')}
         </span>
@@ -26,40 +58,35 @@ export function Gallery({ images, productName }: GalleryProps) {
     )
   }
 
-  const mainImage = validImages[currentIndex]
+  const main = images[Math.min(current, count - 1)]!
 
   return (
     <div className="space-y-3">
-      {/* Main image */}
-      {mainImage && (
-        <button
-          onClick={() => setLightboxOpen(true)}
-          className="aspect-[4/3] w-full overflow-hidden border border-ink/12 bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-          aria-label={t('product.galleryOpen').replace('{name}', productName).replace('{n}', String(currentIndex + 1))}
-        >
-          <img
-            src={imageUrl(mainImage, 'detail')}
-            alt={mainImage.alt ?? productName}
-            className="h-full w-full object-contain"
-          />
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="block aspect-[5/4] w-full overflow-hidden border border-ink/12 bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+        aria-label={t('product.galleryOpen').replace('{name}', productName).replace('{n}', String(current + 1))}
+      >
+        <img src={main.detail} alt={main.alt} className="h-full w-full object-contain" />
+      </button>
 
-      {/* Thumbnails */}
-      {validImages.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto">
-          {validImages.map((img, i) => (
+      {count > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {images.map((img, i) => (
             <button
-              key={i}
-              onClick={() => setCurrentIndex(i)}
+              key={img.key}
+              type="button"
+              onClick={() => setCurrent(i)}
+              aria-current={i === current ? 'true' : undefined}
               className={clsx(
-                'h-16 w-16 shrink-0 overflow-hidden border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass',
-                i === currentIndex ? 'border-brass' : 'border-ink/15 hover:border-ink/40',
+                'h-16 w-16 shrink-0 overflow-hidden border bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass',
+                i === current ? 'border-brass' : 'border-ink/15 hover:border-ink/40',
               )}
             >
               <img
-                src={imageUrl(img, 'thumb')}
-                alt={img.alt ?? t('product.photoAlt').replace('{n}', String(i + 1))}
+                src={img.thumb}
+                alt={t('product.photoAlt').replace('{n}', String(i + 1))}
                 className="h-full w-full object-cover"
               />
             </button>
@@ -67,66 +94,66 @@ export function Gallery({ images, productName }: GalleryProps) {
         </div>
       )}
 
-      {/* Lightbox */}
-      {lightboxOpen && (
+      {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setLightboxOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-label={t('product.galleryZoom').replace('{name}', productName)}
         >
           <button
-            className="absolute right-4 top-4 text-white hover:text-brass transition-colors"
-            onClick={() => setLightboxOpen(false)}
+            ref={closeRef}
+            type="button"
+            className="absolute right-4 top-4 text-white transition-colors hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            onClick={() => setOpen(false)}
             aria-label={t('common.close')}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
           </button>
 
-          {/* Previous */}
-          {validImages.length > 1 && (
+          {count > 1 && (
             <button
-              className="absolute left-4 text-white hover:text-brass transition-colors"
+              type="button"
+              className="absolute left-4 text-white transition-colors hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               onClick={(e) => {
                 e.stopPropagation()
-                setCurrentIndex((prev) => (prev - 1 + validImages.length) % validImages.length)
+                setCurrent((i) => (i - 1 + count) % count)
               }}
               aria-label={t('product.prevPhoto')}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8"><path d="M15 19l-7-7 7-7" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8" aria-hidden="true">
+                <path d="M15 19l-7-7 7-7" />
+              </svg>
             </button>
           )}
 
-          {/* Image */}
-          {validImages[currentIndex] && (
-            <img
-              src={imageUrl(validImages[currentIndex], 'zoom')}
-              alt={validImages[currentIndex].alt ?? productName}
-              className="max-h-[90vh] max-w-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-          )}
+          <img
+            src={main.zoom}
+            alt={main.alt}
+            className="max-h-[90vh] max-w-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
 
-          {/* Next */}
-          {validImages.length > 1 && (
+          {count > 1 && (
             <button
-              className="absolute right-4 text-white hover:text-brass transition-colors"
+              type="button"
+              className="absolute right-4 text-white transition-colors hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               onClick={(e) => {
                 e.stopPropagation()
-                setCurrentIndex((prev) => (prev + 1) % validImages.length)
+                setCurrent((i) => (i + 1) % count)
               }}
               aria-label={t('product.nextPhoto')}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8"><path d="M9 5l7 7-7 7" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-8 w-8" aria-hidden="true">
+                <path d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           )}
         </div>
       )}
     </div>
   )
-}
-
-function clsx(...classes: (string | undefined | null | false)[]): string {
-  return classes.filter(Boolean).join(' ')
 }

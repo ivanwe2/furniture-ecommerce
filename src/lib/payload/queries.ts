@@ -7,6 +7,7 @@ import { company as companyDefaults, type CompanyInfo } from '@/lib/company'
 import { searchTokens } from '@/lib/search'
 import { payloadSort as toPayloadSort, DEFAULT_SORT } from '@/lib/catalog/sort'
 import { collectSubtreeIds } from '@/lib/catalog/category-tree'
+import { isOrderable } from '@/lib/availability'
 
 /** Payload sort string for the default ordering — see lib/catalog/sort.ts. */
 const DEFAULT_PAYLOAD_SORT = toPayloadSort(DEFAULT_SORT)
@@ -174,6 +175,75 @@ export function getProductBySlug(slug: string) {
     },
     ['product', slug],
     { tags: [`product-${slug}`, 'products'] },
+  )()
+}
+
+/** How many cards „Подходящи артикули" shows when falling back to the category. */
+const RELATED_FALLBACK = 4
+
+/**
+ * „Подходящи артикули" for a product page: the owner's hand-picked `related`
+ * list in its order (published only, max 8), or — when that is empty — a few
+ * other published products from the same category. Depth 1 so the cards get
+ * their cover image. Tagged `products`: any product edit refreshes it.
+ */
+export function getRelatedProducts(product: Pick<Product, 'id' | 'related' | 'category'>) {
+  const picked = (product.related ?? []).map((r) => (typeof r === 'object' ? r.id : r))
+  const categoryId = typeof product.category === 'object' ? product.category.id : product.category
+  return unstable_cache(
+    async () => {
+      const payload = await p()
+      if (picked.length > 0) {
+        const { docs } = await payload.find({
+          collection: 'products',
+          depth: 1,
+          limit: picked.length,
+          where: { and: [{ id: { in: picked } }, { status: { equals: 'published' } }] },
+        })
+        const byId = new Map(docs.map((d) => [d.id, d]))
+        return picked.map((id) => byId.get(id)).filter((d): d is Product => d !== undefined)
+      }
+      const { docs } = await payload.find({
+        collection: 'products',
+        depth: 1,
+        limit: RELATED_FALLBACK,
+        sort: DEFAULT_PAYLOAD_SORT,
+        where: {
+          and: [
+            { status: { equals: 'published' } },
+            { category: { equals: categoryId } },
+            { id: { not_equals: product.id } },
+          ],
+        },
+      })
+      return docs
+    },
+    ['related-products', String(product.id), picked.join(','), String(categoryId)],
+    { tags: ['products'] },
+  )()
+}
+
+/**
+ * The published product holding item `sku`, and that item — for the contact
+ * form's „Запитване за наличност / цена" prefill (`/contact?about=<sku>`).
+ * null for unknown SKUs, so nothing arbitrary from the URL is echoed back.
+ */
+export function getItemBySku(sku: string) {
+  return unstable_cache(
+    async () => {
+      const payload = await p()
+      const { docs } = await payload.find({
+        collection: 'products',
+        depth: 0,
+        limit: 1,
+        where: { and: [{ 'items.sku': { equals: sku } }, { status: { equals: 'published' } }] },
+      })
+      const product = docs[0]
+      const item = product?.items?.find((i) => i.sku === sku)
+      return product && item ? { productName: product.name, itemName: item.name, sku: item.sku } : null
+    },
+    ['item-by-sku', sku],
+    { tags: ['products'] },
   )()
 }
 
@@ -422,8 +492,11 @@ export async function resolveCartLines(lines: { productSlug: string; sku: string
     const item = product.items.find((i) => i.sku === line.sku)
     if (!item) continue
 
-    // Reject out-of-stock items (stockQty <= 0)
-    if ((item.stockQty ?? 0) <= 0) continue
+    // Only orderable items: priced AND in stock (lib/availability.ts). Sold-out
+    // and price-on-request („по запитване") lines are dropped here, so the
+    // order action answers errors.cartStale instead of creating an order with
+    // a missing price — whatever a tampered cart claims.
+    if (!isOrderable(item)) continue
 
     resolution.set(`${line.productSlug}:${line.sku}`, {
       productSlug: line.productSlug,
