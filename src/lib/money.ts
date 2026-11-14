@@ -1,5 +1,8 @@
-export const BGN_PER_EUR = 1.95583
-
+/**
+ * Money helpers. Everything is integer euro cents (CLAUDE rule 4). Prices are
+ * shown in euro only: the dual EUR/BGN display ended with Bulgaria's mandatory
+ * period (2026-08-08) and was retired on 2026-11-14 (Ivan) — no lev code left.
+ */
 /**
  * Format non-negative integer cents in the Bulgarian style: comma decimal
  * separator, space thousands separator, always two decimals. Deliberately
@@ -18,25 +21,6 @@ function formatAmount(cents: number): string {
 export function formatEur(cents: number): string {
   assertCents(cents)
   return `${formatAmount(cents)} €`
-}
-
-/** EUR cents → BGN cents, HALF-UP at the cent. Integer in, integer out. */
-export function bgnCentsFromEurCents(eurCents: number): number {
-  assertCents(eurCents)
-  const num = eurCents * 195583
-  const q = Math.floor(num / 100000)
-  const rem = num % 100000
-  return rem * 2 >= 100000 ? q + 1 : q
-}
-
-/** BGN cents → EUR cents, HALF-UP at the cent. Integer in, integer out. */
-export function eurCentsFromBgnCents(bgnCents: number): number {
-  assertCents(bgnCents)
-  // bgnCents / 1.95583 = bgnCents * 100000 / 195583
-  const num = bgnCents * 100000
-  const q = Math.floor(num / 195583)
-  const rem = num % 195583
-  return rem * 2 >= 195583 ? q + 1 : q
 }
 
 /**
@@ -97,21 +81,6 @@ export function netEurCents(grossCents: number, vatPercent: number = VAT_PERCENT
 export function eurDecimalString(cents: number): string {
   assertCents(cents)
   return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`
-}
-
-export function formatBgn(bgnCents: number): string {
-  assertCents(bgnCents)
-  return `${formatAmount(bgnCents)} лв.`
-}
-
-export function showBgn(): boolean {
-  return process.env.NEXT_PUBLIC_SHOW_BGN === 'true'
-}
-
-export function formatPrice(eurCents: number): string {
-  return showBgn()
-    ? `${formatEur(eurCents)} (${formatBgn(bgnCentsFromEurCents(eurCents))})`
-    : formatEur(eurCents)
 }
 
 function assertCents(v: number): void {

@@ -179,20 +179,18 @@ export function imageSrcSet(media: MediaDoc, presets: Preset[]): string
 - `src/lib/money.ts` is the only formatter:
 
 ```ts
-export const BGN_PER_EUR = 1.95583; // fixed by law — never a config value
 export function formatEur(cents: number): string        // "31,14 €"
-export function bgnCentsFromEurCents(c: number): number // round HALF-UP
-export function formatBgn(cents: number): string        // "60,91 лв."
-export function formatPrice(cents: number): string
-// SHOW_BGN=true  → "31,14 € (60,91 лв.)"
-// SHOW_BGN=false → "31,14 €"
+export function netEurCents(gross: number): number      // ex-VAT, half-up (display only)
+export function eurDecimalString(cents: number): string // "31.14" for JSON-LD
+export function eurCentsFromDecimal(v): { cents, rounded } | null // importer
 ```
 
-- `NEXT_PUBLIC_SHOW_BGN` env flag (string 'true'/'false'). Bulgaria's
-  mandatory dual display ends **2026-08-08** — decommission = flip the flag
-  and redeploy. No migration, no code change.
-- Formatting: `Intl.NumberFormat('bg-BG', …)` — comma decimal separator,
-  space thousands.
+- **Euro only.** The dual EUR/BGN display (Bulgaria's mandatory period ended
+  2026-08-08) and its `NEXT_PUBLIC_SHOW_BGN` flag were retired on 2026-11-14
+  (Ivan) — no lev conversion code remains.
+- Formatting is hand-rolled (no `Intl.NumberFormat`): comma decimal
+  separator, space thousands — byte-identical on server and client, so no
+  hydration mismatch.
 - Totals: `lineTotal = unitPriceEurCents × qty` (integers); order total =
   sum of line totals. Computed server-side from DB prices at order time and
   snapshotted onto the order. Client-supplied prices are display-only and
@@ -326,7 +324,6 @@ POSTGRES_DB=nasteh
 REDIS_URL=redis://redis:6379        # rate-limit store
 MEDIA_DIR=/app/media
 NEXT_PUBLIC_SITE_URL=https://nasteh.bg
-NEXT_PUBLIC_SHOW_BGN=true           # flip to false on 2026-08-08 (§6)
 ALTCHA_HMAC_KEY=                    # self-hosted anti-bot (no external service)
 # Email — the app relays through the in-stack `mail` service:
 SMTP_HOST=mail

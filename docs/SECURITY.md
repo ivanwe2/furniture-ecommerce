@@ -161,10 +161,15 @@ alerts were off on the repository.
 | 6 | **GraphQL endpoint and playground publicly exposed**, though nothing uses GraphQL (storefront = local API, admin = REST) — a second public query surface for every Payload query bug | Hardening | `graphQL: { disable: true }`; route files removed |
 | 7 | **No dependency gate**: CI had no audit and no build step | Process | CI runs `pnpm audit --prod --audit-level high` and `pnpm build`; `.github/dependabot.yml` (weekly, majors ignored per rule 2) |
 | 8 | `ProductJsonLd` formatted prices with `(cents / 100).toFixed(2)` (rule 4 defect) | Minor | `eurDecimalString()` in `money.ts` |
+| 9 | **Altcha proof-of-work could be skipped.** `altcha-lib` < 2.3.2 re-derived the key from the submitted counter but never checked it against the challenge's signed `keyPrefix`; our `verify()` passes no key-signature secret, which is exactly that path. A forged payload (counter 0 + its derived key, no work) verified — reproduced against our own call. Effect: the anti-bot layer on checkout/contact was decorative (honeypot, rate limits, server-side prices still held). Not in `pnpm audit` (no advisory published); found in the release notes of Dependabot's widget PR | High (anti-abuse) | `altcha-lib` 2.2.0 → **2.8.0**, widget `altcha` → 3.5.0; regression test `src/lib/altcha.test.ts` (forged counter-0 rejected, honest solve accepted once, replay refused) |
 
 Result: **145 → 6 advisories, 0 unignored in production** (`pnpm audit --prod
 --audit-level high` exits 0). The 6 are listed below and in
 `pnpm-workspace.yaml → auditConfig.ignoreGhsas`, each with its reason.
+
+Finding 9 came later the same day (follow-up PR) and shows the limit of
+`pnpm audit`: it only knows published advisories. When Dependabot bumps a
+security-relevant package (auth, anti-bot, mail), read its release notes.
 
 ### Accepted risks (dependencies, 2026-11-14)
 

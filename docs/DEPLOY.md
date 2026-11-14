@@ -35,7 +35,7 @@ Each step links to the detailed section below. Tick as you go.
       **every** key. Generate the two secrets fresh: `PAYLOAD_SECRET` and
       `ALTCHA_HMAC_KEY` (`openssl rand -hex 32` each); set a strong
       `POSTGRES_PASSWORD` and make `DATABASE_URI` match it; set
-      `NEXT_PUBLIC_SITE_URL=https://nasteh.bg`, `NEXT_PUBLIC_SHOW_BGN=true`,
+      `NEXT_PUBLIC_SITE_URL=https://nasteh.bg`,
       `EMAIL_FROM`, `ORDER_INBOX_EMAIL`, `MAIL_HOSTNAME`, `MAIL_SENDER_DOMAINS`
       (+ `RELAYHOST*` if outbound :25 is blocked). `chmod 600 .env` (§2, §10).
 - [ ] **DNS — web** — `A`/`AAAA` for `nasteh.bg` → the host (through the proxy).
@@ -63,8 +63,6 @@ Each step links to the detailed section below. Tick as you go.
       on the site.
 - [ ] **Backups off-box** — confirm the `backup` sidecar wrote snapshots and set
       up an off-host copy (§5).
-- [ ] **Set a reminder — 2026-08-08:** flip `NEXT_PUBLIC_SHOW_BGN=false` and
-      rebuild (prices go EUR-only) (§9).
 
 ---
 
@@ -98,7 +96,6 @@ Every key (`.env.example` is the authoritative list):
 | `REDIS_URL` | rate-limit store | `redis://redis:6379`. If unset, the app falls back to an in-process limiter. |
 | `MEDIA_DIR` | uploads dir | `/app/media` (the `media` volume). |
 | `NEXT_PUBLIC_SITE_URL` | public URL | `https://nasteh.bg`. **Build-time** — see the note below. |
-| `NEXT_PUBLIC_SHOW_BGN` | dual EUR/BGN prices | `true` until 2026-08-08, then `false`. **Build-time.** |
 | `ALTCHA_HMAC_KEY` | Altcha challenge secret | `openssl rand -hex 32`. Runtime; self-hosted proof-of-work — no external service. |
 | `SITE_LOCK_USER`/`SITE_LOCK_PASSWORD` | pre-launch Basic Auth | Both set = storefront locked (`/admin`, `/api` stay open). ASCII. Runtime — restart, no rebuild. Empty both to go live (§8). |
 | `SMTP_HOST`/`SMTP_PORT` | app → relay | `mail` / `587` (the in-stack relay, no auth). Or point at an external smarthost. |
@@ -151,13 +148,15 @@ Update to a new version:
 git pull
 docker compose exec backup sh -c 'pg_dump | gzip > /backups/db_pre-update_$(date +%F).sql.gz'
 docker compose build --pull       # --pull: fresh node base image (OS + Node patches)
-docker compose pull               # fresh postgres / redis / mail images
+docker compose pull --ignore-buildable   # fresh postgres / redis / mail images
 docker compose up -d              # restart; migrations run on boot
 docker compose logs -f app        # watch: "Migrating: …" then the server starts
 docker compose images             # confirm what is actually running
 ```
 
-**Always use `--pull` and `pull`.** The base images are pinned to a major
+**Always use `--pull` and `pull --ignore-buildable`.** (`--ignore-buildable`
+skips the app image, which is built here, not pulled — without it the command
+stops at „pull access denied for nasteh-bg".) The base images are pinned to a major
 (`node:24-bookworm-slim`, `postgres:18-alpine`, `redis:7-alpine`) so they pick
 up security patches — but only when they are pulled. A plain
 `up -d --build` keeps whatever was cached on the host, possibly for months
@@ -424,8 +423,9 @@ Notes:
 - **`NEXT_PUBLIC_*` are build-time.** Changing the site URL / BGN flag requires
   a rebuild, not just an env edit + restart. (`ALTCHA_HMAC_KEY` is a *runtime*
   server secret — no rebuild needed.)
-- **2026-08-08:** flip `NEXT_PUBLIC_SHOW_BGN` to `false` and rebuild (prices
-  become EUR-only). Set a reminder.
+- **Prices are euro-only** since 2026-11-14 (the dual EUR/BGN display was
+  retired in code). A leftover `NEXT_PUBLIC_SHOW_BGN` line in `.env` is
+  ignored — delete it whenever convenient.
 - **Single app instance.** Rate limiting is on Redis (shared-ready) and the DB
   is Postgres (concurrent writes fine), so scaling the *app* to replicas is
   feasible — but the Next.js content cache is still in-process, so revisit
