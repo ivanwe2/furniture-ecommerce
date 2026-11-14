@@ -8,6 +8,9 @@ import { IMAGE_FAILURES, type ApplyRequest, type ImageFailure } from '@/lib/impo
 import { MAX_FILE_BYTES, type Issue } from '@/lib/import/contract'
 import { MAX_IMAGE_BYTES } from '@/lib/import/fetch-image'
 import { applyImportRecord, attachUploadedImage, previewImport } from '@/lib/import/run'
+import { logger } from '@/lib/log'
+
+const log = logger('import')
 
 /**
  * POST /api/products/import/{preview,apply,image/:id} — the admin product
@@ -80,7 +83,7 @@ async function handle(area: string, run: () => Promise<Response>): Promise<Respo
   try {
     return await run()
   } catch (err) {
-    console.error(`[import] ${area} failed`, err instanceof Error ? err.message : err)
+    log.error(`${area} failed`, { err })
     return fail({ key: 'generic' }, 500)
   }
 }

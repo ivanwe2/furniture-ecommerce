@@ -1,4 +1,8 @@
-import Redis from 'ioredis'
+import { logger, throttled } from '@/lib/log'
+import { getRedis } from '@/lib/redis'
+
+const log = logger('ratelimit')
+const once = throttled(60_000)
 
 type Bucket = { count: number; resetAt: number }
 type Result = { allowed: boolean; retryAfterSec: number }
@@ -37,27 +41,6 @@ function memRateLimit(key: string, opts: { windowSec: number; max: number }): Re
 // only on the first hit of the window — atomic in one round-trip via Lua.
 const INCR_EXPIRE = "local c = redis.call('INCR', KEYS[1]) if c == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end return c"
 
-let redis: Redis | null = null
-let redisInit = false
-
-function getRedis(): Redis | null {
-  if (redisInit) return redis
-  redisInit = true
-  const url = process.env.REDIS_URL
-  if (!url) return null
-  redis = new Redis(url, {
-    // Fail fast when Redis is unreachable so we fall back to in-memory rather
-    // than blocking a checkout on a Redis blip.
-    maxRetriesPerRequest: 1,
-    enableOfflineQueue: false,
-    connectTimeout: 2000,
-    retryStrategy: (times) => Math.min(times * 200, 3000),
-  })
-  // Swallow connection errors — command failures are handled per-call below.
-  redis.on('error', () => {})
-  return redis
-}
-
 /**
  * Server entry point (ARCHITECTURE §7). Uses Redis (shared, own container) as
  * the store; on any Redis error — or when `REDIS_URL` is unset — falls back to
@@ -75,8 +58,9 @@ export async function rateLimit(
       return count > opts.max
         ? { allowed: false, retryAfterSec: opts.windowSec }
         : { allowed: true, retryAfterSec: 0 }
-    } catch {
+    } catch (err) {
       // Redis down → fall back to in-memory (never block on a blip).
+      once('fallback', () => log.warn('Redis unavailable — using the in-memory limiter', { err }))
     }
   }
   return memRateLimit(key, opts)

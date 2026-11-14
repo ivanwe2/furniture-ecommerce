@@ -3,6 +3,7 @@ import 'server-only'
 
 import nodemailer, { type Transporter } from 'nodemailer'
 import { company } from '@/lib/company'
+import { logger } from '@/lib/log'
 import { formatEur } from '@/lib/money'
 import type { Order } from '@/payload-types'
 
@@ -13,6 +14,8 @@ const SMTP_PASS = process.env.SMTP_PASS ?? ''
 const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Настех <no-reply@nasteh.bg>'
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nasteh.bg'
 const ORDER_INBOX_EMAIL = process.env.ORDER_INBOX_EMAIL ?? ''
+
+const log = logger('email')
 
 let transporter: Transporter | null = null
 
@@ -42,7 +45,8 @@ function getTransporter(): Transporter | null {
 async function sendEmail(to: string, subject: string, html: string, text: string, replyTo?: string) {
   const tx = getTransporter()
   if (!tx) {
-    console.log('[email] dev mode - skipped (no SMTP_HOST)', { to, subject })
+    // No recipient in the log line — it is personal data (CONVENTIONS §7).
+    log.info('dev mode — email not sent (no SMTP_HOST)', { subject })
     return
   }
   await tx.sendMail({ from: EMAIL_FROM, to, subject, html, text, replyTo })
@@ -85,24 +89,43 @@ export async function sendOrderEmails(order: Order, customerEmail: string) {
   const lines = normalizeLines(order.lines)
   const totalFormatted = formatEur(order.totalEurCents)
 
-  // Owner email
+  // Owner and customer mails are independent: one failing must not stop the
+  // other (it used to — a failed owner send meant the customer never got a
+  // confirmation). Both are attempted; any failure is thrown afterwards for
+  // the caller to log, after the order already exists (CLAUDE rule 9).
+  const sends: { to: 'owner' | 'customer'; run: () => Promise<void> }[] = []
   if (ORDER_INBOX_EMAIL) {
-    await sendEmail(
-      ORDER_INBOX_EMAIL,
-      `Нова поръчка ${orderNumber} - ${totalFormatted}`,
-      orderOwnerHtml({ orderNumber, orderDate, totalEurCents: order.totalEurCents, customerName: order.customer.name, customerPhone: order.customer.phone, customerEmail: order.customer.email, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, note: order.customer.note, lines }),
-      orderOwnerText({ orderNumber, orderDate, totalEurCents: order.totalEurCents, customerName: order.customer.name, customerPhone: order.customer.phone, customerEmail: order.customer.email, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, note: order.customer.note, lines }),
+    sends.push({
+      to: 'owner',
+      run: () =>
+        sendEmail(
+          ORDER_INBOX_EMAIL,
+          `Нова поръчка ${orderNumber} - ${totalFormatted}`,
+          orderOwnerHtml({ orderNumber, orderDate, totalEurCents: order.totalEurCents, customerName: order.customer.name, customerPhone: order.customer.phone, customerEmail: order.customer.email, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, note: order.customer.note, lines }),
+          orderOwnerText({ orderNumber, orderDate, totalEurCents: order.totalEurCents, customerName: order.customer.name, customerPhone: order.customer.phone, customerEmail: order.customer.email, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, note: order.customer.note, lines }),
+        ),
+    })
+  }
+  sends.push({
+    to: 'customer',
+    run: () =>
+      sendEmail(
+        customerEmail,
+        `Потвърждение на поръчка ${orderNumber} - Настех`,
+        orderCustomerHtml({ orderNumber, orderDate, totalEurCents: order.totalEurCents, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, lines }),
+        orderCustomerText({ orderNumber, orderDate, totalEurCents: order.totalEurCents, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, lines }),
+        ORDER_INBOX_EMAIL,
+      ),
+  })
+
+  const results = await Promise.allSettled(sends.map((s) => s.run()))
+  const failed = results.flatMap((r, i) => (r.status === 'rejected' ? [{ to: sends[i]!.to, err: r.reason }] : []))
+  if (failed.length > 0) {
+    throw new AggregateError(
+      failed.map((f) => f.err),
+      `order email failed for: ${failed.map((f) => f.to).join(', ')}`,
     )
   }
-
-  // Customer email
-  await sendEmail(
-    customerEmail,
-    `Потвърждение на поръчка ${orderNumber} - Настех`,
-    orderCustomerHtml({ orderNumber, orderDate, totalEurCents: order.totalEurCents, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, lines }),
-    orderCustomerText({ orderNumber, orderDate, totalEurCents: order.totalEurCents, deliveryMethod: order.delivery.method, addressOrOffice: order.delivery.addressOrOffice, city: order.delivery.city, lines }),
-    ORDER_INBOX_EMAIL,
-  )
 }
 
 export async function sendContactEmail(data: { name: string; email: string; phone?: string; message: string }, _ip: string) {

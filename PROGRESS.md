@@ -5,20 +5,26 @@
 
 ## Status
 
-**2026-11-14 — NOV 2026 ROUND: Phase 11 (security) merged (#77); Phase 12
-(product page v2 + import grouping) done on branch `phase-12-product-page`;
-next = Phase 13 (observability, PHASES §13).** Ivan's plan approval
-2026-11-14 (scope + decisions in docs/PHASES.md §11–13). Security: 145 → 0
-unignored prod advisories (SECURITY §3). Product page rebuilt from the
-client's mockup: variant radio table drives picture/SKU/price/stock/actions,
-price on request, ex-VAT line, restock lead time, characteristics, related
-products, `?sku=` deep links; importer `group`/`variant` keys.
-**Ivan:** enable Dependabot alerts in GitHub repo settings; upgrade local
-Node to ≥24.22.1; ask the client for the real restock lead-time text and
-whether their export can add `group`/`variant`. **Sysadmin (one message, see chat 2026-11-14):** update per DEPLOY §3,
-then `sudo scripts/deploy/install.sh` once (auto-deploys, §3a); RAM → 4 GB and
-DNS + Caddy for `stats.nasteh.bg` ahead of Phase 13. After that, deploys are
-Ivan's Deploy button.
+**2026-11-14 — NOV 2026 ROUND. Merged: #77 security, #86 product page v2,
+#87 Altcha fix + euro-only, #89 auto-deploy, #90 zod 4, #91 real 404s.
+IN PROGRESS: Phase 13 on branch `phase-13-observability` (NOT merged).**
+Ivan wants ONE bundled deploy + ONE sysadmin message after Phase 13 — do not
+send partial instructions. Done on the branch: `lib/log.ts` (+tests), Payload
+logger fix, importer/altcha/rate-limit logging, `lib/redis.ts`, independent
+owner/customer emails (+tests), OTel packages installed (api 1.9.1, sdk-trace
+2.12.1, context-async-hooks, exporter-trace-otlp-http 0.223.2, resources),
+`lib/telemetry/events.ts` (+tests). NEXT UP (PHASES §13): telemetry server
+`track()` (batched INSERT via payload.db.drizzle into `telemetry.events`, daily
+salted visitor hash in Redis), migration for schema `telemetry`, POST /api/t
+beacon, client queue + consent banner (replaces CookieNotice) + touch points,
+admin change hooks, `instrumentation.ts` (OTel + onRequestError + purge),
+`/api/health` + compose healthcheck, `APP_VERSION` build arg, replace order/
+contact `console.*` with logs + events, docker-compose.observability.yml
+(Grafana/Loki/Prometheus/Tempo/Alloy, db-init one-shot for grafana_reader +
+metrics roles), dashboards, alerts, docs (ARCHITECTURE §13, DEPLOY §11,
+SECURITY, CLAUDE.md scope line, privacy texts), local end-to-end test, PR.
+Then the single sysadmin message (update + install.sh + COMPOSE_FILE + new
+.env keys + RAM 4 GB + DNS/Caddy stats.nasteh.bg).
 
 Earlier: **2026-07-23 — code-complete, handed to the sysadmin** (site lock,
 importer and production fixes followed in Aug–Sep; see Decisions log).

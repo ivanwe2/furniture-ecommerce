@@ -5,6 +5,7 @@ import { bg } from '@payloadcms/translations/languages/bg'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
+import { log, type LogLevel } from './lib/log'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
@@ -19,25 +20,34 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 const isProduction = process.env.NODE_ENV === 'production'
 
-const createLog =
-  (level: string, fn: typeof console.log) => (objOrMsg: object | string, msg?: string) => {
-    if (typeof objOrMsg === 'string') {
-      fn(JSON.stringify({ level, msg: objOrMsg }))
-    } else {
-      fn(JSON.stringify({ level, ...objOrMsg, msg: msg ?? (objOrMsg as { msg?: string }).msg }))
-    }
+/**
+ * Payload's logger in production → lib/log.ts JSON lines (area "payload").
+ * Payload calls `logger.error({ err, msg })`; the old hand-rolled logger did
+ * `JSON.stringify({ ...obj })`, and an Error stringifies to `{}` — every
+ * production Payload error lost its message and stack. Dev keeps Payload's
+ * default pretty logger.
+ */
+const payloadLog =
+  (level: LogLevel) =>
+  (objOrMsg: unknown, msg?: string): void => {
+    if (typeof objOrMsg === 'string') return log(level, 'payload', objOrMsg)
+    const { msg: inner, err, ...rest } = (objOrMsg ?? {}) as { msg?: string; err?: unknown } & Record<string, unknown>
+    log(level, 'payload', msg ?? inner ?? (err instanceof Error ? err.message : 'payload'), {
+      ...rest,
+      ...(err !== undefined ? { err } : {}),
+    })
   }
 
 const jsonLogger = {
   level: process.env.PAYLOAD_LOG_LEVEL || 'info',
-  trace: createLog('trace', console.debug),
-  debug: createLog('debug', console.debug),
-  info: createLog('info', console.log),
-  warn: createLog('warn', console.warn),
-  error: createLog('error', console.error),
-  fatal: createLog('fatal', console.error),
+  trace: payloadLog('debug'),
+  debug: payloadLog('debug'),
+  info: payloadLog('info'),
+  warn: payloadLog('warn'),
+  error: payloadLog('error'),
+  fatal: payloadLog('error'),
   silent: () => {},
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- payload's PayloadLogger type is not exported in 3.82.1
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Payload's logger option is typed as a pino instance; this structural stand-in implements the methods it calls
 } as any
 
 export default buildConfig({
