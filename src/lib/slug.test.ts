@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { slugify } from '@/lib/slug'
+import { normalizeSlug, slugify } from '@/lib/slug'
 
 describe('slugify', () => {
   it('transliterates Bulgarian characters', () => {
@@ -41,5 +41,27 @@ describe('slugify', () => {
   it('returns empty string for non-alphanumeric input', () => {
     expect(slugify('!!!')).toBe('')
     expect(slugify('   ')).toBe('')
+  })
+})
+
+describe('normalizeSlug', () => {
+  it('keeps a clean slug unchanged', () => {
+    expect(normalizeSlug('mebelen-obkov', 'Мебелен обков')).toBe('mebelen-obkov')
+  })
+
+  it('transliterates a typed slug that is not clean', () => {
+    expect(normalizeSlug('pant-clip-on-amortisьor', 'x')).toBe('pant-clip-on-amortisyor')
+    expect(normalizeSlug(' Панти ', 'x')).toBe('panti')
+  })
+
+  it('falls back to the name when the slug is empty or unusable', () => {
+    expect(normalizeSlug('', 'Газов амортисьор 100N')).toBe('gazov-amortisyor-100n')
+    expect(normalizeSlug('—', 'Панта')).toBe('panta')
+    expect(normalizeSlug(undefined, 'Панта')).toBe('panta')
+  })
+
+  it('returns undefined when neither gives a slug', () => {
+    expect(normalizeSlug(undefined, undefined)).toBeUndefined()
+    expect(normalizeSlug('!!!', '***')).toBeUndefined()
   })
 })

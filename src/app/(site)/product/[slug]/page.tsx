@@ -1,19 +1,21 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { t } from '@/lib/i18n/bg'
 import { Container } from '@/components/ui'
-import { Gallery } from '@/components/catalog/Gallery'
-import { ItemsTable } from '@/components/catalog/ItemsTable'
+import type { GalleryImage } from '@/components/catalog/Gallery'
+import { ProductView, type ViewItem } from '@/components/catalog/ProductView'
+import { ProductCard } from '@/components/catalog/ProductCard'
 import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import BreadcrumbList from '@/components/seo/BreadcrumbList'
 import ProductJsonLd from '@/components/seo/ProductJsonLd'
 import { RichText } from '@/components/richtext/RichText'
-import { getProductBySlug } from '@/lib/payload/queries'
+import { getCategoryPath, getCompany, getProductBySlug, getRelatedProducts, getSettings } from '@/lib/payload/queries'
+import { availabilityOf, hasPrice, isOrderable } from '@/lib/availability'
 import { imageUrl } from '@/lib/images'
-import type { Media } from '@/payload-types'
+import type { Media, Product } from '@/payload-types'
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ sku?: string | string[] }>
 }
 
 /** Flatten a Lexical rich-text value to a trimmed plain-text excerpt for meta. */
@@ -32,6 +34,37 @@ function richTextExcerpt(content: unknown, max = 160): string {
   return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text
 }
 
+function asMedia(value: unknown): Media | null {
+  return value && typeof value === 'object' && 'filename' in value && (value as Media).filename
+    ? (value as Media)
+    : null
+}
+
+function toGalleryImage(media: Media, alt: string): GalleryImage {
+  return {
+    key: String(media.id),
+    detail: imageUrl(media, 'detail'),
+    thumb: imageUrl(media, 'thumb'),
+    zoom: imageUrl(media, 'zoom'),
+    alt: media.alt || alt,
+  }
+}
+
+function toViewItem(item: NonNullable<Product['items']>[number], productName: string): ViewItem {
+  const image = asMedia(item.image)
+  return {
+    sku: item.sku,
+    name: item.name,
+    unit: item.unit ?? null,
+    lengthMm: item.lengthMm ?? null,
+    color: item.color ?? null,
+    priceEurCents: hasPrice(item) ? item.priceEurCents : null,
+    stockQty: item.stockQty ?? 0,
+    image: image ? toGalleryImage(image, `${productName} — ${item.name}`) : null,
+    specs: (item.specs ?? []).map((s) => ({ label: s.label, value: s.value })),
+  }
+}
+
 export async function generateMetadata({ params }: ProductPageProps) {
   const resolvedParams = await params
   const product = await getProductBySlug(resolvedParams.slug)
@@ -43,154 +76,124 @@ export async function generateMetadata({ params }: ProductPageProps) {
   const seoDesc =
     product.seo?.description ??
     (richTextExcerpt(product.description) || t('seo.productDesc').replace('{name}', product.name))
-  const firstImage = product.gallery?.[0]?.image
+  const firstImage = asMedia(product.gallery?.[0]?.image)
   return {
     // Custom SEO title used verbatim (absolute); otherwise the name + template.
     title: product.seo?.title ? { absolute: product.seo.title } : product.name,
     description: seoDesc,
+    // Canonical without `?sku=` — every variant is the same page.
     alternates: { canonical: `/product/${product.slug}` },
     openGraph: {
       title: ogTitle,
       description: seoDesc,
       type: 'website',
       url: `/product/${product.slug}`,
-      images: firstImage && typeof firstImage === 'object' && 'filename' in firstImage
-        ? [{ url: imageUrl(firstImage as Media, 'og'), width: 1200, height: 630 }] as const
-        : undefined,
+      images: firstImage ? ([{ url: imageUrl(firstImage, 'og'), width: 1200, height: 630 }] as const) : undefined,
     },
   }
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const resolvedParams = await params
-  const product = await getProductBySlug(resolvedParams.slug)
+export default async function ProductPage({ params, searchParams }: ProductPageProps) {
+  const [{ slug }, query] = await Promise.all([params, searchParams])
+  const product = await getProductBySlug(slug)
+  if (!product) notFound()
 
-  if (!product) {
-    notFound()
-  }
+  const category = typeof product.category === 'object' ? product.category : null
+  const brand =
+    product.brand && typeof product.brand === 'object'
+      ? { name: product.brand.name, slug: product.brand.slug ?? null }
+      : null
 
-  // Build breadcrumbs
-  const _categoryPath = product.category && typeof product.category === 'object' ? [{ id: (product.category as { id: number }).id, name: (product.category as { name: string }).name, slug: (product.category as { slug?: string | null })?.slug ?? '', children: [] }] : []
+  const [categoryPath, company, settings, related] = await Promise.all([
+    category ? getCategoryPath(category.id) : Promise.resolve([]),
+    getCompany(),
+    getSettings(),
+    getRelatedProducts(product),
+  ])
 
-  // Extract gallery images
-  const galleryImages: (Media | null)[] = (product.gallery ?? []).map((entry) => {
-    if (!entry.image) return null
-    if (typeof entry.image === 'number') return null
-    return entry.image as Media
-  })
+  const rawItems = product.items ?? []
+  const items = rawItems.map((item) => toViewItem(item, product.name))
+  if (items.length === 0) notFound()
 
-  // Check if any item is in stock (stockQty > 0)
-  const items = product.items ?? []
-  const hasInStockItem = items.some((i) => (i.stockQty ?? 0) > 0)
+  // `?sku=` deep link (cart, shared links) → that variant; otherwise the first
+  // one a customer can actually order, else simply the first.
+  const requested = Array.isArray(query.sku) ? query.sku[0] : query.sku
+  const initialSku =
+    items.find((i) => i.sku === requested)?.sku ?? rawItems.find(isOrderable)?.sku ?? items[0]!.sku
 
-  // Brand info
-  const brandName = typeof product.brand === 'object' && product.brand?.name ? (product.brand as { name: string }).name : undefined
-  const brandSlug = typeof product.brand === 'object' && product.brand?.slug ? (product.brand as { slug?: string | null })?.slug : undefined
+  const gallery = (product.gallery ?? [])
+    .map((entry) => asMedia(entry.image))
+    .filter((m): m is Media => m !== null)
+    .map((m) => toGalleryImage(m, product.name))
 
-  // Category info
-  const categoryName = typeof product.category === 'object' && product.category?.name ? (product.category as { name: string }).name : undefined
-  const categorySlug = typeof product.category === 'object' && product.category?.slug ? (product.category as { slug?: string | null })?.slug : undefined
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nasteh.bg'
+  const pageUrl = `${siteUrl}/product/${product.slug}`
+  const coverMedia = asMedia(product.gallery?.[0]?.image) ?? rawItems.map((i) => asMedia(i.image)).find(Boolean) ?? null
+  const ogImage = coverMedia ? imageUrl(coverMedia, 'og') : null
 
-  // Build JSON-LD breadcrumbs
   const jsonLdBreadcrumbs = [
     { name: t('common.home'), url: '/' },
-    ...(categorySlug ? [{ name: categoryName ?? '', url: `/category/${categorySlug}` }] : []),
+    ...categoryPath.map((c) => ({ name: c.name, url: `/category/${c.slug}` })),
     { name: product.name, url: `/product/${product.slug}` },
   ]
-
-  // Product structured data (price range + availability)
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nasteh.bg'
-  const prices = items.map((i) => i.priceEurCents)
-  const lowPrice = prices.length > 0 ? Math.min(...prices) : 0
-  const highPrice = prices.length > 0 ? Math.max(...prices) : 0
-  const firstGalleryImage = galleryImages.find((img): img is Media => img != null)
-  const jsonLdImageRaw = firstGalleryImage ? imageUrl(firstGalleryImage, 'og') : null
-  const jsonLdImage = jsonLdImageRaw
-    ? jsonLdImageRaw.startsWith('http')
-      ? jsonLdImageRaw
-      : `${siteUrl}${jsonLdImageRaw}`
-    : null
 
   return (
     <>
       <BreadcrumbList items={jsonLdBreadcrumbs} />
       <ProductJsonLd
         name={product.name}
-        description={product.seo?.description ?? t('seo.productDesc').replace('{name}', product.name)}
-        image={jsonLdImage}
-        brandName={brandName}
-        categoryName={categoryName}
-        lowPriceEurCents={lowPrice}
-        highPriceEurCents={highPrice}
-        offerCount={items.length}
-        inStock={hasInStockItem}
-        url={`${siteUrl}/product/${product.slug}`}
+        description={
+          product.seo?.description ??
+          (richTextExcerpt(product.description) || t('seo.productDesc').replace('{name}', product.name))
+        }
+        image={ogImage ? (ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogImage}`) : null}
+        brandName={brand?.name}
+        categoryName={category?.name}
+        url={pageUrl}
+        offers={rawItems.filter(hasPrice).map((item) => ({
+          sku: item.sku,
+          priceEurCents: item.priceEurCents,
+          inStock: availabilityOf(item) === 'inStock',
+          url: `${pageUrl}?sku=${encodeURIComponent(item.sku)}`,
+        }))}
       />
       <Container className="py-8 sm:py-10">
-        <Breadcrumbs
-          items={[
-            { name: t('common.home'), href: '/' },
-            ...(categorySlug ? [{ name: categoryName ?? '', href: `/category/${categorySlug}` }] : []),
-            { name: product.name },
-          ]}
-        />
-
-        {/* Product layout: gallery + info */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[55%_45%] lg:gap-12">
-          {/* Gallery */}
-          <Gallery images={galleryImages} productName={product.name} />
-
-          {/* Info block */}
-          <div className="space-y-6">
-            {brandName && brandSlug ? (
-              <Link
-                href={`/brand/${brandSlug}`}
-                className="inline-flex items-center border border-ink/18 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.1em] text-steel transition-colors hover:border-brass hover:text-brass"
-              >
-                {brandName}
-              </Link>
-            ) : null}
-
-            <h1 className="font-display text-3xl font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-4xl">
-              {product.name}
-            </h1>
-
-            {/* Short spec bullets */}
-            {product.shortSpec && product.shortSpec.length > 0 && (
-              <ul className="space-y-2.5 text-sm text-ink2">
-                {product.shortSpec.map((spec) => (
-                  <li key={spec.id} className="flex items-start gap-3">
-                    <span className="mt-2 h-1 w-1 shrink-0 bg-brass" />
-                    <span>{spec.text}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {/* In-stock summary */}
-            {hasInStockItem && (
-              <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.1em]">
-                <span className="inline-block h-2 w-2 rounded-full bg-ok" />
-                <span className="text-ok">{t('product.inStockSummary')}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Items table */}
-        {items.length > 0 && (
-          <section className="mt-12">
-            <h2 className="mb-5 border-b border-ink/12 pb-3 font-mono text-xs uppercase tracking-[0.16em] text-brass-dark">
-              {t('product.itemsTitle')}
-            </h2>
-            <ItemsTable items={items} productSlug={product.slug ?? ''} />
-          </section>
+        {categoryPath.length > 0 && (
+          <Breadcrumbs items={categoryPath.map((c) => ({ name: c.name, href: `/category/${c.slug}` }))} />
         )}
 
-        {/* Description */}
-        {product.description && (
-          <section className="mt-12 max-w-3xl">
-            <RichText content={product.description} />
+        <ProductView
+          productSlug={product.slug ?? slug}
+          productName={product.name}
+          brand={brand}
+          gallery={gallery}
+          items={items}
+          specs={(product.specs ?? []).map((s) => ({ label: s.label, value: s.value }))}
+          phone={{ display: company.phoneDisplay, href: company.phoneHref }}
+          leadTime={settings?.restockLeadTime?.trim() || null}
+          initialSku={initialSku}
+          description={product.description ? <RichText content={product.description} /> : null}
+        />
+
+        {related.length > 0 && (
+          <section aria-labelledby="related-title" className="mt-16">
+            <h2 id="related-title" className="mb-5 font-mono text-sm uppercase tracking-[0.16em] text-ink2">
+              {t('product.relatedTitle')}
+            </h2>
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+              {related.map((p) => (
+                <ProductCard
+                  key={p.id}
+                  product={{
+                    name: p.name,
+                    slug: p.slug ?? '',
+                    items: p.items ?? [],
+                    gallery: p.gallery ?? undefined,
+                    category: typeof p.category === 'object' ? p.category : undefined,
+                  }}
+                />
+              ))}
+            </div>
           </section>
         )}
       </Container>

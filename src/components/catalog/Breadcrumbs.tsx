@@ -17,8 +17,8 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
         {items.map((item, i) => (
           <li key={`${item.name}-${i}`} className="flex items-center gap-2">
             {i > 0 && (
-              <span aria-hidden="true" className="text-ink/30">
-                /
+              <span aria-hidden="true" className="text-ink/35">
+                ›
               </span>
             )}
             {item.href ? (

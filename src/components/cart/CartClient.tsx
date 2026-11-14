@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { t } from '@/lib/i18n/bg'
+import type { CartResolutionEntry } from '@/lib/cart/resolution'
 import { useCart, type CartLine } from '@/lib/cart/store'
 import { computeTotals, type ResolvedLine as TotalsResolvedLine } from '@/lib/cart/totals'
 import { Container, Price, Skeleton, Alert } from '@/components/ui'
 import React, { useState, useCallback } from 'react'
 
 interface CartClientProps {
-  resolution: Map<string, TotalsResolvedLine & { inStock: boolean }>
+  resolution: Map<string, CartResolutionEntry>
 }
 
 export function CartClient({ resolution }: CartClientProps) {
@@ -126,7 +127,7 @@ function CartLineItem({ line, setQty, remove }: {
   return (
     <div className="flex flex-col gap-3 border border-ink/14 bg-raised p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
-        <Link href={`/product/${line.productSlug}`} className="font-display font-semibold text-ink transition-colors hover:text-brass">
+        <Link href={`/product/${line.productSlug}?sku=${encodeURIComponent(line.sku)}`} className="font-display font-semibold text-ink transition-colors hover:text-brass">
           {line.name}
         </Link>
         <p className="mt-1 font-mono text-xs text-steel">{line.sku} · {line.unit}</p>

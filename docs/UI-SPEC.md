@@ -97,38 +97,47 @@ who knows the maker rather than the fitting type.
 
 ## 4. Product `/product/[slug]` — the signature page
 
-Layout desktop: gallery left (55%), info right; items table full-width
-below; description after it. Mobile: gallery → info → table → description.
+Rebuilt in Phase 12 from the client's mockup (`cr1.png`, 2026-11-14).
+Code: `app/(site)/product/[slug]/page.tsx` (server: data, JSON-LD, related)
++ `components/catalog/ProductView.tsx` (client: the selected variant).
 
-- **Gallery**: main image (detail preset) + thumb row (thumb preset).
-  Client lightbox on click (zoom preset), arrow keys + swipe, `Escape`
-  closes. No gallery → branded placeholder (steel obков line-art on sand;
-  a single SVG asset created in Phase 4).
-- **Info block**: h1 name · brand link chip if set · shortSpec bullets ·
-  in-stock summary (green dot + `product.inStockSummary` if ANY item in
-  stock).
-- **Items table** (`components/catalog/items-table.tsx`) — spend the
-  polish here:
-  - Columns: Наименование · Мярка · Дължина (мм) · Цвят · Код · Цена ·
-    Количество · [add]. Hide Дължина/Цвят columns entirely when no row in
-    THIS product uses them.
-  - `<table>` semantics; sticky `<thead>` (sand bg) within its scroll
-    container on desktop; SKU cell in monospace; prices right-aligned
-    tabular-nums via `<Price>` component (dual display per money.ts).
-  - Qty: stepper (– input +), min 1, max 999, typing allowed, invalid →
-    clamps. 44px touch targets.
-  - Add button per row (brass, compact): on click → cart store `addItem`,
-    button swaps to ✓ + `product.added` for 1.2s (reduced-motion: instant
-    swap, no animation), cart badge increments.
-  - Out-of-stock row: muted, controls replaced by `product.onRequest`
-    linking to `/contact?about=<sku>` (prefills the contact message).
-  - **Mobile (<768px)**: rows collapse to stacked cards via CSS (each cell
-    gets a `data-label` rendered as inline label) — same DOM, no element
-    swap; horizontal page scroll is a defect.
-- **Description**: Lexical rich text rendered with the project's
-  typographic styles (headings, lists, images through images.ts detail
-  preset).
-- JSON-LD Product per ARCHITECTURE §9.
+Layout desktop: breadcrumb (full category path, `›`) → two equal columns
+(gallery | info) → „Изберете вариант" table (full width, only with 2+
+items) → „Характеристики" (left half) → „Подходящи артикули" (4 cards).
+Mobile: the same order, stacked; no horizontal page scroll.
+
+- **Selected variant** (item row, by SKU): `?sku=` if valid, else the first
+  orderable item, else the first. Changing it uses `history.replaceState`
+  (shareable URL, no navigation); cart lines link back with `?sku=`.
+  Canonical stays `/product/<slug>`.
+- **Gallery**: the selected variant's `image` first, then the product
+  gallery (thumb row). It re-mounts per variant, so the view restarts on
+  the variant's picture. Lightbox (zoom preset): `Escape` closes, ←/→ page,
+  body scroll locked, focus on close. No pictures → `.hatch` placeholder.
+- **Info column**: brand chip → h1 → „Каталожен № {sku}" (mono) → price
+  (`<Price>`, + „с ДДС") and the ex-VAT line „X € без ДДС"
+  (`money.netEurCents`, 20 %) — or „по запитване" → stock badge
+  (Налично / Изчерпан, from `stockQty` alone) + „Очаквана доставка при
+  поръчка: {SiteSettings.restockLeadTime}" when sold out → actions →
+  description.
+- **Actions** (`lib/availability.ts`): `inStock` → qty stepper (44px+,
+  1–999) + „Добави в количката" (adds the stepper's quantity; ✓ Добавено
+  for 1.2 s) + „Обадете се: {phone}" (`tel:`). `soldOut` → „Запитване за
+  наличност", `onRequest` → „Запитване за цена", both linking to
+  `/contact?about=<sku>`, + the phone button.
+- **„Изберете вариант"**: native `<input type=radio name=variant>` inside a
+  table — arrow keys move the selection, the whole row is clickable, the
+  selected row is sand. Columns: Вариант · Каталожен № · Цена (or „по
+  запитване") · Наличност. **Mobile (<640px)**: rows collapse to cards
+  (`.variant-table`, `data-label`).
+- **„Характеристики"**: Марка, then the product's `specs`, the selected
+  variant's `specs` (same label overrides in place), Цвят / Дължина /
+  Мярка (≠ бр.) from the item, and Каталожен № last (`lib/catalog/specs.ts`).
+- **„Подходящи артикули"**: `related`, else up to 4 products of the same
+  category; `ProductCard`. Hidden when empty.
+- **Listing cards**: no priced item → „по запитване" instead of a price.
+- JSON-LD Product with **one Offer per priced item** (sku, price via
+  `eurDecimalString`, availability, `?sku=` url) per ARCHITECTURE §9.
 
 ## 5. Search `/search`
 
@@ -176,8 +185,10 @@ Single page, one column (max-w-lg), order summary collapsed at top
 
 Settings-driven info block (address, phones, hours, map LINK to Google Maps
 — no embedded map in v1) + message form (name*, phone, email*, message*,
-Turnstile, honeypot) → `submitContact` → owner email. `?about=` prefills
-message with `contact.aboutSku` + value. Success inline `contact.success`.
+Altcha, honeypot) → `submitContact` → owner email. `?about=<sku>` (product
+page inquiry buttons) prefills the message with `contact.aboutSku` + SKU +
+product and variant name — **only for a real published SKU**; anything else
+is ignored, never echoed. Success inline `contact.success`.
 
 ## 9. Static pages `/[pageSlug]`, 404, error, loading
 

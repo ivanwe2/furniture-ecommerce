@@ -14,3 +14,18 @@ export function slugify(input: string): string {
     .replace(/^-+|-+$/g, '')
     .replace(/-{2,}/g, '-')
 }
+
+/**
+ * The slug a document is saved with: the one typed in the admin, passed
+ * through `slugify`, else one made from the name. Every slug is therefore
+ * lowercase ASCII — a pasted Cyrillic slug („амортисьор") used to be stored
+ * as-is and its page answered 404, because route params arrive URL-encoded.
+ * Idempotent: an already-clean slug comes back unchanged, so re-saving never
+ * moves a URL. undefined = nothing usable, leave the field alone.
+ */
+export function normalizeSlug(slug: unknown, name: unknown): string | undefined {
+  const fromSlug = typeof slug === 'string' ? slugify(slug) : ''
+  if (fromSlug) return fromSlug
+  const fromName = typeof name === 'string' ? slugify(name) : ''
+  return fromName || undefined
+}

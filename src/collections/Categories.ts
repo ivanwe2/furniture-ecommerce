@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { slugify } from '@/lib/slug'
+import { normalizeSlug } from '@/lib/slug'
 import { revalidateTags } from '@/lib/payload/revalidate'
 
 export const Categories: CollectionConfig = {
@@ -46,9 +46,9 @@ export const Categories: CollectionConfig = {
     beforeValidate: [
       async ({ data, req }) => {
         if (!data) return data
-        if (!data.slug && data.name) {
-          data.slug = slugify(data.name)
-        }
+        // Always slugified (lib/slug.ts normalizeSlug): a non-ASCII slug 404s.
+        const slug = normalizeSlug(data.slug, data.name)
+        if (slug) data.slug = slug
         // Depth guard - walk parent chain, max 3 levels
         if (data.parent) {
           let depth = 1

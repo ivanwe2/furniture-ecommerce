@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { slugify } from '@/lib/slug'
+import { normalizeSlug } from '@/lib/slug'
 import { revalidateTags } from '@/lib/payload/revalidate'
 
 export const Pages: CollectionConfig = {
@@ -38,9 +38,9 @@ export const Pages: CollectionConfig = {
     beforeValidate: [
       ({ data }) => {
         if (!data) return data
-        if (!data.slug && data.title) {
-          data.slug = slugify(data.title)
-        }
+        // Always slugified (lib/slug.ts normalizeSlug): a non-ASCII slug 404s.
+        const slug = normalizeSlug(data.slug, data.title)
+        if (slug) data.slug = slug
         return data
       },
     ],

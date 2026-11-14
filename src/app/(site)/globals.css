@@ -265,43 +265,46 @@
   }
 }
 
-/* Items table collapses to stacked cards on mobile (same DOM, no element swap).
-   Cells opt in with a `data-label` attribute; see components/catalog. */
-@media (max-width: 767px) {
-  .items-table,
-  .items-table tbody {
+/* Product variant table (ProductView) collapses to stacked cards on phones —
+   same DOM, no element swap. The first cell (radio + name) spans the card;
+   other cells show their column name from `data-label`. */
+@media (max-width: 639px) {
+  .variant-table,
+  .variant-table tbody {
     display: block;
     width: 100%;
   }
-  .items-table thead {
+  .variant-table thead {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip: rect(0 0 0 0);
   }
-  .items-table tr {
+  .variant-table tr {
     display: block;
-    border: 1px solid var(--color-sand);
-    border-radius: 0;
-    margin-bottom: 0.75rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
   }
-  .items-table td {
+  .variant-table td {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    padding: 0.375rem 0;
-    border: 0;
+    padding: 0.25rem 0;
+    text-align: right;
   }
-  .items-table td[data-label]::before {
+  .variant-table td.variant-name {
+    padding-bottom: 0.5rem;
+    text-align: left;
+  }
+  .variant-table td[data-label]::before {
     content: attr(data-label);
     color: var(--color-steel);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 11px;
     font-weight: 500;
-  }
-  .items-table td.actions::before {
-    content: none;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
   }
 }
 

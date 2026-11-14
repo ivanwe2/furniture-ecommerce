@@ -5,12 +5,13 @@ import clsx from 'clsx'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { t, tSafe } from '@/lib/i18n/bg'
+import type { CartResolutionEntry } from '@/lib/cart/resolution'
 import { useCart } from '@/lib/cart/store'
 import { computeTotals, type ResolvedLine } from '@/lib/cart/totals'
 import { submitOrder } from '@/actions/order'
 import { Container, Input, Textarea, Button, Checkbox, Price, Alert, Skeleton, Altcha } from '@/components/ui'
 
-type ResolutionEntry = ResolvedLine & { inStock: boolean }
+type ResolutionEntry = CartResolutionEntry
 
 interface CheckoutFormProps {
   resolution: Map<string, ResolutionEntry>

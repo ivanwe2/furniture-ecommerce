@@ -8,6 +8,7 @@ import {
   formatBgn,
   formatEur,
   formatPrice,
+  netEurCents,
   showBgn,
 } from '@/lib/money'
 
@@ -200,5 +201,25 @@ describe('eurDecimalString', () => {
   it('rejects non-integer and negative cents', () => {
     expect(() => eurDecimalString(1.5)).toThrow()
     expect(() => eurDecimalString(-1)).toThrow()
+  })
+})
+
+describe('netEurCents', () => {
+  it('removes 20% VAT, rounding half-up at the cent', () => {
+    expect(netEurCents(505)).toBe(421) // 420.83…
+    expect(netEurCents(600)).toBe(500) // exact
+    expect(netEurCents(3114)).toBe(2595) // 2595.0
+    expect(netEurCents(1)).toBe(1) // 0.83 → 1
+    expect(netEurCents(3)).toBe(3) // 2.5 → 3 (half-up)
+    expect(netEurCents(0)).toBe(0)
+  })
+
+  it('accepts another rate', () => {
+    expect(netEurCents(1090, 9)).toBe(1000)
+  })
+
+  it('rejects non-integer and negative cents', () => {
+    expect(() => netEurCents(1.5)).toThrow()
+    expect(() => netEurCents(-1)).toThrow()
   })
 })

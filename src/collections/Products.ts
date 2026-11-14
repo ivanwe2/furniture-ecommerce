@@ -1,5 +1,5 @@
 import type { CollectionConfig, Where } from 'payload'
-import { slugify } from '@/lib/slug'
+import { normalizeSlug } from '@/lib/slug'
 import { revalidateTags } from '@/lib/payload/revalidate'
 import { importEndpoints } from '@/lib/import/endpoints'
 import { bg } from '@/lib/i18n/bg'
@@ -74,6 +74,28 @@ export const Products: CollectionConfig = {
     },
     { name: 'description', type: 'richText', label: 'Описание' },
     {
+      // „Характеристики" table on the product page. Марка and Каталожен № are
+      // added automatically; a variant's own lines (items[].specs) override a
+      // line here with the same label.
+      name: 'specs',
+      type: 'array',
+      label: 'Характеристики',
+      labels: { singular: 'характеристика', plural: 'характеристики' },
+      admin: {
+        description:
+          'Показват се в таблица „Характеристики". Марка и каталожен номер се добавят автоматично.',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            { name: 'label', type: 'text', required: true, label: 'Характеристика', admin: { width: '40%' } },
+            { name: 'value', type: 'text', required: true, label: 'Стойност', admin: { width: '60%' } },
+          ],
+        },
+      ],
+    },
+    {
       name: 'gallery',
       type: 'array',
       label: 'Галерия',
@@ -112,12 +134,16 @@ export const Products: CollectionConfig = {
         { name: 'lengthMm', type: 'number', label: 'Дължина (мм)' },
         { name: 'color', type: 'text', label: 'Цвят' },
         {
+          // Optional: an empty price means „по запитване" — shown, never
+          // orderable (lib/availability.ts; the order action refuses it).
           name: 'priceEurCents',
           type: 'number',
-          required: true,
           min: 1,
           label: 'Цена (евроцентове)',
-          admin: { description: 'Пример: 31,14 € → 3114', step: 1 },
+          admin: {
+            description: 'Пример: 31,14 € → 3114. Празно = „по запитване" (не може да се поръча онлайн).',
+            step: 1,
+          },
         },
         {
           name: 'stockQty',
@@ -130,7 +156,61 @@ export const Products: CollectionConfig = {
             description: 'Брой в наличност. 0 = изчерпан (не може да се поръча).',
           },
         },
+        {
+          // Shown as the main picture when this variant is selected on the
+          // product page; empty = the product's gallery cover.
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+          label: 'Снимка на варианта',
+        },
+        {
+          name: 'specs',
+          type: 'array',
+          label: 'Характеристики на варианта',
+          labels: { singular: 'характеристика', plural: 'характеристики' },
+          admin: {
+            initCollapsed: true,
+            description:
+              'Само различията на този вариант. Ред със същото име замества характеристиката на продукта.',
+          },
+          fields: [
+            {
+              type: 'row',
+              fields: [
+                { name: 'label', type: 'text', required: true, label: 'Характеристика', admin: { width: '40%' } },
+                { name: 'value', type: 'text', required: true, label: 'Стойност', admin: { width: '60%' } },
+              ],
+            },
+          ],
+        },
       ],
+    },
+    {
+      // „Подходящи артикули". Empty = the page shows other products from the
+      // same category instead. maxDepth 0: the page loads these separately
+      // (with their cover images); populating them inside every product read
+      // would drag each related product's full document along.
+      name: 'related',
+      type: 'relationship',
+      relationTo: 'products',
+      hasMany: true,
+      maxRows: 8,
+      maxDepth: 0,
+      label: 'Подходящи артикули',
+      filterOptions: ({ id }) => (id ? { id: { not_equals: id } } : true),
+      admin: {
+        description: 'Празно = показват се други продукти от същата категория.',
+      },
+    },
+    {
+      // Set by the JSON importer for rows that share a `group` key (DATA-MODEL
+      // §9): it is how a re-run finds the product to add or update variants
+      // on. Never shown — the owner does not edit it.
+      name: 'importGroup',
+      type: 'text',
+      index: true,
+      admin: { hidden: true },
     },
     {
       name: 'featured',
@@ -171,9 +251,9 @@ export const Products: CollectionConfig = {
     beforeValidate: [
       async ({ data, req, originalDoc }) => {
         if (!data) return data
-        if (!data.slug && data.name) {
-          data.slug = slugify(data.name)
-        }
+        // Always slugified (lib/slug.ts normalizeSlug): a non-ASCII slug 404s.
+        const slug = normalizeSlug(data.slug, data.name)
+        if (slug) data.slug = slug
         // Normalize SKUs
         if (Array.isArray(data.items)) {
           for (const it of data.items) {
@@ -187,7 +267,7 @@ export const Products: CollectionConfig = {
         // `gallery`). Building from `data` alone would drop the name from
         // searchText and null minPriceEurCents on every such save.
         const name: string = data.name ?? originalDoc?.name ?? ''
-        const items: { name?: string; sku?: string; priceEurCents?: number }[] = Array.isArray(data.items)
+        const items: { name?: string; sku?: string; priceEurCents?: number | null }[] = Array.isArray(data.items)
           ? data.items
           : Array.isArray(originalDoc?.items)
             ? originalDoc.items
@@ -229,7 +309,12 @@ export const Products: CollectionConfig = {
         // Prices live in the `items` array and Payload cannot sort on an array
         // subfield, so without this column "най-евтини" is impossible. Kept in
         // step with `items` on every save, exactly like searchText above.
-        const prices = items.map((it) => Number(it?.priceEurCents)).filter((n) => Number.isFinite(n))
+        // Price-on-request items (no price) are left out — `Number(null)` is 0
+        // and would make every such product sort as the cheapest. All prices
+        // empty → NULL, which sorts last ascending like an unpriced product.
+        const prices = items
+          .map((it) => it?.priceEurCents)
+          .filter((n): n is number => typeof n === 'number' && Number.isFinite(n))
         data.minPriceEurCents = prices.length > 0 ? Math.min(...prices) : null
 
         return data

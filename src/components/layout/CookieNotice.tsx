@@ -7,18 +7,27 @@ import { t } from '@/lib/i18n/bg'
 const STORAGE_KEY = 'nasteh-cookie-notice'
 
 export default function CookieNotice() {
-  const [visible, setVisible] = React.useState(() => {
-    if (typeof localStorage !== 'undefined') {
-      return localStorage.getItem(STORAGE_KEY) === null
+  // Decided after mount, never during render: the server cannot see
+  // localStorage, so reading it in the initial state rendered the notice on the
+  // server but not on the client for anyone who had dismissed it — a hydration
+  // error on every page of a returning visit.
+  const [visible, setVisible] = React.useState(false)
+  React.useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reading browser-only storage after hydration is the point
+      setVisible(localStorage.getItem(STORAGE_KEY) === null)
+    } catch {
+      setVisible(true)
     }
-    return true
-  })
+  }, [])
 
   if (!visible) return null
 
   const handleDismiss = () => {
-    if (typeof localStorage !== 'undefined') {
+    try {
       localStorage.setItem(STORAGE_KEY, '1')
+    } catch {
+      // storage blocked (private mode) — hiding for this page view is enough
     }
     setVisible(false)
   }

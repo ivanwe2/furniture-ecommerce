@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Price } from '@/components/ui/Price'
 import { imageUrl, imageSrcSet } from '@/lib/images'
 import { t } from '@/lib/i18n/bg'
+import { hasPrice } from '@/lib/availability'
 import type { Media, Product } from '@/payload-types'
 
 interface ProductCardProps {
@@ -15,9 +16,10 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const coverImage = (product.gallery?.[0]?.image as Media | null) ?? null
   const items = product.items ?? []
-  const hasItems = items.length > 0
-  const minPrice = hasItems ? Math.min(...items.map((i) => i.priceEurCents)) : null
-  const singleItem = hasItems && items.length === 1
+  // Price-on-request items (no price) never count towards „от …".
+  const prices = items.filter(hasPrice).map((i) => i.priceEurCents)
+  const minPrice = prices.length > 0 ? Math.min(...prices) : null
+  const singlePrice = items.length === 1 && minPrice !== null
 
   const categoryName =
     typeof product.category === 'object' && product.category?.name ? product.category.name : undefined
@@ -55,13 +57,15 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.name}
         </h3>
         <div className="mt-auto pt-3 font-mono text-sm">
-          {singleItem ? (
-            <Price eurCents={items[0]!.priceEurCents} className="text-ink" />
+          {singlePrice ? (
+            <Price eurCents={minPrice} className="text-ink" />
           ) : minPrice !== null ? (
             <span className="text-ink">
               <span className="text-steel">{t('catalog.from')} </span>
               <Price eurCents={minPrice} className="text-ink" />
             </span>
+          ) : items.length > 0 ? (
+            <span className="text-steel">{t('common.priceOnRequest')}</span>
           ) : null}
         </div>
       </div>

@@ -27,12 +27,20 @@ export type CategoryStep = { name: string; exists: boolean }
 export type MediaStorage = { ok: true } | { ok: false; code: string; dir: string }
 
 export type RowChanges = {
-  price?: { from: number; to: number }
+  /** `from` is null when the item was priced „по запитване". */
+  price?: { from: number | null; to: number }
   stock?: { from: number; to: number }
   image?: true
 }
 
 type RowBase = { index: number; warnings: Issue[] }
+
+/**
+ * A row's `group` (DATA-MODEL §9): how many rows of the file share it, and the
+ * existing product those rows add their variants to (null = the group's first
+ * row creates it in this run).
+ */
+export type GroupInfo = { key: string; size: number; product: { id: number; name: string } | null }
 
 export type PreviewRow =
   | (RowBase & { status: 'error'; sku: string | null; name: string | null; errors: Issue[] })
@@ -45,6 +53,9 @@ export type PreviewRow =
       priceEurCents: number
       stockQty: number
       imageUrl: string | null
+      /** The item row's label (the file's `variant`, else the name). */
+      variant: string
+      group: GroupInfo | null
     })
   | (RowBase & {
       status: 'update' | 'unchanged'
@@ -54,6 +65,7 @@ export type PreviewRow =
       productName: string
       changes: RowChanges
       imageUrl: string | null
+      group: GroupInfo | null
     })
 
 export type PreviewResponse =

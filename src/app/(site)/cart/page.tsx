@@ -1,5 +1,6 @@
 import { CartClient } from '@/components/cart/CartClient'
 import { getAllPublishedProducts } from '@/lib/payload/queries'
+import { cartResolutionFrom } from '@/lib/cart/resolution'
 import { t } from '@/lib/i18n/bg'
 
 export async function generateMetadata() {
@@ -11,21 +12,7 @@ export async function generateMetadata() {
 export default async function CartPage() {
   const products = await getAllPublishedProducts()
 
-  const resolution = new Map()
-  for (const product of products) {
-    if (!product.items) continue
-    for (const item of product.items) {
-      const key = `${product.slug}:${item.sku}`
-      resolution.set(key, {
-        productSlug: product.slug,
-        sku: item.sku,
-        name: item.name,
-        unit: item.unit ?? t('common.unitDefault'),
-        priceEurCents: item.priceEurCents,
-        inStock: (item.stockQty ?? 0) > 0,
-      })
-    }
-  }
+  const resolution = cartResolutionFrom(products, t('common.unitDefault'))
 
   return <CartClient resolution={resolution} />
 }

@@ -281,6 +281,16 @@ export interface Product {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * Показват се в таблица „Характеристики". Марка и каталожен номер се добавят автоматично.
+   */
+  specs?:
+    | {
+        label: string;
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
   gallery?:
     | {
         image: number | Media;
@@ -295,16 +305,32 @@ export interface Product {
         lengthMm?: number | null;
         color?: string | null;
         /**
-         * Пример: 31,14 € → 3114
+         * Пример: 31,14 € → 3114. Празно = „по запитване" (не може да се поръча онлайн).
          */
-        priceEurCents: number;
+        priceEurCents?: number | null;
         /**
          * Брой в наличност. 0 = изчерпан (не може да се поръча).
          */
         stockQty?: number | null;
+        image?: (number | null) | Media;
+        /**
+         * Само различията на този вариант. Ред със същото име замества характеристиката на продукта.
+         */
+        specs?:
+          | {
+              label: string;
+              value: string;
+              id?: string | null;
+            }[]
+          | null;
         id?: string | null;
       }[]
     | null;
+  /**
+   * Празно = показват се други продукти от същата категория.
+   */
+  related?: (number | Product)[] | null;
+  importGroup?: string | null;
   featured?: boolean | null;
   searchText?: string | null;
   minPriceEurCents?: number | null;
@@ -623,6 +649,13 @@ export interface ProductsSelect<T extends boolean = true> {
         id?: T;
       };
   description?: T;
+  specs?:
+    | T
+    | {
+        label?: T;
+        value?: T;
+        id?: T;
+      };
   gallery?:
     | T
     | {
@@ -639,8 +672,18 @@ export interface ProductsSelect<T extends boolean = true> {
         color?: T;
         priceEurCents?: T;
         stockQty?: T;
+        image?: T;
+        specs?:
+          | T
+          | {
+              label?: T;
+              value?: T;
+              id?: T;
+            };
         id?: T;
       };
+  related?: T;
+  importGroup?: T;
   featured?: T;
   searchText?: T;
   minPriceEurCents?: T;
@@ -768,6 +811,10 @@ export interface SiteSetting {
     | null;
   email: string;
   workingHours?: string | null;
+  /**
+   * Показва се до „Изчерпан" на страницата на продукта като „Очаквана доставка при поръчка: …". Пример: 5–10 работни дни. Празно = не се показва.
+   */
+  restockLeadTime?: string | null;
   heroTitle?: string | null;
   heroSubtitle?: string | null;
   announcement?: string | null;
@@ -794,6 +841,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
       };
   email?: T;
   workingHours?: T;
+  restockLeadTime?: T;
   heroTitle?: T;
   heroSubtitle?: T;
   announcement?: T;

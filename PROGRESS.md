@@ -5,16 +5,19 @@
 
 ## Status
 
-**2026-11-14 — NOV 2026 ROUND: security release (Phase 11) done on branch
-`phase-11-security-patch`; next = Phase 12 (product page v2), then Phase 13
-(observability).** Ivan's plan approval 2026-11-14 (scope + decisions in
-docs/PHASES.md §11–13). Audit: `pnpm audit` had drifted to 145 advisories
-(9 critical) in two quiet months → Payload 3.93 / Next 16.4.6 / nodemailer 10 /
-sharp 0.35.5 + overrides → 0 unignored prod advisories (SECURITY §3). GraphQL
-off; CI now audits + builds; Dependabot config added. **Ivan:** enable
-Dependabot alerts in the GitHub repo settings; upgrade local Node to ≥24.22.1.
-**Sysadmin:** deploy per DEPLOY §3 "Update" (pre-update dump, `build --pull`,
-`pull`, `up -d`) — the migration runs on boot.
+**2026-11-14 — NOV 2026 ROUND: Phase 11 (security) merged (#77); Phase 12
+(product page v2 + import grouping) done on branch `phase-12-product-page`;
+next = Phase 13 (observability, PHASES §13).** Ivan's plan approval
+2026-11-14 (scope + decisions in docs/PHASES.md §11–13). Security: 145 → 0
+unignored prod advisories (SECURITY §3). Product page rebuilt from the
+client's mockup: variant radio table drives picture/SKU/price/stock/actions,
+price on request, ex-VAT line, restock lead time, characteristics, related
+products, `?sku=` deep links; importer `group`/`variant` keys.
+**Ivan:** enable Dependabot alerts in GitHub repo settings; upgrade local
+Node to ≥24.22.1; ask the client for the real restock lead-time text and
+whether their export can add `group`/`variant`; decide `NEXT_PUBLIC_SHOW_BGN`
+(see Notes 2026-11-14). **Sysadmin:** deploy per DEPLOY §3 "Update" —
+migrations run on boot.
 
 Earlier: **2026-07-23 — code-complete, handed to the sysadmin** (site lock,
 importer and production fixes followed in Aug–Sep; see Decisions log).
@@ -221,8 +224,8 @@ Routes are English (Ivan's decision).
 - [x] Phase 9 — Import & seeding (CSV script never ran — replaced 2026-09-24 by the admin JSON importer, DATA-MODEL §9)
 - [x] Phase 10 — Launch & handover (documentation complete; execution requires Ivan's account)
 - [x] Phase 11 — Security patch release (2026-11-14; PHASES §11 — all AC verified on the local production image)
-- [ ] Phase 12 — Product page v2 + import grouping (client CR; PHASES §12) ← next
-- [ ] Phase 13 — Observability & usage telemetry (PHASES §13)
+- [x] Phase 12 — Product page v2 + import grouping (client CR 2026-11-14; PHASES §12 — AC verified on dev + the local production image)
+- [ ] Phase 13 — Observability & usage telemetry (PHASES §13) ← next
 
 ### Active phase task breakdown
 
@@ -335,6 +338,7 @@ https://nasteh.bg/rukovodstvo-za-administratora
 
 | Date | Decision | Why | Recorded where |
 |---|---|---|---|
+| 2026-11-14 | **Product page v2 (Phase 12): variants drive the page, price on request, ex-VAT price, restock lead time, characteristics, related products; importer groups rows into variants.** Client mockup (`cr1.png`) + „the picture should change when you pick another variant". Ivan's decisions: variants come from an import grouping key; all four mockup placeholders are real. **Model:** no new "variants" system — the item rows ARE the variants (DATA-MODEL §0); added `items[].image`, `items[].specs`, product `specs`, `related` (maxDepth 0, own query), hidden `importGroup`, SiteSettings `restockLeadTime`; `items[].priceEurCents` optional = „по запитване". Migration `20261114_132518_product_page_v2` is additive (verified on the existing local data). **One availability rule** (`lib/availability.ts`: onRequest / soldOut / inStock) now used by page, cart, checkout and `resolveCartLines` — a server-action payload rewritten to order a price-on-request SKU gets `errors.cartStale`, no order (tested by intercepting the request). `minPriceEurCents` ignores unpriced items (`Number(null)` would have sorted them cheapest). **Page:** `ProductView` (client) owns the selected SKU (`?sku=` via replaceState; cart links back to the variant); gallery re-mounts on the variant's picture; lightbox Esc/←/→; native radio group table collapsing to cards <640px; characteristics merged in layers (`lib/catalog/specs.ts`); JSON-LD one Offer per priced item; `/contact?about=<sku>` prefill (UI-SPEC §8, never built before) — only for a real published SKU. ItemsTable removed (its quantity stepper never fed the Add button). **Importer:** optional `group` + `variant`; the group's first new row creates the product, later new SKUs append items; grouped pictures go on the item (+ gallery cover); manual upload takes `?sku=`; `groupMismatch` warning; re-run unchanged (tested end to end). **Found + fixed along the way (pre-existing on main):** (1) a product with a non-ASCII slug 404'd (route params arrive URL-encoded) — three seed slugs had a Cyrillic letter and the admin accepted any typed slug → `normalizeSlug` on every collection; (2) the cookie notice read localStorage during render → hydration error on every page of a returning visit → decided after mount. Breadcrumb separator `/` → `›` site-wide (mockup). Verified 375/1280, keyboard, 0 console errors; production image over existing data: migration, admin fields, order + emails. | Ivan, 2026-11-14 (client CR) | Products.ts · SiteSettings.ts · migration · ProductView/Gallery · availability.ts · specs.ts · cart/resolution.ts · import/** · UI-SPEC §4/§8 · DATA-MODEL §0/§3/§9 · ADMIN-GUIDE · here |
 | 2026-11-14 | **Security release (Phase 11): Payload 3.86→3.93, Next 16.2.11→16.4.6, nodemailer 9→10 (major), sharp 0.35.5, GraphQL disabled, CI audit+build gate.** Ivan asked for an audit after ~2 months idle. `pnpm audit`: 145 advisories, **9 critical / 54 high** — Payload (Postgres SQL injection, auth-collection field-access bypass, unauthorized document update, first-register RCE, upload validation…) and Next (image-optimizer RCE with AVIF/SVG — we use the optimizer — `use cache` RCE, SSRF, server-action DoS); nothing had flagged it (no CI audit, Dependabot alerts off). **Versions:** minor bumps within Payload 3 / Next 16 (rule 2 — logged here); **nodemailer 10 is a major** — Ivan approved it with the plan (Payload's own adapter moved to 10; only `send.ts` uses it; `@types/nodemailer` dropped, v10 ships types). Node engine ≥24.22.1 (Payload 3.93's floor; Docker base already 24.22.3; **Ivan's local Node 24.21 must be upgraded** — pnpm only warns). Transitives lifted by **same-major** `overrides` (`pnpm-workspace.yaml`), postcss pinned to 8.5.32 because 8.5.33 is inside pnpm's minimum-release-age window. **zod stays 3.x (accepted risk, SECURITY §3)** — the fix exists only in zod 4; 5 advisories ignored with reasons (`auditConfig.ignoreGhsas`). **Migration** `20261114_131207_payload_3_93` adds `users.reset_password_requested_at`; the generator also re-emitted `min_price_eur_cents` because the hand-written 2026-08-05 migration shipped without a snapshot — removed by hand, snapshot now correct (re-run `migrate:create` = no changes). **PBKDF2:** 3.90 raised iterations; legacy hashes still verify (25000-iteration fallback) and are re-hashed on first login — proven on the local image with a legacy-format hash (login 200, hash re-prefixed `pbkdf2-sha256-v1:`), so the owner's production login survives. **GraphQL disabled** (unused: storefront = local API, admin = REST; `/api/graphql` now 404). **CI** gained `pnpm audit --prod --audit-level high` and `pnpm build` (the "build needs Cloudflare" comment was stale); `.github/dependabot.yml` weekly, majors ignored. `ProductJsonLd` `.toFixed` → `eurDecimalString`. Verified on the production image over the existing local volumes: migration on boot, admin (list, edit + Lexical, import view, orders, settings), importer preview/apply/image save, storefront 200s, a full order with both emails via Mailpit, SECURITY §2 checks (403s, public register 403, lockout after 5, importer 401/403, headers), 0 console errors. | Ivan, 2026-11-14 | package.json · pnpm-workspace.yaml · src/migrations/20261114_* · payload.config.ts · ci.yml · dependabot.yml · SECURITY §3 · DEPLOY §3 · ARCHITECTURE §2 · PHASES §11 · here |
 | 2026-09-30 | **The container now fixes its own media-folder ownership, and failed pictures can be pasted in.** Ivan: „do i really have to make the admin do these commands? shouldnt it work automatically?" — right: `docker-entrypoint.sh` starts as root ONLY to re-own `MEDIA_DIR` for uid 1001 when anything in it isn't (one `find -quit` walk per boot; no recursive chown when already correct), then `setpriv` drops to `nasteh` before `payload migrate` / `next start` — the Postgres/Redis-image pattern. The image therefore no longer ends in `USER nasteh`, so `docker compose exec app` defaults to root (docs use `-u nasteh` for app code). The one unfixable case — a host bind-mount in an unprivileged Proxmox LXC, where container root cannot chown — boots anyway with an `[entrypoint] WARNING`, and the importer's red notice names it (DEPLOY §9). **Paste (Ivan chose option 2 of 2):** each failed-picture row has a paste box; „Отвори линка" opens the picture AND focuses that box, so Copy image → back → Ctrl+V attaches it. contentEditable box with no React children (label via CSS `::before`) because Safari only fires paste into editable elements; typing is blocked, text in the clipboard gets a „copy the image, not its address" hint; dropping a file works too. Verified on the local Docker stack: root-owned media → entrypoint re-owned it, app processes uid 1001 only, second boot no-op; read-only mount → warning + app up + preview reports EROFS; real clipboard paste after opening the link, text-paste hint, drop — 375/1280, no console errors. Option 1 (bulk images matched by SKU filename) not built. | Ivan | docker-entrypoint.sh · Dockerfile · ProductImport.tsx · DEPLOY §9 · SECURITY §5 · ADMIN-GUIDE · here |
 | 2026-09-30 | **Import images failed in production because the server's media folder was not writable — and the importer mislabelled it „not an image".** First production run (Ivan): every image failed as „not an image", „404" or „not allowed", and manual uploads failed with „Продуктът не беше записан". Reproduced locally by making `/app/media` root-owned: the 404/403 rows are genuine link problems (a UK shop has since swapped its files; two hosts sit behind Cloudflare challenges), but every link that *did* download failed on the WRITE (`EACCES` in the log), and `attachImage`'s catch reported that as `notImage`; Payload itself masks it as the generic „Имаше проблем при качването на файла." — so admin uploads are affected too. This is the known DEPLOY §9 watch-item (media volume must be writable by uid 1001 — a root-owned volume or host bind-mount breaks it). **Fix (code):** `checkMediaStorage` probes the folder on every preview/image save; the preview shows a red warning with the OS error and folder, failed saves are the new `storeFailed` reason, the manual upload returns `mediaNotWritable` with the code. **Fix (server):** `docker compose exec -u root app chown -R 1001:1001 /app/media` (LXC bind-mount variant in DEPLOY §9), then re-run the same file — verified locally: images attach, nothing duplicated. | Ivan (production report) | src/lib/import/media-storage.ts · run.ts · DEPLOY §9 · here |
@@ -489,6 +493,13 @@ _(Format per CLAUDE.md §6. Agents STOP the blocked task after writing here.)_
 - [ ] (phase-2.3) **Migration on existing DB**: The migration 20260709_075256 was created assuming a fresh database, but local D1 has stale tables from dev mode. Solution: delete `.wrangler/state/v3/d1/miniflare-D1DatabaseObject` before running `migrate:local`. This is non-destructive for local dev.
 
 ## Notes & surprises
+
+- **2026-11-14 — `NEXT_PUBLIC_SHOW_BGN` still `true`.** The mockup shows euro only
+  („5,05 €"), but prices still render „5,05 € (9,88 лв.)" because the flag is
+  on (`.env.example`, Dockerfile, compose). PHASES 10.6 planned to flip it after
+  the 2026-08-08 end of the mandatory dual display. It is a **build arg**: the
+  sysadmin sets `NEXT_PUBLIC_SHOW_BGN=false` and rebuilds. Ivan to confirm with
+  the client (legal end date per their accountant) before flipping.
 
 _(Quirks, workarounds, deliberate TODOs the next session must know.)_
 

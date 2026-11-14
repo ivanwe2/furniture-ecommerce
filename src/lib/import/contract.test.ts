@@ -41,6 +41,8 @@ describe('validateImportRecord', () => {
       imageUrl: 'https://www.example.com/img/71t3550.jpg',
       unit: 'бр.',
       color: null,
+      group: null,
+      variant: null,
     })
     expect(row.warnings).toEqual([])
   })
@@ -152,6 +154,30 @@ describe('validateImportFile', () => {
     expect(result.rows.map((r) => r.ok)).toEqual([true, true, false])
     const third = result.rows[2]
     expect(third && !third.ok && third.errors).toEqual([{ key: 'skuDuplicate', params: { row: '1' } }])
+  })
+
+  it('reads group and variant, trimmed', () => {
+    const row = validateImportRecord({ ...sample, group: ' CLIP-top-110 ', variant: 'Никел' })
+    expect(row.ok && row.record.group).toBe('CLIP-top-110')
+    expect(row.ok && row.record.variant).toBe('Никел')
+    const bad = validateImportRecord({ ...sample, group: 12 })
+    expect(keys(bad)).toEqual(['fieldType'])
+  })
+
+  it('warns when a later row of a group disagrees on category or brand, naming the first row', () => {
+    const result = validateImportFile([
+      { ...sample, sku: 'A', group: 'g1' },
+      { ...sample, sku: 'B', group: 'G1 ', variant: 'Никел' }, // same group (case/space-insensitive)
+      { ...sample, sku: 'C', group: 'g1', category: 'Мебелен обков > Друго' },
+      { ...sample, sku: 'D', group: 'g1', brand: 'Hettich' },
+      { ...sample, sku: 'E', category: 'Мебелен обков > Друго' }, // ungrouped — never compared
+    ])
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const warningKeys = result.rows.map((r) => r.warnings.map((w) => w.key))
+    expect(warningKeys).toEqual([[], [], ['groupMismatch'], ['groupMismatch'], []])
+    expect(result.rows[2]?.warnings[0]?.params).toEqual({ row: '1' })
+    expect(result.unknownKeys).toEqual([])
   })
 
   it('lists unknown keys once, sorted', () => {

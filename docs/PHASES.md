@@ -416,12 +416,14 @@ Tasks:
 12.5 Docs: UI-SPEC §4/§8, DATA-MODEL §3/§9, ADMIN-GUIDE.
 
 AC:
-- [ ] Selecting a variant swaps image, SKU, price, stock and actions; `?sku=`
+- [x] Selecting a variant swaps image, SKU, price, stock and actions; `?sku=`
       deep-links; 375/1280; keyboard; no console errors.
-- [ ] Stepper quantity reaches the cart; price-on-request items cannot be
+- [x] Stepper quantity reaches the cart; price-on-request items cannot be
       ordered (UI and server).
-- [ ] Grouped JSON imports as one product with variant images; re-run is a
+- [x] Grouped JSON imports as one product with variant images; re-run is a
       no-op.
+
+Commit: `feat(phase-12): product page v2 — variants, price on request, grouping`
 
 ---
 
