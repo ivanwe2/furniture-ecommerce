@@ -16,6 +16,13 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      # Fails on any high/critical advisory in production dependencies that is
+      # not listed (with its reason) under auditConfig.ignoreGhsas in
+      # pnpm-workspace.yaml. Security audit 2026-11-14: the repo had drifted to
+      # 9 critical / 54 high because nothing checked this.
+      - name: Dependency audit (prod, high+)
+        run: pnpm audit --prod --audit-level high
+
       - name: Guardrail — no hex colors in components
         run: |
           ! grep -rEn '#[0-9a-fA-F]{3,8}\b' src/app src/components --include='*.tsx' --include='*.ts' || (echo 'Hex color outside tokens' && exit 1)
@@ -33,9 +40,16 @@ jobs:
       - name: Test
         run: pnpm test
 
-      # NO pnpm build here — it requires CF auth (remote D1 connection)
-      # to collect page data during ISR generation. Build is verified at
-      # deploy time (Phase 1.7) under Ivan's Cloudflare account.
+      # CLAUDE rule 11 requires a green build. Every page is rendered on
+      # demand, so the build never connects to the database — the values below
+      # only satisfy config loading and are not secrets.
+      - name: Build
+        run: pnpm build
+        env:
+          PAYLOAD_SECRET: ci-build-only-not-a-secret
+          DATABASE_URI: postgres://ci:ci@127.0.0.1:5432/ci
+          NEXT_PUBLIC_SITE_URL: https://nasteh.bg
+          NEXT_PUBLIC_SHOW_BGN: 'true'
 
       - name: Env key-drift check
         run: |

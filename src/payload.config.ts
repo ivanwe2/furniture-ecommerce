@@ -74,6 +74,10 @@ export default buildConfig({
     features: ({ defaultFeatures }) => [...defaultFeatures, EXPERIMENTAL_TableFeature()],
   }),
   secret: process.env.PAYLOAD_SECRET || '',
+  // Nothing uses GraphQL: the storefront reads through the local API and the
+  // admin talks REST. Leaving it on only exposes a second public query surface
+  // (security audit 2026-11-14); its route files are removed too.
+  graphQL: { disable: true },
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },

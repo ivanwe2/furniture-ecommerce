@@ -1,4 +1,5 @@
 import { jsonLdScript } from '@/lib/json-ld'
+import { eurDecimalString } from '@/lib/money'
 
 /**
  * schema.org/Product structured data for a product page, enabling price /
@@ -40,8 +41,8 @@ export default function ProductJsonLd({
     offers: {
       '@type': 'AggregateOffer',
       priceCurrency: 'EUR',
-      lowPrice: (lowPriceEurCents / 100).toFixed(2),
-      highPrice: (highPriceEurCents / 100).toFixed(2),
+      lowPrice: eurDecimalString(lowPriceEurCents),
+      highPrice: eurDecimalString(highPriceEurCents),
       offerCount,
       availability: inStock
         ? 'https://schema.org/InStock'

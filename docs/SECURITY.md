@@ -1,7 +1,8 @@
 # SECURITY.md — threat model, controls, and audit record
 
 What this app defends against, how, and how to re-check it. Written after the
-pre-launch audit of 2026-07-28 (commit `04794f4`, PR #64).
+pre-launch audit of 2026-07-28 (commit `04794f4`, PR #64); re-audited
+2026-11-14 (§3, dependency refresh after two quiet months).
 
 Read this before changing the order path, the auth config, the query layer, or
 anything under `src/actions/`. Deploy-side security (TLS, HSTS, proxy headers,
@@ -140,7 +141,60 @@ curl -s 'https://nasteh.bg/api/pages?limit=50' | grep -c '"status":"draft"'  # 0
   refused loopback, `localhost`, 169.254.169.254, decimal-IP, `[::1]`,
   DNS-to-loopback (nip.io), odd port and redirect-to-loopback links.
 
-## 3. Audit record — 2026-07-28
+## 3. Audit record — 2026-11-14
+
+Re-audit after about two months without active development. The code had not
+changed in risky ways; **the dependency tree had**. `pnpm audit` went from 39
+advisories at launch to **145 (9 critical, 54 high)**, nearly all in Payload and
+Next.js, and nothing would have flagged it: CI had no audit step and Dependabot
+alerts were off on the repository.
+
+### Fixed (Phase 11, security patch release)
+
+| # | Finding | Severity | Resolution |
+|---|---|---|---|
+| 1 | **Payload 3.86**: SQL injection on Postgres (GHSA-v49j-62m6-pgrr), field-access bypass on auth collections, unauthorized document update, auth-token handling, API-key disclosure, first-register RCE, upload validation, weak PBKDF2 iterations, lockout DoS | Critical | `payload` + `@payloadcms/*` → **3.93.0**; migration `20261114_131207_payload_3_93` (adds `users.reset_password_requested_at`, runs at boot) |
+| 2 | **Next.js 16.2**: image-optimizer RCE with AVIF/SVG, `use cache` RCE, `next/og` RCE, image-optimizer SSRF, server-action DoS, ISR cache poisoning. We use the optimizer (`next/image` + `/api/media/file/**`) | Critical | `next` + `eslint-config-next` → **16.4.6** |
+| 3 | **nodemailer 9**: address-parser DoS (quadratic), recipient-domain validation bypasses | High | → **10.5.0** (major, approved by Ivan with the plan 2026-11-14; Payload's own adapter moved to 10). `@types/nodemailer` removed — v10 ships types |
+| 4 | **sharp 0.35.3**: libheif / librsvg CVEs | High | → **0.35.5** (direct + the tree-wide override) |
+| 5 | ~15 vulnerable transitive packages (undici, fast-uri, dompurify, postcss, js-yaml, nanoid, browserslist, source-map-js, happy-dom, brace-expansion, vite…) | High→Low | same-major `overrides` in `pnpm-workspace.yaml` (lift the patch level only) |
+| 6 | **GraphQL endpoint and playground publicly exposed**, though nothing uses GraphQL (storefront = local API, admin = REST) — a second public query surface for every Payload query bug | Hardening | `graphQL: { disable: true }`; route files removed |
+| 7 | **No dependency gate**: CI had no audit and no build step | Process | CI runs `pnpm audit --prod --audit-level high` and `pnpm build`; `.github/dependabot.yml` (weekly, majors ignored per rule 2) |
+| 8 | `ProductJsonLd` formatted prices with `(cents / 100).toFixed(2)` (rule 4 defect) | Minor | `eurDecimalString()` in `money.ts` |
+
+Result: **145 → 6 advisories, 0 unignored in production** (`pnpm audit --prod
+--audit-level high` exits 0). The 6 are listed below and in
+`pnpm-workspace.yaml → auditConfig.ignoreGhsas`, each with its reason.
+
+### Accepted risks (dependencies, 2026-11-14)
+
+- **zod 3 — GHSA-mrhx-c7xc-m3w5** (high): memory exhaustion while validating
+  oversized constrained collections; fixed only in zod 4 (a major with a broad
+  API change). Our zod schemas (`src/lib/validation/*`) run behind server
+  actions, whose request body Next caps at 1 MB. Planned: zod 4 migration as
+  its own task.
+- **happy-dom 20 — GHSA-834v-8h66-3h79, GHSA-c8p4-j97h-3vg8** (high): only hit
+  when parsing HTML server-side (`@lexical/headless`) or in vitest. This app
+  never converts HTML to Lexical. Fixed only in happy-dom 21.
+- **esbuild 0.18 — GHSA-67mh-4wv8-2f99** (moderate): inside drizzle-kit's
+  loader; a dev-server CORS issue. The app never runs esbuild's dev server.
+- **deepmerge 4.3.1 — GHSA-gcqx-w48m-w2h4** (low): no fixed 4.x published;
+  Payload merges its own config objects with it, not request input.
+- **minimatch 10** (moderate, dev-only via typescript-eslint): lint tooling.
+
+### Operational findings
+
+- Live `nasteh.bg` (checked 2026-11-14): HSTS (`max-age=31536000;
+  includeSubDomains`), `X-Frame-Options`, `nosniff`, `Referrer-Policy`,
+  `Permissions-Policy` all present.
+- Base images float on major tags (`node:24-bookworm-slim`, `postgres:18-alpine`,
+  `redis:7-alpine`), so OS/security patches arrive **only when the sysadmin
+  pulls**. DEPLOY §3 now deploys with `build --pull` + `pull`.
+- No secrets in git history (re-scanned).
+
+---
+
+## 3b. Audit record — 2026-07-28 (pre-launch)
 
 Full-codebase review: every server action, collection access rule, the auth
 config, both email and JSON-LD sinks, the query layer, and the dependency tree.
@@ -180,10 +234,8 @@ nodemailer's CRLF stripping; JSON-LD `</script>` escaping; fail-closed empty
   are set in `next.config.ts`.
 - **Any admin can modify any other admin.** There is no role system — the site
   has one owner. Revisit only if staff accounts are ever added.
-- **Remaining dependency advisories are build- or admin-only**: `postcss`,
-  `brace-expansion`, `fast-uri` (build/dev tooling); `dompurify` (via
-  `monaco-editor` inside the Payload admin UI, pinned by Payload). None are
-  reachable by an anonymous visitor.
+- **Remaining dependency advisories** — superseded by the 2026-11-14 list in
+  §3 above.
 
 ---
 
@@ -230,7 +282,8 @@ Security properties this app cannot enforce on its own. All detailed in
 ## 6. Re-running the audit
 
 ```bash
-pnpm audit                       # dependency advisories
+pnpm audit                       # all advisories (incl. dev + ignored)
+pnpm audit --prod --audit-level high   # the CI gate; must exit 0
 git ls-files | grep -E '\.env'   # only .env.example should appear
 for f in .env .env.production .env.backup; do git check-ignore -q $f \
   && echo "$f ignored" || echo "$f NOT IGNORED"; done
@@ -240,5 +293,10 @@ grep -rn "overrideAccess" src/            # each must be a deliberate server pat
 
 Then re-run the per-control checks in §2 against the deployed site.
 
+Review `auditConfig.ignoreGhsas` in `pnpm-workspace.yaml` on every audit: drop
+an entry as soon as its fix ships, and never add one without a reachability
+reason next to it (and a line in the accepted risks of §3).
+
 **When to re-audit:** before launch (done), after any change to the order path
-or auth config, after a Payload or Next major bump, and otherwise annually.
+or auth config, after a Payload or Next major bump, and otherwise **quarterly**
+— two quiet months were enough for 9 critical advisories to pile up (§3).
