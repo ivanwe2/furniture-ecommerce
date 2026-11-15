@@ -9,6 +9,8 @@ import { MAX_FILE_BYTES, type Issue } from '@/lib/import/contract'
 import { MAX_IMAGE_BYTES } from '@/lib/import/fetch-image'
 import { applyImportRecord, attachUploadedImage, previewImport } from '@/lib/import/run'
 import { logger } from '@/lib/log'
+import { isSameOrigin } from '@/lib/same-origin'
+import { track } from '@/lib/telemetry/server'
 
 const log = logger('import')
 
@@ -31,30 +33,10 @@ const log = logger('import')
 
 const fail = (error: Issue, status: number) => Response.json({ ok: false, error }, { status })
 
-function sameOrigin(req: PayloadRequest): boolean {
-  const origin = req.headers.get('origin')
-  if (!origin) return false
-  let host: string
-  try {
-    host = new URL(origin).host
-  } catch {
-    return false
-  }
-  let siteHost: string | null = null
-  try {
-    siteHost = process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL).host : null
-  } catch {
-    siteHost = null
-  }
-  // The proxy forwards Host (DEPLOY §6); the site URL covers a proxy that
-  // doesn't, and the LAN/dev case is covered by Host itself.
-  return [req.headers.get('x-forwarded-host'), req.headers.get('host'), siteHost].includes(host)
-}
-
 /** Everything that must hold before a body is read — or the response to send instead. */
 function guard(req: PayloadRequest, contentType: string, maxBytes: number): Response | null {
   if (!req.user || req.user.collection !== 'users') return fail({ key: 'unauthorized' }, 401)
-  if (!sameOrigin(req)) return fail({ key: 'generic' }, 403)
+  if (!isSameOrigin(req.headers)) return fail({ key: 'generic' }, 403)
   const type = (req.headers.get('content-type') ?? '').split(';')[0]?.trim().toLowerCase()
   if (type !== contentType) return fail({ key: 'generic' }, 415)
   const length = Number(req.headers.get('content-length'))
@@ -118,7 +100,15 @@ const apply: Endpoint = {
       }
       const failure = IMAGE_FAILURES.find((f): f is ImageFailure => f === previousFailure)
       if (failure) request.previousFailure = failure
-      return Response.json(await applyImportRecord(req.payload, request))
+      const result = await applyImportRecord(req.payload, request)
+      // How the owner's imports go (rows created/updated/failed, picture
+      // outcomes) — input for automating the stock sync later.
+      track(
+        'import_row',
+        { status: result.ok ? result.status : 'error', image: result.ok ? result.image.kind : 'none' },
+        { source: 'admin' },
+      )
+      return Response.json(result)
     }),
 }
 

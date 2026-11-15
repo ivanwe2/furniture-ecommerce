@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Container } from '@/components/ui'
 import { Wordmark } from './Wordmark'
+import { ConsentSettingsLink } from '@/components/telemetry/ConsentBanner'
 import { t } from '@/lib/i18n/bg'
 import { getCompany, type CategoryNode } from '@/lib/payload/queries'
 
@@ -62,6 +63,9 @@ export default async function Footer({ categories }: FooterProps) {
                   </Link>
                 </li>
               ))}
+              <li>
+                <ConsentSettingsLink className={`${LINK} text-left`} />
+              </li>
             </ul>
           </div>
 

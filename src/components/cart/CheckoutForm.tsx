@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import clsx from 'clsx'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { t, tSafe } from '@/lib/i18n/bg'
 import type { CartResolutionEntry } from '@/lib/cart/resolution'
 import { useCart } from '@/lib/cart/store'
+import { trackClient } from '@/lib/telemetry/client'
 import { computeTotals, type ResolvedLine } from '@/lib/cart/totals'
 import { submitOrder } from '@/actions/order'
 import { Container, Input, Textarea, Button, Checkbox, Price, Alert, Skeleton, Altcha } from '@/components/ui'
@@ -30,6 +31,19 @@ export function CheckoutForm({ resolution }: CheckoutFormProps) {
   const [altcha, setAltcha] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [globalError, setGlobalError] = useState('')
+
+  // One checkout_start per visit to this page, once the cart has loaded.
+  const started = useRef(false)
+  useEffect(() => {
+    if (!hydrated || started.current) return
+    const priced = lines.flatMap((line) => {
+      const entry = resolution.get(`${line.productSlug}:${line.sku}`)
+      return entry ? [entry.priceEurCents * line.qty] : []
+    })
+    if (priced.length === 0) return
+    started.current = true
+    trackClient('checkout_start', { lines: priced.length, cents: priced.reduce((sum, c) => sum + c, 0) })
+  }, [hydrated, lines, resolution])
 
   if (!hydrated) {
     return (

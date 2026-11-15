@@ -1,15 +1,26 @@
 'use client'
 
+import { useEffect } from 'react'
 import { t } from '@/lib/i18n/bg'
+import { trackClient } from '@/lib/telemetry/client'
 import { Button } from '@/components/ui'
 
 export default function Error({
-  error: _error,
+  error,
   reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  // The server already logged it (instrumentation onRequestError); the digest
+  // links this report to that log line. Client-side errors only reach us here.
+  useEffect(() => {
+    trackClient('client_error', {
+      message: error.message.slice(0, 500) || 'render error',
+      ...(error.digest ? { digest: error.digest.slice(0, 100) } : {}),
+    })
+  }, [error])
+
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
       <div className="text-center">

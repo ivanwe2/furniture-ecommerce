@@ -13,6 +13,11 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import type { Order } from '@/payload-types'
 import { sendOrderEmails } from '@/emails/send'
+import { logger } from '@/lib/log'
+import { contextFromHeaders } from '@/lib/telemetry/request'
+import { track } from '@/lib/telemetry/server'
+
+const log = logger('order')
 
 export type ActionResult<T> =
   | { ok: true; data: T }
@@ -36,10 +41,16 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
   const hdrs = await headers()
   const ip = clientIp(hdrs)
   const userAgent = hdrs.get('user-agent') ?? ''
+  // Telemetry/logs get no personal data: reasons, counts and the order number only.
+  const ctx = contextFromHeaders(hdrs)
+  const rejected = (reason: 'validation' | 'captcha' | 'rate_limited' | 'cart_stale', fields?: string[]) => {
+    log.info('order rejected', { reason, ...(fields ? { fields } : {}) })
+    track('order_rejected', { reason, ...(fields ? { fields } : {}) }, { source: 'server', ctx })
+  }
 
   // Step 1: Honeypot — fake success if filled
   if (record['website'] != null && String(record['website']).trim() !== '') {
-    console.log('[order] honeypot triggered')
+    log.info('honeypot triggered — fake success returned')
     return { ok: true, data: { orderNumber: 'NAS-FAKE' } }
   }
 
@@ -52,6 +63,7 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
         fieldErrors[String(path)] = err.message
       }
     }
+    rejected('validation', Object.keys(fieldErrors))
     return { ok: false, error: 'errors.generic', fieldErrors }
   }
 
@@ -60,12 +72,14 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
   // Step 3: Altcha proof-of-work verify → errors.captcha
   const altchaOk = await verifyAltcha(data.altcha)
   if (!altchaOk) {
+    rejected('captcha')
     return { ok: false, error: 'errors.captcha' }
   }
 
   // Step 4: Rate limit → errors.rateLimited
   const rl = await rateLimit(`rl:order:${ip}`, { windowSec: 600, max: 5 })
   if (!rl.allowed) {
+    rejected('rate_limited')
     return { ok: false, error: 'errors.rateLimited' }
   }
 
@@ -75,6 +89,7 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
   // since each line costs a DB lookup below.
   const cartLines = parseCartField(record['cart'])
   if (!cartLines) {
+    rejected('cart_stale')
     return { ok: false, error: 'errors.cartStale' }
   }
 
@@ -82,6 +97,7 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
   const totalsResult = computeTotals({ lines: cartLines, resolution })
 
   if (totalsResult.stale.length > 0 || totalsResult.ok.length === 0) {
+    rejected('cart_stale')
     return { ok: false, error: 'errors.cartStale' }
   }
 
@@ -125,13 +141,19 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
   })
 
   const orderNumber = (order.orderNumber ?? '') as string
+  log.info('order placed', { orderNumber, lines: totalsResult.ok.length, cents: subtotalEurCents })
+  track(
+    'order_placed',
+    { lines: totalsResult.ok.length, cents: subtotalEurCents, method: data.method },
+    { source: 'server', ctx },
+  )
 
   // Step 8: Send emails — NEVER rethrow
   try {
     await sendOrderEmails(order, data.email)
   }
-  catch (e) {
-    console.error('[email]', orderNumber, e)
+  catch (err) {
+    log.error('order email failed', { orderNumber, err })
   }
 
   // Step 9: Return success

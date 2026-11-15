@@ -3,6 +3,7 @@ import * as migration_20260721_193900_inventory_stock_qty from './20260721_19390
 import * as migration_20260805_101500_product_min_price from './20260805_101500_product_min_price';
 import * as migration_20261114_131207_payload_3_93 from './20261114_131207_payload_3_93';
 import * as migration_20261114_132518_product_page_v2 from './20261114_132518_product_page_v2';
+import * as migration_20261115_090000_telemetry_events from './20261115_090000_telemetry_events';
 
 export const migrations = [
   {
@@ -29,5 +30,10 @@ export const migrations = [
     up: migration_20261114_132518_product_page_v2.up,
     down: migration_20261114_132518_product_page_v2.down,
     name: '20261114_132518_product_page_v2',
+  },
+  {
+    up: migration_20261115_090000_telemetry_events.up,
+    down: migration_20261115_090000_telemetry_events.down,
+    name: '20261115_090000_telemetry_events',
   },
 ];

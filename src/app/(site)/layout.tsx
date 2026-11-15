@@ -7,7 +7,8 @@ import { Container } from '@/components/ui'
 import { Header } from '@/components/layout/Header'
 import { PromoBar } from '@/components/layout/PromoBar'
 import Footer from '@/components/layout/Footer'
-import CookieNotice from '@/components/layout/CookieNotice'
+import { ConsentBanner } from '@/components/telemetry/ConsentBanner'
+import { Telemetry } from '@/components/telemetry/Telemetry'
 import { CartHydrator } from '@/components/cart/CartHydrator'
 import { ScrollReset } from '@/components/layout/ScrollReset'
 import { getCategoryTree } from '@/lib/payload/queries'
@@ -79,7 +80,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           </Container>
 
           <Footer categories={categories} />
-          <CookieNotice />
+          <ConsentBanner />
+          <Telemetry />
           <CartHydrator />
         </div>
       </body>

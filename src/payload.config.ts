@@ -6,6 +6,7 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 import { log, type LogLevel } from './lib/log'
+import { withAdminTelemetry, withAdminTelemetryGlobal } from './lib/telemetry/admin'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
@@ -78,8 +79,10 @@ export default buildConfig({
     supportedLanguages: { bg },
     fallbackLanguage: 'bg',
   },
-  collections: [Users, Media, Categories, Brands, Products, Orders, Pages],
-  globals: [SiteSettings],
+  // Admin usage telemetry (which collections/fields the owner edits) is added
+  // to every collection and global here, in one place — lib/telemetry/admin.ts.
+  collections: [Users, Media, Categories, Brands, Products, Orders, Pages].map(withAdminTelemetry),
+  globals: [SiteSettings].map(withAdminTelemetryGlobal),
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [...defaultFeatures, EXPERIMENTAL_TableFeature()],
   }),

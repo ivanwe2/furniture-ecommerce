@@ -4,6 +4,9 @@ import { Container } from '@/components/ui'
 import { ProductCard } from '@/components/catalog/ProductCard'
 import { Breadcrumbs } from '@/components/catalog/Breadcrumbs'
 import { searchProducts, getCategoryTree } from '@/lib/payload/queries'
+import { cleanSearchQuery } from '@/lib/telemetry/events'
+import { requestContext } from '@/lib/telemetry/request'
+import { track } from '@/lib/telemetry/server'
 
 interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -37,6 +40,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   if (q.trim()) {
     products = await searchProducts(q)
+    // Zero-result terms are the most useful search statistic (catalogue gaps,
+    // wrong names). Stored cleaned: emails and phone numbers masked.
+    track('search', { q: cleanSearchQuery(q), results: products.length }, { source: 'server', ctx: await requestContext(), path: '/search' })
   }
 
   const categories = await getCategoryTree()

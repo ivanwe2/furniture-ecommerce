@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { t } from '@/lib/i18n/bg'
 import type { CartResolutionEntry } from '@/lib/cart/resolution'
 import { useCart, type CartLine } from '@/lib/cart/store'
+import { trackClient } from '@/lib/telemetry/client'
 import { computeTotals, type ResolvedLine as TotalsResolvedLine } from '@/lib/cart/totals'
 import { Container, Price, Skeleton, Alert } from '@/components/ui'
 import React, { useState, useCallback } from 'react'
@@ -16,7 +17,14 @@ export function CartClient({ resolution }: CartClientProps) {
   const lines = useCart((s) => s.lines)
   const hydrated = useCart((s) => s.hydrated)
   const setQty = useCart((s) => s.setQty)
-  const remove = useCart((s) => s.remove)
+  const removeFromCart = useCart((s) => s.remove)
+  const remove = useCallback(
+    (sku: string) => {
+      removeFromCart(sku)
+      trackClient('cart_remove', { sku })
+    },
+    [removeFromCart],
+  )
 
   if (!hydrated) {
     return <CartSkeleton />
