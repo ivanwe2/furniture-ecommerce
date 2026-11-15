@@ -1,0 +1,56 @@
+# Provisioned on every start — editing them in the UI is not persisted.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      timeInterval: 15s
+
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      derivedFields:
+        # A log line's traceId opens its trace in Tempo.
+        - name: traceId
+          matcherType: regex
+          matcherRegex: '"traceId":"([0-9a-f]{32})"'
+          datasourceUid: tempo
+          url: '$${__value.raw}'
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: '-5m'
+        spanEndTimeShift: '5m'
+        customQuery: true
+        query: '{service="app"} |= "$${__trace.traceId}"'
+
+  # Usage telemetry, read through a role that can see the telemetry schema
+  # only (observability/db-init/init.sh) — never orders or customers.
+  - name: Telemetry
+    uid: telemetry
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: db:5432
+    user: grafana_reader
+    jsonData:
+      database: ${POSTGRES_DB}
+      sslmode: disable
+      postgresVersion: 1800
+      timescaledb: false
+      maxOpenConns: 5
+    secureJsonData:
+      password: $__file{/secrets/grafana_reader_password}

@@ -26,7 +26,10 @@ import {
 import { downloadImage, toStoredImage, type StoredImage } from '@/lib/import/fetch-image'
 import { checkMediaStorage } from '@/lib/import/media-storage'
 import { slugify } from '@/lib/slug'
+import { logger } from '@/lib/log'
 import type { Media, Product } from '@/payload-types'
+
+const log = logger('import')
 
 /**
  * The product importer against the database (DATA-MODEL §9). Two passes over
@@ -402,7 +405,7 @@ async function attachImage(
     // Not the link's fault: the bytes were a valid image (sharp decoded them
     // in downloadImage) — saving failed. Reporting this as „not an image"
     // once hid a production media-folder permission problem.
-    console.error('[import] storing image failed', record.sku, err instanceof Error ? err.message : err)
+    log.error('storing image failed', { sku: record.sku, err })
     return { kind: 'failed', reason: 'storeFailed' }
   }
 }

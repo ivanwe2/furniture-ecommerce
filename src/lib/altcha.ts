@@ -2,6 +2,9 @@ import 'server-only'
 import { deriveKey } from 'altcha-lib/algorithms/sha'
 import { create, CappedMap } from 'altcha-lib/frameworks/nextjs'
 import { verify as altchaVerify } from 'altcha-lib/frameworks/shared'
+import { logger } from '@/lib/log'
+
+const log = logger('altcha')
 
 /**
  * Self-hosted Altcha proof-of-work anti-bot (replaces Cloudflare Turnstile).
@@ -72,8 +75,12 @@ export async function verifyAltcha(payload: string): Promise<boolean> {
   if (!key || !payload) return false
   try {
     const res = await altchaVerify(payload, deriveKey, key, undefined, store)
-    return !res.error && res.verification?.verified === true
-  } catch {
+    const ok = !res.error && res.verification?.verified === true
+    // Info, not warn: bots fail this all day; a spike is what matters.
+    if (!ok) log.info('verification failed', { reason: res.error ?? 'invalid solution' })
+    return ok
+  } catch (err) {
+    log.info('verification failed', { reason: 'malformed', err })
     return false
   }
 }

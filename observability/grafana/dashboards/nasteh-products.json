@@ -1,0 +1,235 @@
+{
+  "uid": "nasteh-products",
+  "title": "Products & variants",
+  "description": "Interest per product and variant, and demand that the shop cannot currently serve (sold out / price on request).",
+  "tags": [
+    "nasteh"
+  ],
+  "timezone": "browser",
+  "editable": false,
+  "schemaVersion": 41,
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "refresh": "5m",
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Most viewed products",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 14,
+        "h": 12
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT v.slug AS \"product\", v.views AS \"views\", coalesce(c.adds, 0) AS \"added to cart\",\n             round(100.0 * coalesce(c.adds, 0) / nullif(v.views, 0), 1) AS \"add rate %\"\n      FROM (SELECT props->>'slug' AS slug, count(*) AS views FROM telemetry.events WHERE name = 'product_view' AND source = 'web' AND $__timeFilter(ts) GROUP BY 1) v\n      LEFT JOIN (SELECT props->>'slug' AS slug, count(*) AS adds FROM telemetry.events WHERE name = 'cart_add' AND source = 'web' AND $__timeFilter(ts) GROUP BY 1) c USING (slug)\n      ORDER BY v.views DESC LIMIT 30"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Most added to cart (by variant)",
+      "gridPos": {
+        "x": 14,
+        "y": 0,
+        "w": 10,
+        "h": 12
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT props->>'sku' AS \"SKU\", props->>'slug' AS \"product\", count(*) AS \"adds\", sum((props->>'qty')::int) AS \"pieces\" FROM telemetry.events WHERE name = 'cart_add' AND source = 'web' AND $__timeFilter(ts) GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 30"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "Unserved demand — inquiries",
+      "description": "Clicks on „Запитване за наличност / цена\" — restock or price these first.",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 10
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT props->>'sku' AS \"SKU\", count(*) FILTER (WHERE props->>'kind' = 'availability') AS \"asked: in stock?\", count(*) FILTER (WHERE props->>'kind' = 'price') AS \"asked: price?\", max(ts) AS \"last\" FROM telemetry.events WHERE name = 'inquiry_click' AND source = 'web' AND $__timeFilter(ts) GROUP BY 1 ORDER BY 2 + 3 DESC LIMIT 30"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Variant picks",
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 10
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT props->>'slug' AS \"product\", props->>'sku' AS \"variant\", count(*) AS \"selected\" FROM telemetry.events WHERE name = 'variant_select' AND source = 'web' AND $__timeFilter(ts) GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 30"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Missing pages hit (404)",
+      "description": "Old links or typos — candidates for redirects.",
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT props->>'path' AS \"path\", count(*) AS \"hits\", max(ts) AS \"last\" FROM telemetry.events WHERE name = 'not_found' AND source = 'web' AND $__timeFilter(ts) GROUP BY 1 ORDER BY 2 DESC LIMIT 30"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ]
+}

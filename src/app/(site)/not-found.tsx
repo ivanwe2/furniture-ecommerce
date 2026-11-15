@@ -3,8 +3,15 @@
 import { t } from '@/lib/i18n/bg'
 import { Input, Button } from '@/components/ui'
 import Link from 'next/link'
+import { useEffect } from 'react'
+import { trackClient } from '@/lib/telemetry/client'
 
 export default function NotFound() {
+  // Which missing URLs people (or old links) hit — candidates for redirects.
+  useEffect(() => {
+    trackClient('not_found', { path: window.location.pathname })
+  }, [])
+
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
       <div className="text-center max-w-md">

@@ -10,6 +10,7 @@ import { useCart } from '@/lib/cart/store'
 import { mergeSpecLayers, type SpecLine } from '@/lib/catalog/specs'
 import { t } from '@/lib/i18n/bg'
 import { formatEur, netEurCents } from '@/lib/money'
+import { trackClient } from '@/lib/telemetry/client'
 
 export type ViewItem = {
   sku: string
@@ -51,12 +52,24 @@ export function ProductView(props: ProductViewProps) {
   const [sku, setSku] = useState(props.initialSku)
   const selected = items.find((i) => i.sku === sku) ?? items[0]!
 
-  const select = useCallback((next: string) => {
-    setSku(next)
-    const url = new URL(window.location.href)
-    url.searchParams.set('sku', next)
-    window.history.replaceState(window.history.state, '', url)
-  }, [])
+  const select = useCallback(
+    (next: string) => {
+      setSku(next)
+      const url = new URL(window.location.href)
+      url.searchParams.set('sku', next)
+      window.history.replaceState(window.history.state, '', url)
+      trackClient('variant_select', { slug: props.productSlug, sku: next })
+    },
+    [props.productSlug],
+  )
+
+  // One product view per page load, with the variant it opened on.
+  const viewed = useRef(false)
+  useEffect(() => {
+    if (viewed.current) return
+    viewed.current = true
+    trackClient('product_view', { slug: props.productSlug, sku: props.initialSku })
+  }, [props.productSlug, props.initialSku])
 
   // The selected variant's own picture leads; the product gallery follows.
   const images = useMemo(() => {
@@ -87,7 +100,12 @@ export function ProductView(props: ProductViewProps) {
     <>
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-14">
         {/* Remount per variant: the view restarts at the variant's picture. */}
-        <Gallery key={selected.sku} images={images} productName={productName} />
+        <Gallery
+          key={selected.sku}
+          images={images}
+          productName={productName}
+          onZoom={() => trackClient('gallery_zoom', { slug: props.productSlug })}
+        />
 
         <div className="min-w-0">
           {props.brand ? (
@@ -202,7 +220,7 @@ function Actions({
 }) {
   const availability = availabilityOf(item)
   const callUs = (
-    <a href={phone.href} className={secondaryBtn}>
+    <a href={phone.href} className={secondaryBtn} onClick={() => trackClient('phone_click', { place: 'product' })}>
       {t('product.callUs').replace('{phone}', phone.display)}
     </a>
   )
@@ -211,7 +229,11 @@ function Actions({
     const label = availability === 'onRequest' ? t('product.requestPrice') : t('product.requestAvailability')
     return (
       <div className="mt-7 flex flex-wrap gap-3">
-        <Link href={`/contact?about=${encodeURIComponent(item.sku)}`} className={primaryBtn}>
+        <Link
+          href={`/contact?about=${encodeURIComponent(item.sku)}`}
+          className={primaryBtn}
+          onClick={() => trackClient('inquiry_click', { sku: item.sku, kind: availability === 'onRequest' ? 'price' : 'availability' })}
+        >
           {label}
         </Link>
         {callUs}
@@ -221,13 +243,13 @@ function Actions({
 
   return (
     <div className="mt-7 flex flex-wrap items-center gap-3">
-      <AddToCart sku={item.sku} productSlug={productSlug} />
+      <AddToCart sku={item.sku} productSlug={productSlug} cents={item.priceEurCents ?? 0} />
       {callUs}
     </div>
   )
 }
 
-function AddToCart({ sku, productSlug }: { sku: string; productSlug: string }) {
+function AddToCart({ sku, productSlug, cents }: { sku: string; productSlug: string; cents: number }) {
   const add = useCart((s) => s.add)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
@@ -261,6 +283,7 @@ function AddToCart({ sku, productSlug }: { sku: string; productSlug: string }) {
         className={clsx(primaryBtn, added && 'bg-ok hover:bg-ok')}
         onClick={() => {
           add({ productSlug, sku }, qty)
+          trackClient('cart_add', { slug: productSlug, sku, qty, cents })
           setAdded(true)
           if (timer.current) clearTimeout(timer.current)
           timer.current = setTimeout(() => setAdded(false), 1200)

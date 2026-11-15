@@ -18,12 +18,18 @@
     "typecheck": "cross-env NODE_OPTIONS=--no-deprecation tsc --noEmit",
     "migrate:local": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
     "gen:redirects": "tsx scripts/gen-redirects.ts",
+    "gen:dashboards": "tsx scripts/gen-dashboards.ts",
     "seed:dev": "cross-env NODE_OPTIONS=--no-deprecation SKIP_REVALIDATE=1 tsx scripts/seed-dev.ts",
     "test": "pnpm run test:int",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/context-async-hooks": "2.12.1",
+    "@opentelemetry/exporter-trace-otlp-http": "0.223.2",
+    "@opentelemetry/resources": "2.12.1",
+    "@opentelemetry/sdk-trace": "2.12.1",
     "@payloadcms/db-postgres": "3.93.0",
     "@payloadcms/next": "3.93.0",
     "@payloadcms/richtext-lexical": "3.93.0",

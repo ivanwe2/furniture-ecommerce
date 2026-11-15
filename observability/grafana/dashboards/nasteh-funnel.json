@@ -1,0 +1,287 @@
+{
+  "uid": "nasteh-funnel",
+  "title": "Funnel & journeys",
+  "description": "Visitors at each step (per-day visitors, summed). The second row uses only visitors who accepted the consent banner.",
+  "tags": [
+    "nasteh"
+  ],
+  "timezone": "browser",
+  "editable": false,
+  "schemaVersion": 41,
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "refresh": "5m",
+  "panels": [
+    {
+      "id": 1,
+      "type": "bargauge",
+      "title": "Funnel: visit → product → cart → checkout → order",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT\n              count(DISTINCT (visitor_day, ts::date)) FILTER (WHERE name = 'page_view') AS \"1 visited\",\n              count(DISTINCT (visitor_day, ts::date)) FILTER (WHERE name = 'product_view') AS \"2 viewed a product\",\n              count(DISTINCT (visitor_day, ts::date)) FILTER (WHERE name = 'cart_add') AS \"3 added to cart\",\n              count(DISTINCT (visitor_day, ts::date)) FILTER (WHERE name = 'checkout_start') AS \"4 opened checkout\",\n              count(DISTINCT (visitor_day, ts::date)) FILTER (WHERE name = 'order_placed') AS \"5 ordered\"\n            FROM telemetry.events WHERE $__timeFilter(ts) AND NOT coalesce((props->>'staff')::boolean, false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Consent: accepted",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT count(*) FROM telemetry.events WHERE name = 'consent' AND props->>'choice' = 'granted' AND source = 'web' AND $__timeFilter(ts)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Consent: declined",
+      "gridPos": {
+        "x": 6,
+        "y": 8,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT count(*) FROM telemetry.events WHERE name = 'consent' AND props->>'choice' = 'denied' AND source = 'web' AND $__timeFilter(ts)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Returning visitors (consented)",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT count(*) FROM (SELECT visitor_id FROM telemetry.events WHERE visitor_id IS NOT NULL AND source = 'web' AND $__timeFilter(ts) GROUP BY 1 HAVING count(DISTINCT ts::date) > 1) r"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Avg. visits per consented visitor",
+      "gridPos": {
+        "x": 18,
+        "y": 8,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT coalesce(round(avg(d), 2), 0) FROM (SELECT count(DISTINCT session_id) AS d FROM telemetry.events WHERE visitor_id IS NOT NULL AND source = 'web' AND $__timeFilter(ts) GROUP BY visitor_id) s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Consented journeys: days from first visit to order",
+      "description": "Uses the checkout step (orders are recorded server-side without the browser id).",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 24,
+        "h": 9
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "telemetry"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "telemetry"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT f.visitor_id::text AS \"visitor\", f.first_seen AS \"first visit\", o.ordered AS \"ordered\", (o.ordered::date - f.first_seen::date) AS \"days\"\n      FROM (SELECT visitor_id, min(ts) AS first_seen FROM telemetry.events WHERE visitor_id IS NOT NULL GROUP BY 1) f\n      JOIN (SELECT e.visitor_id, min(e.ts) AS ordered FROM telemetry.events e WHERE e.name = 'checkout_start' AND e.visitor_id IS NOT NULL AND $__timeFilter(e.ts) GROUP BY 1) o USING (visitor_id)\n      ORDER BY o.ordered DESC LIMIT 30"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ]
+}

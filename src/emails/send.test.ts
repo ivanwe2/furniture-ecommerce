@@ -58,3 +58,42 @@ describe('customer-supplied content', () => {
     expect(html).not.toContain('"onmouseover="')
   })
 })
+
+describe('order emails', () => {
+  const order = {
+    id: 1,
+    orderNumber: 'NAS-20261114-TEST',
+    createdAt: '2026-11-14T10:00:00.000Z',
+    updatedAt: '2026-11-14T10:00:00.000Z',
+    totalEurCents: 1290,
+    customer: { name: 'Тест', phone: '0888123456', email: 'client@example.com', note: null },
+    delivery: { method: 'адрес', addressOrOffice: 'ул. Тестова 1', city: 'Пловдив' },
+    lines: [{ productId: 'p', itemSku: 'A1', itemName: 'Панта', unit: 'бр.', qty: 1, unitPriceEurCents: 1290, lineTotalEurCents: 1290 }],
+  }
+
+  async function load() {
+    vi.stubEnv('SMTP_HOST', 'mail')
+    vi.stubEnv('ORDER_INBOX_EMAIL', 'orders@nasteh.bg')
+    vi.resetModules()
+    return import('./send')
+  }
+
+  it('still sends the customer confirmation when the owner email fails, then reports the failure', async () => {
+    const { sendOrderEmails } = await load()
+    sendMail.mockImplementation(async (msg: { to: string }) => {
+      if (msg.to === 'orders@nasteh.bg') throw new Error('owner inbox rejected')
+    })
+    await expect(sendOrderEmails(order as never, 'client@example.com')).rejects.toThrow(/owner/)
+    const recipients = sendMail.mock.calls.map((c) => (c[0] as { to: string }).to)
+    expect(recipients).toEqual(['orders@nasteh.bg', 'client@example.com'])
+    sendMail.mockReset()
+  })
+
+  it('resolves when both sends succeed', async () => {
+    const { sendOrderEmails } = await load()
+    sendMail.mockResolvedValue({})
+    await expect(sendOrderEmails(order as never, 'client@example.com')).resolves.toBeUndefined()
+    expect(sendMail).toHaveBeenCalledTimes(2)
+    sendMail.mockReset()
+  })
+})

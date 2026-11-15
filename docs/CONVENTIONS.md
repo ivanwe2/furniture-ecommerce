@@ -84,9 +84,18 @@ export async function submitOrder(input: unknown): Promise<ActionResult<{ orderN
   key `errors.generic`).
 - `error.tsx` per route group with the generic message + retry button;
   `not-found.tsx` with search + category links (UI-SPEC §404).
-- Log format: `console.error('[area] message', minimalContext)` — areas:
-  `[order] [email] [import] [seed] [images] [ratelimit]`. No personal data
-  in logs (order numbers OK).
+- Logging: `const log = logger('area')` from `src/lib/log.ts`, then
+  `log.info|warn|error('message', { fields })` — one JSON line each (ts,
+  level, area, msg, traceId, version, fields; `err` is serialised with its
+  stack). Areas in use: `order contact email import altcha ratelimit redis
+  telemetry request process otel payload client`. No bare `console.*`.
+  **No personal data** — no names, phones, emails, addresses, IPs or message
+  bodies; order numbers, SKUs, slugs and counts are fine. Email-shaped text
+  is masked automatically as a safety net, not as permission.
+- Usage events: `track(name, props, { source, ctx })` (server,
+  `lib/telemetry/server.ts`) or `trackClient(name, props)` (browser,
+  `lib/telemetry/client.ts`). New event = add it to `lib/telemetry/events.ts`
+  (client events need a zod schema) and to docs/OBSERVABILITY.md.
 - Never swallow errors silently. Either handle meaningfully, or log +
   degrade per spec (e.g., email failure after order write), or let it
   bubble to `error.tsx`.

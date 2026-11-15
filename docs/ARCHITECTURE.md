@@ -64,6 +64,7 @@ import host-specific APIs (Cloudflare or otherwise).
 | Database | **PostgreSQL 18** in the `db` container | `postgres:18-alpine` · `@payloadcms/db-postgres` | `DATABASE_URI=postgres://…@db:5432/nasteh`. Own container + `pgdata` volume. Migrations are Postgres-dialect (the old SQLite/D1 migration was regenerated). Backups = `pg_dump` (§ backups). Swapped from SQLite 2026-07-17 |
 | Media storage | **Local disk** on a mounted volume | Payload default disk adapter | originals + sized variants on the `media` volume; no object store. See §5 |
 | Image sizing | **Payload + sharp** (native, at upload) | `sharp` | sharp runs on Node → Payload generates responsive sized variants **as WebP** at upload; served via the app's media route. No `/cdn-cgi/image/`, no image CDN |
+| Observability | **Grafana + Loki + Prometheus + Tempo + Alloy** (optional compose file) | pinned images; `@opentelemetry/*` 2.x in the app | §13; DEPLOY §11 |
 | Rate limiting | **Redis** fixed-window counter | `ioredis` + `redis` container | behind `src/lib/rate-limit.ts` seam; `REDIS_URL=redis://redis:6379`. In-memory fallback if Redis is unreachable so a Redis blip never blocks orders |
 | Anti-bot | **Altcha** (self-hosted proof-of-work) | `altcha-lib` + `altcha` widget | replaces Turnstile — server issues an HMAC challenge, the browser solves a PoW, the server verifies locally. No external calls, no keys/account. Checkout + contact forms |
 | Styling | Tailwind CSS | 4.x | tokens in §8 |
@@ -347,6 +348,37 @@ RELAYHOST_PASSWORD=
   DKIM, DMARC (+ PTR / unblocked port 25 if they run their own MTA). The app
   is a plain SMTP client — it works against whatever endpoint they point it
   at. No `NEXT_PUBLIC_MEDIA_HOST` (media is served by the app).
+
+## 13. Observability & usage telemetry 🔒 (Ivan, 2026-11-14)
+
+Self-hosted only (rule 3): an optional compose file,
+`docker-compose.observability.yml`, adds Grafana, Loki, Prometheus, Tempo and
+Alloy on the client's box; nothing leaves it. Details and the event
+catalogue: docs/OBSERVABILITY.md. Ops: DEPLOY §11.
+
+- **Logs**: the app writes JSON lines (`src/lib/log.ts`); Alloy tails every
+  container's log file (read-only mount, never the Docker socket), redacts
+  emails and IPs, ships to Loki (30 days).
+- **Traces / request metrics**: OpenTelemetry in the app
+  (`instrumentation-node.ts`, on only when `OTEL_EXPORTER_OTLP_ENDPOINT` is
+  set) → Alloy → Tempo (7 days) + span metrics → Prometheus (30 days).
+  `onRequestError` logs every server error with its route; log lines carry
+  the trace id.
+- **Usage events**: `telemetry.events` in its own Postgres schema (Payload
+  migration; written through the adapter's drizzle connection, batched,
+  fire-and-forget; purged after 13 months). Grafana reads it through a role
+  that can see that schema only.
+- **Privacy — hybrid consent**: no cookies; no raw IP or personal data in
+  events; visitors counted per day by a salted hash rotated daily (salt in
+  Redis 48 h). Only after „Приемам" does the browser attach a random
+  visitor/session id. Bots and the owner's own admin session are excluded.
+- **Health**: `/api/health` (DB + Redis + version) drives the container
+  healthcheck, the auto-deploy rollback and the uptime alert.
+- Dashboards and alerts are provisioned from the repo (read-only in the UI):
+  `scripts/gen-dashboards.ts`, `observability/grafana/provisioning/`.
+
+Explicitly not done: third-party analytics, session replay, fingerprinting,
+cross-day tracking without consent, the Docker socket in any container.
 
 ## 12. Repository layout 🔒
 

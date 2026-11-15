@@ -75,6 +75,8 @@ main() {
   fi
 
   git checkout --quiet --detach "$target"
+  # Shown by /api/health and stamped on every log line.
+  export APP_VERSION="${target:0:12}"
   if ! docker compose build --pull app; then
     log "ERROR: build failed — staying on ${previous:0:12}."
     git checkout --quiet --detach "$previous"

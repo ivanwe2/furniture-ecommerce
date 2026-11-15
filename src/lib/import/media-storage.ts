@@ -4,6 +4,9 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { MediaStorage } from '@/lib/import/api'
+import { logger } from '@/lib/log'
+
+const log = logger('import')
 
 /**
  * Can the app write into the media folder right now?
@@ -27,7 +30,7 @@ export async function checkMediaStorage(staticDir: string): Promise<MediaStorage
   } catch (err) {
     const code =
       typeof err === 'object' && err !== null && 'code' in err && typeof err.code === 'string' ? err.code : 'UNKNOWN'
-    console.error('[import] media folder is not writable', dir, code)
+    log.error('media folder is not writable', { dir, code })
     return { ok: false, code, dir }
   }
 }

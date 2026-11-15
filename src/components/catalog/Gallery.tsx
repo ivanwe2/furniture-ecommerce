@@ -17,6 +17,8 @@ export type GalleryImage = {
 interface GalleryProps {
   images: GalleryImage[]
   productName: string
+  /** Called when the lightbox opens (telemetry). */
+  onZoom?: () => void
 }
 
 /**
@@ -25,7 +27,7 @@ interface GalleryProps {
  * `key`) whenever the selected variant changes, so the view starts again at
  * the first picture — that variant's own picture when it has one.
  */
-export function Gallery({ images, productName }: GalleryProps) {
+export function Gallery({ images, productName, onZoom }: GalleryProps) {
   const [current, setCurrent] = useState(0)
   const [open, setOpen] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -64,7 +66,10 @@ export function Gallery({ images, productName }: GalleryProps) {
     <div className="space-y-3">
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true)
+          onZoom?.()
+        }}
         className="block aspect-[5/4] w-full overflow-hidden border border-ink/12 bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         aria-label={t('product.galleryOpen').replace('{name}', productName).replace('{n}', String(current + 1))}
       >

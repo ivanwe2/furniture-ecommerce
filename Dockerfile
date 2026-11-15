@@ -39,8 +39,11 @@ RUN PAYLOAD_SECRET=build-time-placeholder pnpm build
 # --- runtime: built app + node_modules + source (source is needed because
 # `payload migrate` loads the TS config/collections via tsconfig path aliases).
 FROM base AS runtime
+# The git SHA of this build (docker-compose passes it) — /api/health and logs.
+ARG APP_VERSION=dev
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=3000 \
+    APP_VERSION=$APP_VERSION
 RUN useradd -m -u 1001 nasteh
 # --chown on each COPY sets ownership inline (far faster than a recursive
 # chown over node_modules).
