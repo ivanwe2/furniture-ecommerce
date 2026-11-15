@@ -49,7 +49,7 @@
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
     "sharp": "0.35.5",
-    "three": "0.160.1",
+    "three": "0.187.0",
     "zod": "^4.6.6",
     "zustand": "^5.0.14"
   },
@@ -60,7 +60,7 @@
     "@types/node": "24.19.2",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
-    "@types/three": "0.160.0",
+    "@types/three": "0.187.0",
     "@vitejs/plugin-react": "4.5.2",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.4.6",
