@@ -1,0 +1,5 @@
+# Prometheus only stores: every series arrives from Alloy by remote write
+# (span metrics, Postgres/Redis exporters, the /api/health probe, disk).
+global:
+  scrape_interval: 30s
+scrape_configs: []

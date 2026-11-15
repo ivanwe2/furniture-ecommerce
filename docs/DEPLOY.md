@@ -29,7 +29,7 @@ go-live starts on an empty DB.
 
 Each step links to the detailed section below. Tick as you go.
 
-- [ ] **Host ready** — Docker Engine + Compose plugin; ~2 GB RAM for the whole
+- [ ] **Host ready** — Docker Engine + Compose plugin; ~2 GB RAM for the core (4 GB with §11) for the whole
       stack; storage driver `overlay2` (§1, §10).
 - [ ] **Get the code + `.env`** — clone the repo, `cp .env.example .env`, fill
       **every** key. Generate the two secrets fresh: `PAYLOAD_SECRET` and
@@ -549,8 +549,11 @@ memory.
   check `docker info | grep "Storage Driver"`. If you have the choice, running
   Docker in a small **VM** instead of an LXC sidesteps all of this — a common
   choice for Docker workloads on Proxmox.
-- **Give it enough RAM.** The whole stack wants ~2 GB: app ~1 GB (Next SSR +
+- **Give it enough RAM.** The core stack wants ~2 GB: app ~1 GB (Next SSR +
   Payload + sharp), Postgres ~0.5 GB, Redis/mail/backup ~0.4 GB combined.
+  **With the observability stack (§11) plan 4 GB** — Grafana, Loki,
+  Prometheus, Tempo and Alloy add ~1.7 GB of caps — and keep ~10 GB of disk
+  free for 30 days of logs/metrics.
   Compose caps each service (`deploy.resources.limits.memory`) so no single one
   can OOM-kill the host — tune those caps to the LXC/VM you give it. If you cap
   tightly, also cap Node's heap for the app so it stays under its limit — Node
@@ -568,3 +571,63 @@ memory.
   serialisation). Back up via the `backup` sidecar / `pg_dump` (§5), never a raw
   copy of the data dir. `pgdata` is the only volume that must survive; losing
   `media` loses uploads (restore from §5), `maildata`/`backups` regenerate.
+
+---
+
+## 11. Observability — logs, metrics, traces, usage statistics, alerts
+
+`docker-compose.observability.yml` adds Grafana, Loki, Prometheus, Tempo and
+Alloy (ARCHITECTURE §13, docs/OBSERVABILITY.md). Self-hosted; nothing leaves
+the box; the shop runs unchanged without it.
+
+**One-time setup (sysadmin):**
+
+1. Give the host **4 GB RAM** and ~10 GB free disk (§10).
+2. Add to `.env`:
+   ```
+   COMPOSE_FILE=docker-compose.yml:docker-compose.observability.yml
+   GRAFANA_ADMIN_PASSWORD=<openssl rand -hex 16>
+   ALERT_EMAIL=<who gets alerts>
+   ```
+   `COMPOSE_FILE` makes every `docker compose` command — and the auto-deploy
+   (§3a) — include the stack. Compose refuses to start it without the two
+   other values.
+3. `docker compose up -d` (or let the next deploy do it). First start pulls
+   ~1.5 GB of images; the one-shot `telemetry-db-init` creates the read-only
+   database roles and their passwords by itself.
+4. Reverse proxy: `stats.nasteh.bg` → `127.0.0.1:3001` (DNS A record to the
+   same IP as nasteh.bg). Caddy:
+   ```
+   stats.nasteh.bg {
+       reverse_proxy 127.0.0.1:3001
+   }
+   ```
+   Grafana has its own login (`admin` / `GRAFANA_ADMIN_PASSWORD`); an IP
+   allow-list in the proxy is a welcome extra.
+5. Mail: alerts are sent as `alerts@nasteh.bg` through the stack's relay —
+   covered by the existing `MAIL_SENDER_DOMAINS=nasteh.bg` and DKIM.
+
+**Using it (Ivan):** https://stats.nasteh.bg → Dashboards → *Nasteh*: Shop
+overview, Search, Products & variants, Funnel & journeys, Admin usage,
+System health. Explore → Loki for logs (`{service="app", level="error"}`), a
+`traceId` opens its trace. Alerts arrive at `ALERT_EMAIL`.
+
+**Checks:**
+```bash
+docker compose ps                       # loki prometheus tempo alloy grafana: Up
+docker compose logs telemetry-db-init   # "roles grafana_reader + metrics ready"
+curl -s localhost:3000/api/health       # {"status":"ok","db":"ok","redis":"ok","version":"<sha>"}
+```
+
+**Notes:**
+- Docker data root other than `/var/lib/docker`: set
+  `DOCKER_CONTAINERS_DIR=<root>/containers` in `.env` (Alloy reads the log
+  files there, read-only — it never gets the Docker socket).
+- Retention: logs 30 d, metrics 30 d (max 3 GB), traces 7 d, usage events
+  13 months (purged daily by the app). Volumes: `lokidata`, `promdata`,
+  `tempodata`, `grafanadata`, `alloydata`, `obs-secrets` — losing them loses
+  history only, never shop data. Usage events live in the main database and
+  are in the daily `pg_dump`.
+- To switch it off: remove the `COMPOSE_FILE` line and
+  `docker compose -f docker-compose.yml -f docker-compose.observability.yml stop loki prometheus tempo alloy grafana`.
+

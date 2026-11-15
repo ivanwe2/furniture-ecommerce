@@ -96,6 +96,17 @@ describe('changedFields', () => {
     expect(changedFields(after, before)).toEqual(['items.priceEurCents', 'items.stockQty'])
   })
 
+  it('treats a populated relationship and its id as the same value', () => {
+    const brand = { id: 3, name: 'Blum', updatedAt: '2026-01-01' }
+    const image = { id: 9, filename: 'a.webp', createdAt: '2026-01-01' }
+    expect(
+      changedFields(
+        { brand: 3, category: 7, items: [{ id: 'a', image: 9, stockQty: 4 }] },
+        { brand, category: { id: 7, name: 'Панти', updatedAt: 'x' }, items: [{ id: 'a', image, stockQty: 3 }] },
+      ),
+    ).toEqual(['items.stockQty'])
+  })
+
   it('falls back to the array name when rows were added or removed', () => {
     expect(changedFields({ items: [{ sku: 'A' }, { sku: 'B' }] }, { items: [{ sku: 'A' }] })).toEqual(['items'])
   })

@@ -165,6 +165,31 @@ minutes, so moving it is the guarded step.
 
 ---
 
+### T8 — Observability and usage telemetry (2026-11-14, ARCHITECTURE §13)
+
+- **Grafana is a new login surface** (stats.nasteh.bg via the sysadmin's
+  proxy, Grafana itself on 127.0.0.1:3001): admin password from `.env`,
+  sign-up and anonymous access off, secure cookie, no outbound phone-home.
+  Loki/Prometheus/Tempo/Alloy publish no ports.
+- **Grafana cannot read shop data**: its Postgres role `grafana_reader` has
+  SELECT on schema `telemetry` only (verified: `orders`, `users` → permission
+  denied). Alloy's `metrics` role has `pg_monitor` (statistics, no table
+  data). Both passwords are generated on first run into a private volume.
+- **No Docker socket** anywhere: Alloy reads container log files through a
+  read-only mount.
+- **Beacon `POST /api/t`**: same-origin only, ≤ 8 KB, ≤ 20 events, each
+  validated against a fixed catalogue (unknown names and keys dropped),
+  rate-limited 120/min per IP; bots and admin sessions ignored. It writes
+  nothing but telemetry rows; worst case is noisy statistics.
+- **Personal data**: the app never logs or records personal data (lib/log.ts
+  masks email-shaped text as a safety net); Alloy masks emails and IPs from
+  other services' logs (Postfix) before storage. Retention: logs 30 d,
+  traces 7 d, metrics 30 d, events 13 months.
+- Re-verify: as grafana_reader, `SELECT 1 FROM orders` must fail; `curl
+  -X POST localhost:3000/api/t -H 'origin: https://evil.example'` → 403.
+
+---
+
 ## 3. Audit record — 2026-11-14
 
 Re-audit after about two months without active development. The code had not

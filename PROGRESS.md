@@ -5,26 +5,18 @@
 
 ## Status
 
-**2026-11-14 — NOV 2026 ROUND. Merged: #77 security, #86 product page v2,
-#87 Altcha fix + euro-only, #89 auto-deploy, #90 zod 4, #91 real 404s.
-IN PROGRESS: Phase 13 on branch `phase-13-observability` (NOT merged).**
-Ivan wants ONE bundled deploy + ONE sysadmin message after Phase 13 — do not
-send partial instructions. Done on the branch: `lib/log.ts` (+tests), Payload
-logger fix, importer/altcha/rate-limit logging, `lib/redis.ts`, independent
-owner/customer emails (+tests), OTel packages installed (api 1.9.1, sdk-trace
-2.12.1, context-async-hooks, exporter-trace-otlp-http 0.223.2, resources),
-`lib/telemetry/events.ts` (+tests). NEXT UP (PHASES §13): telemetry server
-`track()` (batched INSERT via payload.db.drizzle into `telemetry.events`, daily
-salted visitor hash in Redis), migration for schema `telemetry`, POST /api/t
-beacon, client queue + consent banner (replaces CookieNotice) + touch points,
-admin change hooks, `instrumentation.ts` (OTel + onRequestError + purge),
-`/api/health` + compose healthcheck, `APP_VERSION` build arg, replace order/
-contact `console.*` with logs + events, docker-compose.observability.yml
-(Grafana/Loki/Prometheus/Tempo/Alloy, db-init one-shot for grafana_reader +
-metrics roles), dashboards, alerts, docs (ARCHITECTURE §13, DEPLOY §11,
-SECURITY, CLAUDE.md scope line, privacy texts), local end-to-end test, PR.
-Then the single sysadmin message (update + install.sh + COMPOSE_FILE + new
-.env keys + RAM 4 GB + DNS/Caddy stats.nasteh.bg).
+**2026-11-15 — NOV 2026 ROUND COMPLETE in code. Merged: #77 security, #86
+product page v2, #87 Altcha + euro-only, #89 auto-deploy, #90 zod 4, #91 real
+404s; Phase 13 (observability + telemetry) in its PR.** Everything ships in
+ONE deploy with ONE sysadmin message (Ivan, 2026-11-14): update per DEPLOY §3,
+add the §11 `.env` lines (COMPOSE_FILE, GRAFANA_ADMIN_PASSWORD, ALERT_EMAIL,
+optional DEPLOY_NOTIFY_EMAIL), RAM → 4 GB, DNS + Caddy `stats.nasteh.bg` →
+127.0.0.1:3001, then `sudo scripts/deploy/install.sh` (§3a). After that Ivan
+deploys with the GitHub „Deploy" button. **Ivan / client:** lawyer review of
+docs/PRIVACY-TELEMETRY.bg.md before publishing the privacy/cookie texts;
+restock lead-time text; `group`/`variant` in the export; images folder.
+Next phase candidates: stock sync (see the Admin usage dashboard), zod/other
+majors, `three` upgrade (visual check), Tempo 3 evaluation.
 
 Earlier: **2026-07-23 — code-complete, handed to the sysadmin** (site lock,
 importer and production fixes followed in Aug–Sep; see Decisions log).
@@ -232,7 +224,7 @@ Routes are English (Ivan's decision).
 - [x] Phase 10 — Launch & handover (documentation complete; execution requires Ivan's account)
 - [x] Phase 11 — Security patch release (2026-11-14; PHASES §11 — all AC verified on the local production image)
 - [x] Phase 12 — Product page v2 + import grouping (client CR 2026-11-14; PHASES §12 — AC verified on dev + the local production image)
-- [ ] Phase 13 — Observability & usage telemetry (PHASES §13) ← next
+- [x] Phase 13 — Observability & usage telemetry (2026-11-15; PHASES §13 — AC verified on the local full stack)
 
 ### Active phase task breakdown
 
@@ -345,6 +337,7 @@ https://nasteh.bg/rukovodstvo-za-administratora
 
 | Date | Decision | Why | Recorded where |
 |---|---|---|---|
+| 2026-11-15 | **Phase 13: observability + usage telemetry (self-hosted Grafana stack, hybrid consent).** Ivan's decisions 2026-11-14: Grafana on `stats.nasteh.bg`; hybrid tracking (cookieless for all + opt-in persistent anonymous id); everything bundled into one deploy. **App:** `lib/log.ts` JSON logger (errors serialised — Payload's prod errors used to stringify to `{}`; emails masked), all `console.*` replaced, silent failures now logged (Redis fallback, Altcha, order/contact rejections), owner/customer order emails independent (a failed owner send used to skip the customer confirmation), `instrumentation.ts` (`onRequestError`, process handlers, OTel when `OTEL_EXPORTER_OTLP_ENDPOINT` is set, daily purge), `/api/health` (DB + Redis + `APP_VERSION`) now drives the compose healthcheck. **New deps (rule 2):** `@opentelemetry/api` 1.9.1, `sdk-trace` 2.12.1, `context-async-hooks` 2.12.1, `exporter-trace-otlp-http` 0.223.2, `resources` 2.12.1 — @vercel/otel rejected (its peer ranges pin older majors), `sdk-trace-node` is deprecated → `sdk-trace`. **Telemetry:** `telemetry.events` in its own schema (Payload migration, raw SQL; written batched through the adapter's drizzle; 13-month purge); daily-salted visitor hash (Redis); `POST /api/t` beacon (same-origin, 8 KB, 20 events, zod catalogue, rate-limited, bots + admin sessions skipped); consent banner replaces the cookie notice (equal-weight buttons, footer „Настройки за бисквитки"); events on product/variant/cart/checkout/inquiry/phone/404/search/order/contact/import; admin usage via one wrapper on every collection/global (`changedFields` reports `items.stockQty` etc.; populated relations normalised to ids — first run reported untouched brand/category). **Stack:** `docker-compose.observability.yml` — Grafana 13.3.1, Loki 3.7.10, Prometheus 3.16.0, Tempo **2.10.10** (3.1.1 rejected: config model changed), Alloy 1.22.0; Alloy tails json-file logs via a read-only mount (no Docker socket; services tag lines with `logging.options.labels`), redacts emails/IPs, spanmetrics, Postgres/Redis/blackbox/disk exporters, drops health-check traces; `telemetry-db-init` one-shot creates `grafana_reader` (telemetry schema only) + `metrics` (pg_monitor) with generated passwords. Six dashboards generated by `scripts/gen-dashboards.ts`; six email alerts. **Verified locally (full stack):** all containers up; scripted traffic (consent accepted / declined) → events with/without visitor id; search terms incl. zero-result; order_placed; admin_login/admin_change; browser errors in Loki with trace ids; request metrics per route; all 53 panel queries execute, dashboards render with data; grafana_reader denied on orders/users; a real alert email (disk NoData before the mount fix) delivered via SMTP. Docs: ARCHITECTURE §13, DEPLOY §11, SECURITY T8, CONVENTIONS §4, OBSERVABILITY.md, PRIVACY-TELEMETRY.bg.md (for the client's lawyer), CLAUDE.md scope line. | Ivan, 2026-11-14/15 | src/lib/{log,redis,same-origin}.ts · src/lib/telemetry/* · instrumentation*.ts · api/{health,t} · docker-compose.observability.yml · observability/** · scripts/gen-dashboards.ts · docs · here |
 | 2026-11-14 | **Real 404s instead of "soft 404s".** Every missing product/category/brand/page and any unknown URL answered HTTP 200 with the not-found UI: `(site)/loading.tsx` (and the product/category ones) wrapped the pages, so the response was already streaming with 200 when `notFound()` ran. A layout-level check was tried first — it set 404 but rendered a blank page (with one root layout per route group, a layout's `notFound()` skips `(site)/not-found.tsx`). Final: the three loading files are removed so the pages' own `notFound()` runs before streaming starts; `[pageSlug]/[...rest]` catches deeper unknown paths. Verified on the production image: missing → 404 with header, 404 text + search, footer; real pages 200. Trade-off: no skeleton flash when navigating to product/category pages (Next keeps the current page until the next is ready); search keeps its loading UI. | Ivan, 2026-11-14 | (site)/[pageSlug]/[...rest] · removed loading.tsx ×3 · here |
 | 2026-11-14 | **zod 3 → 4.6.6 (major) — security.** Once Dependabot alerts were on, it opened a security PR (#88) for the one high advisory I had parked as an accepted risk (GHSA-mrhx-c7xc-m3w5). Ivan delegated merging security PRs („merge whichever security prs you deem worth it") — taken because the migration is two API renames (`error.errors` → `error.issues`, `errorMap` → `error`). Its CI failed on exactly those, so done in our own PR (Dependabot closes #88). The tests never asserted error *messages*, so new tests pin every field's bg.ts key for checkout + contact; browser-checked invalid checkout/contact submissions (Bulgarian messages) and a valid order on the production image. The zod `ignoreGhsas` entry is gone (5 left). | Ivan (delegated), 2026-11-14 | package.json · actions/{order,contact}.ts · validation/* · SECURITY §3 #10 · ARCHITECTURE §2 · here |
 | 2026-11-14 | **Automatic deploys: a „Deploy" button instead of the sysadmin (ArgoCD rejected — it needs Kubernetes).** Ivan wanted to stop depending on the slow sysadmin; he chose a manual Deploy button over deploy-on-every-merge, and asked that only he — or the workflow with his approval — can move the production branch. **GitHub side:** `.github/workflows/deploy.yml` (workflow_dispatch, environment `production` with Ivan as required reviewer and main-only) checks the commit is on main and CI passed, then adds a deploy commit (content = chosen commit; parents = previous deploy + chosen) to `production`, so the branch only fast-forwards and rollback = deploy an older SHA. Ruleset on `production` blocks create/update/delete/force-push except repo admin + deploy key; GitHub refused to exempt the Actions integration on a personal repo, so a write deploy key was created (Ivan approved), private half stored only as the environment secret `DEPLOY_SSH_KEY`, local copy shredded; bypass probed on a temporary branch. **Server side:** `scripts/deploy/auto-deploy.sh` (systemd timer every 2 min, `install.sh` one-time) pulls `production`, dumps the DB, tags the image `:previous`, builds/pulls/ups, waits for the healthcheck, rolls back + never retries an unhealthy target; optional email via the mail relay. Tested locally against a bare-repo "GitHub" + a scratch stack: no-op, good deploy (43 s), build failure (stays), unhealthy release (auto-rollback, healthy again, not retried), rollback by deploying an older SHA; systemd units pass `systemd-analyze verify`. **Not yet exercised on GitHub itself** — Ivan's first Deploy press is the first real run. | Ivan, 2026-11-14 | deploy.yml · scripts/deploy/* · DEPLOY §3a · SECURITY T7 · ARCHITECTURE §2 · here |

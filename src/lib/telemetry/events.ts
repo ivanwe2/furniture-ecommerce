@@ -142,11 +142,28 @@ const NOISE = new Set(['id', 'updatedAt', 'createdAt', 'searchText', 'minPriceEu
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
 /**
+ * A relationship arrives as an id on one side of a save and as the populated
+ * document on the other (Payload's afterChange `doc` vs `previousDoc`). Reduce
+ * populated documents to their id so an untouched brand/category/image is not
+ * reported as changed.
+ */
+function refsToIds(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(refsToIds)
+  if (!isObject(value)) return value
+  if ('id' in value && ('updatedAt' in value || 'createdAt' in value)) return value.id
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(value)) out[k] = refsToIds(v)
+  return out
+}
+
+/**
  * Which fields an admin save changed: top-level names, and for arrays of rows
  * the row fields too (`items.stockQty`, `items.priceEurCents`) — that detail is
  * what shows automation candidates ("stock edited 200×/week").
  */
-export function changedFields(doc: unknown, previous: unknown): string[] {
+export function changedFields(rawDoc: unknown, rawPrevious: unknown): string[] {
+  const doc = refsToIds(rawDoc)
+  const previous = refsToIds(rawPrevious)
   if (!isObject(doc)) return []
   const prev = isObject(previous) ? previous : {}
   const out = new Set<string>()

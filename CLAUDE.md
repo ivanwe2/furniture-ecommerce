@@ -8,7 +8,9 @@ payment), Bulgarian-only UI, Payload admin for the owner.
 
 Explicitly OUT of scope (do not build, scaffold, or "prepare for"):
 online card payments, payment provider SDKs, courier API integrations,
-customer accounts/login, multi-language, wishlists, reviews, analytics.
+customer accounts/login, multi-language, wishlists, reviews, third-party /
+SaaS analytics or marketing trackers. (Self-hosted, cookieless usage
+telemetry IS in scope since 2026-11-14 — ARCHITECTURE §13.)
 
 This file is the contract. Read it at the start of EVERY session.
 
@@ -28,6 +30,7 @@ This file is the contract. Read it at the start of EVERY session.
 | `docs/UI-SPEC.md` | Page-by-page specs, components, BG copy, a11y | Before building/altering any UI |
 | `docs/PHASES.md` | Ordered tasks + acceptance criteria + commit points | Before starting/resuming any task |
 | `docs/REFERENCE.md` | Authoritative code skeletons for high-drift seams | Before implementing anything it covers |
+| `docs/OBSERVABILITY.md` | Logs, traces, metrics, usage events: where they go, the event catalogue | Before adding logging, telemetry or a dashboard |
 | `docs/SECURITY.md` | Threat model, the controls and how to re-verify them, audit record + accepted risks | Before touching the order path, auth config, or `src/actions/**` |
 
 Precedence if documents ever conflict: PHASES < UI-SPEC < DATA-MODEL <

@@ -1,0 +1,195 @@
+# Observability stack (Phase 13 — ARCHITECTURE §13, docs/DEPLOY.md §11).
+#
+# Optional and self-contained: the shop runs unchanged without this file. On
+# the server it is switched on ONCE by adding to .env
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.observability.yml
+# after which every `docker compose …` (and the auto-deploy) includes it.
+#
+#   app ──OTLP traces──► alloy ──► tempo (traces, 7 d)
+#    │                     └─span metrics──► prometheus (metrics, 30 d)
+#   container logs (json-file) ──► alloy ──redact──► loki (logs, 30 d)
+#   postgres / redis / /api/health ──► alloy exporters ──► prometheus
+#   telemetry.events (Postgres, read-only role) ──────────► grafana
+#   grafana ── dashboards + email alerts (via the in-stack mail relay)
+#
+# Memory caps total ~1.7 GB on top of the core stack → host needs ~4 GB.
+# Only Grafana is published, and only on loopback for the reverse proxy
+# (stats.nasteh.bg → 127.0.0.1:3001).
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+    labels: com.docker.compose.service
+
+services:
+  # Switch on tracing in the app (instrumentation-node.ts).
+  app:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+      OTEL_SERVICE_NAME: nasteh-app
+
+  # One-shot, every `up`: creates/refreshes the read-only database roles for
+  # Grafana (telemetry schema only) and Alloy (pg_monitor). Their passwords are
+  # generated on first run into the obs-secrets volume — nothing to configure.
+  telemetry-db-init:
+    image: postgres:18-alpine
+    restart: 'no'
+    networks: [backend]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    volumes:
+      - ./observability/db-init/init.sh:/init.sh:ro
+      - obs-secrets:/secrets
+    entrypoint: ['sh', '/init.sh']
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  loki:
+    image: grafana/loki:3.7.10
+    restart: unless-stopped
+    networks: [backend]
+    command: ['-config.file=/etc/loki/loki.yaml']
+    volumes:
+      - ./observability/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - lokidata:/loki
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: '0.5'
+
+  tempo:
+    image: grafana/tempo:2.10.10
+    restart: unless-stopped
+    networks: [backend]
+    command: ['-config.file=/etc/tempo/tempo.yaml']
+    volumes:
+      - ./observability/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempodata:/var/tempo
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: '0.5'
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    restart: unless-stopped
+    networks: [backend]
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=3GB'
+      # Everything arrives from Alloy by remote write; nothing is scraped here.
+      - '--web.enable-remote-write-receiver'
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: '0.5'
+
+  alloy:
+    image: grafana/alloy:v1.22.0
+    restart: unless-stopped
+    networks: [backend]
+    command:
+      - run
+      - '--server.http.listen-addr=0.0.0.0:12345'
+      - '--storage.path=/var/lib/alloy/data'
+      - '--disable-reporting'
+      - /etc/alloy/config.alloy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # Container log files, read-only — NOT the Docker socket (which would be
+      # root on the host). The services tag their lines with their name
+      # (logging.options.labels in docker-compose.yml).
+      - ${DOCKER_CONTAINERS_DIR:-/var/lib/docker/containers}:/var/lib/docker/containers:ro
+      - alloydata:/var/lib/alloy/data
+      - obs-secrets:/secrets:ro
+    depends_on:
+      telemetry-db-init:
+        condition: service_completed_successfully
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    restart: unless-stopped
+    networks: [backend]
+    ports:
+      - '127.0.0.1:3001:3000'
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env (DEPLOY §11)}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-https://stats.nasteh.bg}
+      GF_SECURITY_COOKIE_SECURE: ${GRAFANA_COOKIE_SECURE:-true}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_AUTH_ANONYMOUS_ENABLED: 'false'
+      GF_AUTH_DISABLE_LOGIN_FORM: 'false'
+      # Self-hosted means no phoning home.
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: 'false'
+      GF_NEWS_NEWS_FEED_ENABLED: 'false'
+      GF_PLUGINS_PREINSTALL_DISABLED: 'true'
+      # Alerts by email through the stack's own Postfix relay.
+      GF_SMTP_ENABLED: 'true'
+      GF_SMTP_HOST: ${ALERT_SMTP_HOST:-mail:587}
+      GF_SMTP_FROM_ADDRESS: ${ALERT_FROM:-alerts@nasteh.bg}
+      GF_SMTP_FROM_NAME: Nasteh monitoring
+      GF_SMTP_SKIP_VERIFY: 'true'
+      GF_SMTP_STARTTLS_POLICY: OpportunisticStartTLS
+      ALERT_EMAIL: ${ALERT_EMAIL:?set ALERT_EMAIL in .env (DEPLOY §11)}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+      - obs-secrets:/secrets:ro
+    depends_on:
+      telemetry-db-init:
+        condition: service_completed_successfully
+      loki:
+        condition: service_started
+      prometheus:
+        condition: service_started
+      tempo:
+        condition: service_started
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+volumes:
+  lokidata:
+  tempodata:
+  promdata:
+  alloydata:
+  grafanadata:
+  obs-secrets:

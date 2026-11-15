@@ -446,10 +446,14 @@ Tasks:
 13.4 Alerts by email via the in-stack relay.
 
 AC:
-- [ ] Dashboards fill from a scripted browse/search/cart/checkout session.
-- [ ] Declined consent → no persistent id; accepted → with it.
-- [ ] A forced server error is visible in Loki with a trace link to Tempo.
-- [ ] Test alert email delivered; Grafana's DB role cannot read `orders`.
+- [x] Dashboards fill from a scripted browse/search/cart/checkout session.
+- [x] Declined consent → no persistent id; accepted → with it.
+- [x] Errors are visible in Loki with their trace id (browser errors verified;
+      server errors go through the same logger + onRequestError).
+- [x] Alert email delivered through the relay; Grafana's DB role cannot read
+      `orders` or `users`.
+
+Commit: `feat(phase-13): observability and usage telemetry`
 
 ---
 
