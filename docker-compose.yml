@@ -51,8 +51,9 @@ services:
     ports:
       # Publish on loopback only — the app is reachable ONLY through the
       # sysadmin's reverse proxy (which terminates TLS), never directly from
-      # the network. If the proxy runs on a DIFFERENT host, change to
-      # "3000:3000" and firewall the port (or share a Docker network).
+      # the network. A proxy in a container or on another host: join its
+      # network from a server-side docker-compose.override.yml (DEPLOY §6) —
+      # never edit this file on the server (the auto-deploy refuses).
       - '127.0.0.1:3000:3000'
     volumes:
       - media:/app/media # uploaded images + sized variants
