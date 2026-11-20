@@ -11,11 +11,14 @@ as intended; observability stack up; auto-deploy timer installed (runs as
 root, `/vm-1/nasteh`). The update caused a 502 until the sysadmin listed his
 `docker-compose.override.yml` (Caddy-network join) in `COMPOSE_FILE` — see
 Decisions log 2026-11-20; DEPLOY §6 now documents the Caddy-in-Docker setup
-and the auto-deploy refuses that state. **Open:** sysadmin adds Grafana to the
-override + Caddy `stats.nasteh.bg` → `nasteh-grafana:3000` (his block used
-`nasteh-grafana-1:3001` — the host port, unreachable from Caddy's container);
-then Ivan: Grafana login + change the admin password (it travelled over
-Telegram), test the alert contact point, first „Deploy" press.
+and the auto-deploy refuses that state. stats.nasteh.bg live 2026-11-20
+(Grafana joined Caddy's network in the override, Caddy → `nasteh-grafana:3000`;
+checked from outside: 302 → login, valid cert, API 401 unauthenticated, sign-up
+and anonymous off). **Open (Ivan):** Grafana login + change the admin password
+(it travelled over Telegram), test the alert contact point, merge this PR and
+make the first „Deploy" press. Usage dashboards stay near-empty while the site
+lock is on (the lock page has no telemetry; admin sessions are skipped);
+system dashboards fill immediately.
 
 **2026-11-15 — NOV 2026 ROUND COMPLETE in code. Merged: #77 security, #86
 product page v2, #87 Altcha + euro-only, #89 auto-deploy, #90 zod 4, #91 real
