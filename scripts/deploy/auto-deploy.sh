@@ -60,6 +60,22 @@ main() {
     exit 1
   fi
 
+  # A server-side docker-compose.override.yml (production: it joins the app to
+  # the Caddy container's network) is read by Compose only while COMPOSE_FILE
+  # is unset. Once .env sets COMPOSE_FILE without it, `up -d` recreates the app
+  # off the proxy network and the site answers 502 (2026-11-17). Refuse before
+  # anything changes; retried every run, so fixing .env is enough to proceed.
+  local skipped
+  if skipped="$(skipped_override)"; then
+    if [ "$target" != "$(cat "$state_dir/blocked" 2>/dev/null || true)" ]; then
+      log "ERROR: $skipped exists but COMPOSE_FILE in .env does not list it — not deploying ${target:0:12}. Append :$skipped to COMPOSE_FILE (docs/DEPLOY.md §6)."
+      notify "BLOCKED" "$skipped exists but COMPOSE_FILE in .env does not list it, so Compose would ignore it (and with it the reverse-proxy network). Nothing was changed. Append :$skipped to COMPOSE_FILE in .env; the deploy then proceeds on its own."
+      echo "$target" > "$state_dir/blocked"
+    fi
+    exit 1
+  fi
+  rm -f "$state_dir/blocked"
+
   local previous
   previous="$(git rev-parse HEAD)"
   log "deploying ${target:0:12} (running ${previous:0:12})"
@@ -118,6 +134,22 @@ log() {
   line="$(date -u +%FT%TZ) [deploy] $*"
   echo "$line"
   echo "$line" >> "${STATE_DIR:-.deploy}/deploy.log" 2>/dev/null || true
+}
+
+# Prints the override file Compose would silently skip: it exists, but
+# COMPOSE_FILE (environment, else .env) is set and does not list it.
+skipped_override() {
+  local files f
+  files="${COMPOSE_FILE:-$(sed -n 's/^COMPOSE_FILE=//p' .env 2>/dev/null | tail -1 | tr -d '"'"'"' ')}"
+  [ -n "$files" ] || return 1
+  for f in docker-compose.override.yml docker-compose.override.yaml; do
+    [ -f "$f" ] || continue
+    case ":$files:" in
+      *":$f:"* | *"/$f:"*) ;;
+      *) echo "$f"; return 0 ;;
+    esac
+  done
+  return 1
 }
 
 # The app container's own healthcheck (docker-compose.yml) — migrations included.

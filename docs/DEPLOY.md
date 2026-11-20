@@ -226,7 +226,11 @@ repo Settings → Deploy keys (then generate a new pair and secret).
   delete that file to retry the same commit.
 - Extra compose files (e.g. observability, Phase 13): set
   `COMPOSE_FILE=docker-compose.yml:docker-compose.observability.yml` in `.env`
-  and the deploy script uses them too.
+  and the deploy script uses them too. It never edits `.env` and passes no
+  `-f` of its own — plain `docker compose`, so `.env` decides. A
+  `docker-compose.override.yml` must then be listed in `COMPOSE_FILE` too
+  (§6); while it isn't, the script refuses (journal + `BLOCKED` email, once)
+  and proceeds by itself on the first run after `.env` is fixed.
 
 ---
 
@@ -284,8 +288,7 @@ docker run --rm -v <project>_media:/media -v "$PWD":/in alpine \
 
 Terminate TLS and proxy to `127.0.0.1:3000`. The compose publishes the app on
 **loopback only** (not exposed to the network) — a same-host proxy reaches it
-directly; a proxy on another host needs the port mapping adjusted (see the
-`docker-compose.yml` comment). Two things the app relies on:
+directly. Two things the app relies on:
 
 - **`X-Real-IP` (+ `X-Forwarded-For`)** — the checkout/contact rate limiter
   derives the client IP from these (ARCHITECTURE §7). The app **prefers
@@ -347,6 +350,59 @@ server {
 > contact rate limits.
 
 Caching the media route (`/api/media/file/`) at the proxy is a nice-to-have.
+
+### Proxy in a Docker container (the production setup)
+
+On the production server Caddy is its own container on its own Docker network,
+so `127.0.0.1` inside it is Caddy, not this host. The app — and Grafana (§11) —
+join that network from a **server-side `docker-compose.override.yml`**: owned
+by the sysadmin, untracked (the network name belongs to the host, not the repo):
+
+```yaml
+services:
+  app:
+    networks:
+      backend:
+      <caddy-network>:
+        aliases: [nasteh-app]
+  grafana:              # only while the observability stack is on (§11) —
+    networks:           # without it Compose rejects this block
+      backend:
+      <caddy-network>:
+        aliases: [nasteh-grafana]
+networks:
+  <caddy-network>:
+    external: true
+```
+
+Caddy then targets the **container** port — 3000 for both; the host's
+`127.0.0.1:3000/3001` mappings are not visible from another container:
+
+```
+nasteh.bg {
+    encode zstd gzip
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    request_body {
+        max_size 12MB
+    }
+    reverse_proxy nasteh-app:3000 {
+        header_up X-Real-IP {remote_host}
+    }
+}
+
+stats.nasteh.bg {
+    reverse_proxy nasteh-grafana:3000
+}
+```
+
+> **Once `.env` sets `COMPOSE_FILE` (§11), Compose stops reading
+> `docker-compose.override.yml` by itself — list it last in `COMPOSE_FILE`.**
+> Otherwise `up -d` recreates the app without the proxy network and the site
+> answers 502 (happened on 2026-11-17). The auto-deploy (§3a) refuses to deploy
+> while an override exists that `COMPOSE_FILE` leaves out, and says so.
+
+Don't edit the tracked `docker-compose.yml` on the server for any of this —
+the auto-deploy refuses to deploy over local edits.
 
 ---
 
@@ -591,17 +647,22 @@ the box; the shop runs unchanged without it.
    ```
    `COMPOSE_FILE` makes every `docker compose` command — and the auto-deploy
    (§3a) — include the stack. Compose refuses to start it without the two
-   other values.
+   other values. **If the server has a `docker-compose.override.yml`, append
+   it** — `…:docker-compose.observability.yml:docker-compose.override.yml` —
+   because a set `COMPOSE_FILE` turns off its automatic loading (§6).
 3. `docker compose up -d` (or let the next deploy do it). First start pulls
    ~1.5 GB of images; the one-shot `telemetry-db-init` creates the read-only
    database roles and their passwords by itself.
-4. Reverse proxy: `stats.nasteh.bg` → `127.0.0.1:3001` (DNS A record to the
-   same IP as nasteh.bg). Caddy:
+4. Reverse proxy: DNS A record `stats.nasteh.bg` to the same IP as nasteh.bg,
+   then a Caddy block. Caddy on the host itself:
    ```
    stats.nasteh.bg {
        reverse_proxy 127.0.0.1:3001
    }
    ```
+   Caddy in a container (production): Grafana joins Caddy's network in the
+   override and Caddy uses `reverse_proxy nasteh-grafana:3000` — see §6.
+   (`3001` exists only on the host's loopback.)
    Grafana has its own login (`admin` / `GRAFANA_ADMIN_PASSWORD`); an IP
    allow-list in the proxy is a welcome extra.
 5. Mail: alerts are sent as `alerts@nasteh.bg` through the stack's relay —

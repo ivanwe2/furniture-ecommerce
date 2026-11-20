@@ -14,7 +14,8 @@
 #
 # Memory caps total ~1.7 GB on top of the core stack → host needs ~4 GB.
 # Only Grafana is published, and only on loopback for the reverse proxy
-# (stats.nasteh.bg → 127.0.0.1:3001).
+# (stats.nasteh.bg → 127.0.0.1:3001; a proxy container instead reaches it as
+# nasteh-grafana:3000 via the server's override file — DEPLOY §6/§11).
 
 x-logging: &logging
   driver: json-file
