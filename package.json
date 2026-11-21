@@ -35,7 +35,7 @@
     "@payloadcms/richtext-lexical": "3.93.0",
     "@payloadcms/translations": "3.93.0",
     "@payloadcms/ui": "3.93.0",
-    "altcha": "3.5.0",
+    "altcha": "3.6.0",
     "altcha-lib": "2.8.0",
     "clsx": "^2.1.1",
     "cross-env": "10.1.0",
